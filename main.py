@@ -19,3 +19,4 @@ with open('KiwiAST/example.kiwi') as file:
     parser = KiwiParser(tokenizer)
     tree = parser.start()
     tree: KiwiAST.Module
+    print(tree)
