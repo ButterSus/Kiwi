@@ -1,4 +1,5 @@
 if a:
     pass
+    pass
 else if 5:
     pass

@@ -3,7 +3,7 @@
 
 @class KiwiParser
 @subheader '''
-import KiwiAST as kiwi
+import frontend.KiwiAST as kiwi
 from itertools import chain
 '''
 
@@ -215,10 +215,10 @@ data_type:
     | 'auto' {'auto'}
 
 NUMBER_:
-    | v=NUMBER {int(v.string)}
+    | v=NUMBER {kiwi.Int(v.string)}
 
 NAME_:
-    | v=NAME {v.string}
+    | v=NAME {kiwi.Name(v.string)}
 
 STRING_:
     | v=STRING+ {kiwi.String(''.join(map(lambda x: x.string[1:-1], v)))}
