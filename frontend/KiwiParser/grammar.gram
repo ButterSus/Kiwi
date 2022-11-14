@@ -7,7 +7,31 @@ import frontend.KiwiAST as kiwi
 from itertools import chain
 '''
 
-start[kiwi.Module]: b=[statements] ENDMARKER {kiwi.Module(b)}
+start[kiwi.Module]:
+    | i=import_stmts v=statements ENDMARKER {kiwi.Module(i, v)}
+    | i=import_stmts ENDMARKER {kiwi.Module(i, [])}
+    | v=statements ENDMARKER {kiwi.Module([], v)}
+    | ENDMARKER {kiwi.Module([], [])}
+
+# IMPORT STATEMENTS
+# =================
+
+import_stmts:
+    | import_stmt+
+
+import_stmt:
+    | "import" v=dotted_as_names (NEWLINE | ';')+ {v}
+
+dotted_as_names:
+    | ','.dotted_as_name+
+
+dotted_as_name:
+    | v=dotted_name "as" a=NAME_ {kiwi.Alias(v, a)}
+    | v=dotted_name {kiwi.Alias(v, None)}
+
+dotted_name:
+    | v=dotted_name '.' a=NAME_ {[*v, a]}
+    | v=NAME_ {[v]}
 
 # GENERAL STATEMENTS
 # ==================
@@ -16,16 +40,19 @@ statements:
     | statement+
 
 statement:
-    | v=simple_stmt (NEWLINE | ';') {v}
+    | v=simple_stmt (NEWLINE | ';')+ {v}
     | compound_stmt
 
 statement_newline:
-    | v=simple_stmt NEWLINE {v}
+    | v=simple_stmt (NEWLINE)+ {v}
 
 simple_stmt:
     | assignment
+    | expression
     | return_stmt
     | 'pass' {kiwi.Pass()}
+    | 'break' {kiwi.Break()}
+    | 'continue' {kiwi.Continue()}
 
 compound_stmt:
     | function_def
@@ -49,11 +76,11 @@ annotation:
     | i=NAME_ ':' t=data_type {[i, t]}
 
 augassign:
-    | '+=' {'+='}
-    | '-=' {'-='}
-    | '*=' {'*='}
-    | '/=' {'/='}
-    | '%=' {'%='}
+    | '+=' {kiwi.Token('+=')}
+    | '-=' {kiwi.Token('-=')}
+    | '*=' {kiwi.Token('*=')}
+    | '/=' {kiwi.Token('/=')}
+    | '%=' {kiwi.Token('%=')}
 
 return_stmt:
     | 'return' v=expression {kiwi.Return(v)}
@@ -131,8 +158,19 @@ if_stmt:
 # -----------
 
 expression:
+    | lambda_def
     | c=inversion '?' t=inversion ':' e=inversion {kiwi.IfExpression(c, t, e)}
     | v=inversion {kiwi.Expression(v)}
+
+lambda_def:
+    | "lambda" p=lambda_parameters ':' r=expression {kiwi.LambdaDef(p, r)}
+
+lambda_parameters:
+    | v=','.lambda_param+ {v}
+    | [lambda_param] {[]}
+
+lambda_param:
+    | v=NAME_ {kiwi.LambdaParameter(v)}
 
 inversion:
     | '!' x=inversion {kiwi.UnaryOp(x, '!')}
@@ -154,71 +192,105 @@ compare_op_sum_pair:
     | gt_sum
 
 eq_sum:
-    | '==' sum
+    | o='==' v=sum {kiwi.Token(o), v}
 
 noteq_sum:
-    | '!=' sum 
+    | o='!=' v=sum {kiwi.Token(o), v}
 
 lte_sum:
-    | '<=' sum 
+    | o='<=' v=sum {kiwi.Token(o), v}
 
 lt_sum:
-    | '<' sum 
+    | o='<' v=sum {kiwi.Token(o), v}
 
 gte_sum:
-    | '>=' sum 
+    | o='>=' v=sum {kiwi.Token(o), v}
 
 gt_sum:
-    | '>' sum
+    | o='>' v=sum {kiwi.Token(o), v}
 
 # Arithmetic operators
 # --------------------
 
 sum:
-    | x=sum '+' y=term {kiwi.BinaryOp(x, y, '+')}
-    | x=sum '-' y=term {kiwi.BinaryOp(x, y, '-')}
+    | x=sum '+' y=term {kiwi.BinaryOp(x, y, kiwi.Token('+'))}
+    | x=sum '-' y=term {kiwi.BinaryOp(x, y, kiwi.Token('-'))}
     | term
 
 term:
-    | x=term '*' y=factor {kiwi.BinaryOp(x, y, '*')}
-    | x=term '/' y=factor {kiwi.BinaryOp(x, y, '/')}
-    | x=term '%' y=factor {kiwi.BinaryOp(x, y, '%')}
+    | x=term '*' y=factor {kiwi.BinaryOp(x, y, kiwi.Token('*'))}
+    | x=term '/' y=factor {kiwi.BinaryOp(x, y, kiwi.Token('/'))}
+    | x=term '%' y=factor {kiwi.BinaryOp(x, y, kiwi.Token('%'))}
     | factor
 
 factor:
-    | '+' x=factor {kiwi.UnaryOp(x, '+')}
-    | '-' x=factor {kiwi.UnaryOp(x, '-')}
+    | '+' x=factor {kiwi.UnaryOp(x, kiwi.Token('+'))}
+    | '-' x=factor {kiwi.UnaryOp(x, kiwi.Token('-'))}
     | power
 
 power:
-    | x=atom '**' y=factor {kiwi.BinaryOp(x, y, '**')}
+    | x=primary '**' y=factor {kiwi.BinaryOp(x, y, kiwi.Token('**'))}
+    | primary
+
+primary:
+    | v=primary '.' a=NAME_ {kiwi.Attribute(v, a)}
+    | i=primary '(' v=arguments ')' {kiwi.Call(i, v)}
+    | "match" k=expression ':' c=key_block {kiwi.MatchExpr(k, c)}
     | atom
 
 atom:
     | NAME_
-    | 'true' {'true'}
-    | 'false' {'false'}
-    | 'none' {'none'}
+    | constant
+    | group
+
+constant:
+    | 'true' {kiwi.Token('true')}
+    | 'false' {kiwi.Token('false')}
+    | 'none' {kiwi.Token('none')}
+    | SELECTOR_
     | STRING_
     | NUMBER_
-    | group
 
 group:
     | '(' expression ')'
+
+# FUNCTION CALL ARGUMENTS
+# =======================
+
+arguments:
+    | v=args ','? &')' {v}
+
+args:
+    | v=','.expression+ {v}
+    | expression? {[]}
+
+# MATCH KEYS
+# ==========
+
+key_block:
+    | NEWLINE INDENT v=NEWLINE.match_key+ NEWLINE {v} # AAAH!! I HATE PEGEN, I SPENT ABOUT 1 HOUR TO UNDERSTAND THAT PEGEN CAN BE SOME STUPID WITH DEDENT
+
+match_key:
+    | f=constant "to" t=constant '->' v=expression {kiwi.MatchKey(f, t, v)}
+    | f=constant '->' v=expression {kiwi.MatchKey(f, f, v)}
 
 # DATA TYPES
 # ----------
 
 data_type:
-    | 'score' {'score'}
-    | 'scoreboard' {'scoreboard'}
-    | 'auto' {'auto'}
+    | 'score' {kiwi.Token('score')}
+    | 'scoreboard' {kiwi.Token('scoreboard')}
+    | 'selector' {kiwi.Token('selector')}
+    | 'auto' {kiwi.Token('auto')}
 
 NUMBER_:
-    | v=NUMBER {kiwi.Int(v.string)}
+    | v=NUMBER {kiwi.Number(v.string)}
 
 NAME_:
     | v=NAME {kiwi.Name(v.string)}
 
 STRING_:
     | v=STRING+ {kiwi.String(''.join(map(lambda x: x.string[1:-1], v)))}
+
+SELECTOR_:
+    | '@' v=NAME {kiwi.Selector(v.string)}

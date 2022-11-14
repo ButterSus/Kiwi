@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Literal
+from typing import List, Literal, Any
 from dataclasses import dataclass
 
 import frontend.KiwiAST.colors
@@ -23,6 +23,10 @@ class Theme_Statements:
     color = colors.LightYellow + colors.BackgroundDefault
 
 
+class Theme_CStatements:
+    color = colors.LightYellow + colors.BackgroundDefault
+
+
 class Theme_Expressions:
     color = colors.Cyan + colors.BackgroundDefault
 
@@ -41,7 +45,23 @@ class AST(Theme_Undefined):
 
 @dataclass
 class Module(Theme_Start, AST):
+    imports: List[Any]
     body: List[_statement]
+
+
+# IMPORT STATEMENTS
+# =================
+
+
+@dataclass
+class Import(Theme_Statements, AST):
+    names: List[Alias]
+
+
+@dataclass
+class Alias(Theme_Expressions, AST):
+    name: List[Name]
+    as_name: Name
 
 
 # SIMPLE STATEMENTS
@@ -50,6 +70,16 @@ class Module(Theme_Start, AST):
 
 @dataclass
 class Pass(Theme_Statements, AST):
+    ...
+
+
+@dataclass
+class Break(Theme_Statements, AST):
+    ...
+
+
+@dataclass
+class Continue(Theme_Statements, AST):
     ...
 
 
@@ -89,7 +119,7 @@ class Return(Theme_Statements, AST):
 
 
 @dataclass
-class NamespaceDef(Theme_Statements, AST):
+class NamespaceDef(Theme_CStatements, AST):
     name: Name
     body_private: List[_statement]
     body_public: List[_statement]
@@ -97,7 +127,7 @@ class NamespaceDef(Theme_Statements, AST):
 
 
 @dataclass
-class FuncDef(Theme_Statements, AST):
+class FuncDef(Theme_CStatements, AST):
     name: Name
     params: List[Parameter | RefParameter]
     default: List[_expression]
@@ -112,12 +142,23 @@ class Parameter(Theme_Statements, AST):
 
 
 @dataclass
+class LambdaDef(Theme_Statements, AST):
+    targets: List[Name]
+    returns: _expression
+
+
+@dataclass
+class LambdaParameter(Theme_Statements, AST):
+    target: Name
+
+
+@dataclass
 class RefParameter(Theme_Statements, AST):
     target: Name
 
 
 @dataclass
-class IfElse(Theme_Statements, AST):
+class IfElse(Theme_CStatements, AST):
     condition: _expression
     then: List[_statement]
     or_else: List[_statement]
@@ -157,41 +198,92 @@ class BinaryOp(Theme_Expressions, AST):
     op: str
 
 
-class Token:
+@dataclass
+class Call(Theme_Expressions, AST):
+    target: _expression
+    args: List[_expression]
+
+
+@dataclass
+class Attribute(Theme_Expressions, AST):
+    target: _expression
+    attribute: Name
+
+
+# MATCH KEYS
+# ==========
+
+
+@dataclass
+class MatchExpr(Theme_Expressions, AST):
+    value: _expression
+    cases: List[MatchKey]
+
+
+@dataclass
+class MatchKey(Theme_Expressions, AST):
+    from_this: _constant
+    to_this: _constant
+    value: _expression
+
+
+class Token(Theme_Tokens):
+    value: str
+
+    def __init__(self, value: str):
+        self.value = value
+
+    def __repr__(self) -> str:
+        return self.value
+
+
+class Selector(str, Token):
     ...
 
 
-class Name(str, Theme_Tokens, Token):
+class Name(str, Token):
     ...
 
 
-class String(str, Theme_Tokens, Token):
+class String(str, Token):
     ...
 
 
-class Int(int, Theme_Tokens, Token):
+class Number(float, Token):
     ...
 
 
-class Float(float, Theme_Tokens, Token):
+class Float(float, Token):
     ...
 
 
 _expression = \
     Expression | \
     IfExpression | \
+    LambdaDef | \
     Compare | \
     UnaryOp | \
     BinaryOp | \
+    Selector | \
+    Call | \
+    Attribute | \
+    MatchExpr | \
     Name | \
     String | \
-    Int | \
+    Number | \
     Float
+
+_constant = \
+    str | \
+    Selector | \
+    String | \
+    Number
 
 _simple_stmt = \
     Assignment | \
     Return | \
-    Pass
+    Pass | \
+    _expression
 
 _compound_stmt = \
     FuncDef | \

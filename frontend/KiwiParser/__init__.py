@@ -17,20 +17,41 @@ class KiwiParser(Parser):
 
     @memoize
     def start(self) -> Optional[kiwi . Module]:
-        # start: statements? $
+        # start: import_stmts statements $ | import_stmts $ | statements $ | $
         mark = self._mark()
         if (
-            (b := self.statements(),)
+            (i := self.import_stmts())
+            and
+            (v := self.statements())
             and
             (_endmarker := self.expect('ENDMARKER'))
         ):
-            return kiwi . Module ( b )
+            return kiwi . Module ( i , v )
+        self._reset(mark)
+        if (
+            (i := self.import_stmts())
+            and
+            (_endmarker := self.expect('ENDMARKER'))
+        ):
+            return kiwi . Module ( i , [] )
+        self._reset(mark)
+        if (
+            (v := self.statements())
+            and
+            (_endmarker := self.expect('ENDMARKER'))
+        ):
+            return kiwi . Module ( [] , v )
+        self._reset(mark)
+        if (
+            (_endmarker := self.expect('ENDMARKER'))
+        ):
+            return kiwi . Module ( [] , [] )
         self._reset(mark)
         return None
 
     @memoize
-    def statements(self) -> Optional[Any]:
-        # statements: statement+
+    def import_stmts(self) -> Optional[Any]:
+        # import_stmts: import_stmt+
         mark = self._mark()
         if (
             (_loop1_1 := self._loop1_1())
@@ -40,13 +61,90 @@ class KiwiParser(Parser):
         return None
 
     @memoize
+    def import_stmt(self) -> Optional[Any]:
+        # import_stmt: "import" dotted_as_names ((NEWLINE | ';'))+
+        mark = self._mark()
+        if (
+            (literal := self.expect("import"))
+            and
+            (v := self.dotted_as_names())
+            and
+            (_loop1_2 := self._loop1_2())
+        ):
+            return v
+        self._reset(mark)
+        return None
+
+    @memoize
+    def dotted_as_names(self) -> Optional[Any]:
+        # dotted_as_names: ','.dotted_as_name+
+        mark = self._mark()
+        if (
+            (_gather_3 := self._gather_3())
+        ):
+            return _gather_3
+        self._reset(mark)
+        return None
+
+    @memoize
+    def dotted_as_name(self) -> Optional[Any]:
+        # dotted_as_name: dotted_name "as" NAME_ | dotted_name
+        mark = self._mark()
+        if (
+            (v := self.dotted_name())
+            and
+            (literal := self.expect("as"))
+            and
+            (a := self.NAME_())
+        ):
+            return kiwi . Alias ( v , a )
+        self._reset(mark)
+        if (
+            (v := self.dotted_name())
+        ):
+            return kiwi . Alias ( v , None )
+        self._reset(mark)
+        return None
+
+    @memoize_left_rec
+    def dotted_name(self) -> Optional[Any]:
+        # dotted_name: dotted_name '.' NAME_ | NAME_
+        mark = self._mark()
+        if (
+            (v := self.dotted_name())
+            and
+            (literal := self.expect('.'))
+            and
+            (a := self.NAME_())
+        ):
+            return [* v , a]
+        self._reset(mark)
+        if (
+            (v := self.NAME_())
+        ):
+            return [v]
+        self._reset(mark)
+        return None
+
+    @memoize
+    def statements(self) -> Optional[Any]:
+        # statements: statement+
+        mark = self._mark()
+        if (
+            (_loop1_5 := self._loop1_5())
+        ):
+            return _loop1_5
+        self._reset(mark)
+        return None
+
+    @memoize
     def statement(self) -> Optional[Any]:
-        # statement: simple_stmt (NEWLINE | ';') | compound_stmt
+        # statement: simple_stmt ((NEWLINE | ';'))+ | compound_stmt
         mark = self._mark()
         if (
             (v := self.simple_stmt())
             and
-            (_tmp_2 := self._tmp_2())
+            (_loop1_6 := self._loop1_6())
         ):
             return v
         self._reset(mark)
@@ -59,12 +157,12 @@ class KiwiParser(Parser):
 
     @memoize
     def statement_newline(self) -> Optional[Any]:
-        # statement_newline: simple_stmt NEWLINE
+        # statement_newline: simple_stmt (NEWLINE)+
         mark = self._mark()
         if (
             (v := self.simple_stmt())
             and
-            (_newline := self.expect('NEWLINE'))
+            (_loop1_7 := self._loop1_7())
         ):
             return v
         self._reset(mark)
@@ -72,12 +170,17 @@ class KiwiParser(Parser):
 
     @memoize
     def simple_stmt(self) -> Optional[Any]:
-        # simple_stmt: assignment | return_stmt | 'pass'
+        # simple_stmt: assignment | expression | return_stmt | 'pass' | 'break' | 'continue'
         mark = self._mark()
         if (
             (assignment := self.assignment())
         ):
             return assignment
+        self._reset(mark)
+        if (
+            (expression := self.expression())
+        ):
+            return expression
         self._reset(mark)
         if (
             (return_stmt := self.return_stmt())
@@ -88,6 +191,16 @@ class KiwiParser(Parser):
             (literal := self.expect('pass'))
         ):
             return kiwi . Pass ( )
+        self._reset(mark)
+        if (
+            (literal := self.expect('break'))
+        ):
+            return kiwi . Break ( )
+        self._reset(mark)
+        if (
+            (literal := self.expect('continue'))
+        ):
+            return kiwi . Continue ( )
         self._reset(mark)
         return None
 
@@ -121,25 +234,25 @@ class KiwiParser(Parser):
             and
             (literal := self.expect('='))
             and
-            (v := self._gather_3())
+            (v := self._gather_8())
         ):
             return kiwi . AnnAssignment ( * a , v )
         self._reset(mark)
         if (
-            (i := self._gather_5())
+            (i := self._gather_10())
             and
             (literal := self.expect('='))
             and
-            (v := self._gather_7())
+            (v := self._gather_12())
         ):
             return kiwi . Assignment ( i , v )
         self._reset(mark)
         if (
-            (i := self._gather_9())
+            (i := self._gather_14())
             and
             (o := self.augassign())
             and
-            (v := self._gather_11())
+            (v := self._gather_16())
         ):
             return kiwi . AugAssignment ( i , o , v )
         self._reset(mark)
@@ -164,7 +277,7 @@ class KiwiParser(Parser):
             return [[i] , t]
         self._reset(mark)
         if (
-            (i := self._gather_13())
+            (i := self._gather_18())
             and
             (literal := self.expect('->'))
             and
@@ -196,27 +309,27 @@ class KiwiParser(Parser):
         if (
             (literal := self.expect('+='))
         ):
-            return '+='
+            return kiwi . Token ( '+=' )
         self._reset(mark)
         if (
             (literal := self.expect('-='))
         ):
-            return '-='
+            return kiwi . Token ( '-=' )
         self._reset(mark)
         if (
             (literal := self.expect('*='))
         ):
-            return '*='
+            return kiwi . Token ( '*=' )
         self._reset(mark)
         if (
             (literal := self.expect('/='))
         ):
-            return '/='
+            return kiwi . Token ( '/=' )
         self._reset(mark)
         if (
             (literal := self.expect('%='))
         ):
-            return '%='
+            return kiwi . Token ( '%=' )
         self._reset(mark)
         return None
 
@@ -474,9 +587,9 @@ class KiwiParser(Parser):
         # nullable=True
         mark = self._mark()
         if (
-            (p := self._loop0_15(),)
+            (p := self._loop0_20(),)
             and
-            (d := self._loop0_16(),)
+            (d := self._loop0_21(),)
         ):
             return [* p , * map ( lambda x : x [0] , d )] , list ( map ( lambda x : x [1] , d ) )
         self._reset(mark)
@@ -643,8 +756,13 @@ class KiwiParser(Parser):
 
     @memoize
     def expression(self) -> Optional[Any]:
-        # expression: inversion '?' inversion ':' inversion | inversion
+        # expression: lambda_def | inversion '?' inversion ':' inversion | inversion
         mark = self._mark()
+        if (
+            (lambda_def := self.lambda_def())
+        ):
+            return lambda_def
+        self._reset(mark)
         if (
             (c := self.inversion())
             and
@@ -662,6 +780,51 @@ class KiwiParser(Parser):
             (v := self.inversion())
         ):
             return kiwi . Expression ( v )
+        self._reset(mark)
+        return None
+
+    @memoize
+    def lambda_def(self) -> Optional[Any]:
+        # lambda_def: "lambda" lambda_parameters ':' expression
+        mark = self._mark()
+        if (
+            (literal := self.expect("lambda"))
+            and
+            (p := self.lambda_parameters())
+            and
+            (literal_1 := self.expect(':'))
+            and
+            (r := self.expression())
+        ):
+            return kiwi . LambdaDef ( p , r )
+        self._reset(mark)
+        return None
+
+    @memoize
+    def lambda_parameters(self) -> Optional[Any]:
+        # lambda_parameters: ','.lambda_param+ | lambda_param?
+        # nullable=True
+        mark = self._mark()
+        if (
+            (v := self._gather_22())
+        ):
+            return v
+        self._reset(mark)
+        if (
+            (opt := self.lambda_param(),)
+        ):
+            return []
+        self._reset(mark)
+        return None
+
+    @memoize
+    def lambda_param(self) -> Optional[Any]:
+        # lambda_param: NAME_
+        mark = self._mark()
+        if (
+            (v := self.NAME_())
+        ):
+            return kiwi . LambdaParameter ( v )
         self._reset(mark)
         return None
 
@@ -690,7 +853,7 @@ class KiwiParser(Parser):
         if (
             (f := self.sum())
             and
-            (v := self._loop1_17())
+            (v := self._loop1_24())
         ):
             return kiwi . Compare ( [f , * list ( map ( lambda x : x [1] , v ) )] , list ( map ( lambda x : x [0] , v ) ) )
         self._reset(mark)
@@ -742,11 +905,11 @@ class KiwiParser(Parser):
         # eq_sum: '==' sum
         mark = self._mark()
         if (
-            (literal := self.expect('=='))
+            (o := self.expect('=='))
             and
-            (sum := self.sum())
+            (v := self.sum())
         ):
-            return [literal, sum]
+            return kiwi . Token ( o ) , v
         self._reset(mark)
         return None
 
@@ -755,11 +918,11 @@ class KiwiParser(Parser):
         # noteq_sum: '!=' sum
         mark = self._mark()
         if (
-            (literal := self.expect('!='))
+            (o := self.expect('!='))
             and
-            (sum := self.sum())
+            (v := self.sum())
         ):
-            return [literal, sum]
+            return kiwi . Token ( o ) , v
         self._reset(mark)
         return None
 
@@ -768,11 +931,11 @@ class KiwiParser(Parser):
         # lte_sum: '<=' sum
         mark = self._mark()
         if (
-            (literal := self.expect('<='))
+            (o := self.expect('<='))
             and
-            (sum := self.sum())
+            (v := self.sum())
         ):
-            return [literal, sum]
+            return kiwi . Token ( o ) , v
         self._reset(mark)
         return None
 
@@ -781,11 +944,11 @@ class KiwiParser(Parser):
         # lt_sum: '<' sum
         mark = self._mark()
         if (
-            (literal := self.expect('<'))
+            (o := self.expect('<'))
             and
-            (sum := self.sum())
+            (v := self.sum())
         ):
-            return [literal, sum]
+            return kiwi . Token ( o ) , v
         self._reset(mark)
         return None
 
@@ -794,11 +957,11 @@ class KiwiParser(Parser):
         # gte_sum: '>=' sum
         mark = self._mark()
         if (
-            (literal := self.expect('>='))
+            (o := self.expect('>='))
             and
-            (sum := self.sum())
+            (v := self.sum())
         ):
-            return [literal, sum]
+            return kiwi . Token ( o ) , v
         self._reset(mark)
         return None
 
@@ -807,11 +970,11 @@ class KiwiParser(Parser):
         # gt_sum: '>' sum
         mark = self._mark()
         if (
-            (literal := self.expect('>'))
+            (o := self.expect('>'))
             and
-            (sum := self.sum())
+            (v := self.sum())
         ):
-            return [literal, sum]
+            return kiwi . Token ( o ) , v
         self._reset(mark)
         return None
 
@@ -826,7 +989,7 @@ class KiwiParser(Parser):
             and
             (y := self.term())
         ):
-            return kiwi . BinaryOp ( x , y , '+' )
+            return kiwi . BinaryOp ( x , y , kiwi . Token ( '+' ) )
         self._reset(mark)
         if (
             (x := self.sum())
@@ -835,7 +998,7 @@ class KiwiParser(Parser):
             and
             (y := self.term())
         ):
-            return kiwi . BinaryOp ( x , y , '-' )
+            return kiwi . BinaryOp ( x , y , kiwi . Token ( '-' ) )
         self._reset(mark)
         if (
             (term := self.term())
@@ -855,7 +1018,7 @@ class KiwiParser(Parser):
             and
             (y := self.factor())
         ):
-            return kiwi . BinaryOp ( x , y , '*' )
+            return kiwi . BinaryOp ( x , y , kiwi . Token ( '*' ) )
         self._reset(mark)
         if (
             (x := self.term())
@@ -864,7 +1027,7 @@ class KiwiParser(Parser):
             and
             (y := self.factor())
         ):
-            return kiwi . BinaryOp ( x , y , '/' )
+            return kiwi . BinaryOp ( x , y , kiwi . Token ( '/' ) )
         self._reset(mark)
         if (
             (x := self.term())
@@ -873,7 +1036,7 @@ class KiwiParser(Parser):
             and
             (y := self.factor())
         ):
-            return kiwi . BinaryOp ( x , y , '%' )
+            return kiwi . BinaryOp ( x , y , kiwi . Token ( '%' ) )
         self._reset(mark)
         if (
             (factor := self.factor())
@@ -891,14 +1054,14 @@ class KiwiParser(Parser):
             and
             (x := self.factor())
         ):
-            return kiwi . UnaryOp ( x , '+' )
+            return kiwi . UnaryOp ( x , kiwi . Token ( '+' ) )
         self._reset(mark)
         if (
             (literal := self.expect('-'))
             and
             (x := self.factor())
         ):
-            return kiwi . UnaryOp ( x , '-' )
+            return kiwi . UnaryOp ( x , kiwi . Token ( '-' ) )
         self._reset(mark)
         if (
             (power := self.power())
@@ -909,16 +1072,58 @@ class KiwiParser(Parser):
 
     @memoize
     def power(self) -> Optional[Any]:
-        # power: atom '**' factor | atom
+        # power: primary '**' factor | primary
         mark = self._mark()
         if (
-            (x := self.atom())
+            (x := self.primary())
             and
             (literal := self.expect('**'))
             and
             (y := self.factor())
         ):
-            return kiwi . BinaryOp ( x , y , '**' )
+            return kiwi . BinaryOp ( x , y , kiwi . Token ( '**' ) )
+        self._reset(mark)
+        if (
+            (primary := self.primary())
+        ):
+            return primary
+        self._reset(mark)
+        return None
+
+    @memoize_left_rec
+    def primary(self) -> Optional[Any]:
+        # primary: primary '.' NAME_ | primary '(' arguments ')' | "match" expression ':' key_block | atom
+        mark = self._mark()
+        if (
+            (v := self.primary())
+            and
+            (literal := self.expect('.'))
+            and
+            (a := self.NAME_())
+        ):
+            return kiwi . Attribute ( v , a )
+        self._reset(mark)
+        if (
+            (i := self.primary())
+            and
+            (literal := self.expect('('))
+            and
+            (v := self.arguments())
+            and
+            (literal_1 := self.expect(')'))
+        ):
+            return kiwi . Call ( i , v )
+        self._reset(mark)
+        if (
+            (literal := self.expect("match"))
+            and
+            (k := self.expression())
+            and
+            (literal_1 := self.expect(':'))
+            and
+            (c := self.key_block())
+        ):
+            return kiwi . MatchExpr ( k , c )
         self._reset(mark)
         if (
             (atom := self.atom())
@@ -929,7 +1134,7 @@ class KiwiParser(Parser):
 
     @memoize
     def atom(self) -> Optional[Any]:
-        # atom: NAME_ | 'true' | 'false' | 'none' | STRING_ | NUMBER_ | group
+        # atom: NAME_ | constant | group
         mark = self._mark()
         if (
             (NAME_ := self.NAME_())
@@ -937,19 +1142,40 @@ class KiwiParser(Parser):
             return NAME_
         self._reset(mark)
         if (
+            (constant := self.constant())
+        ):
+            return constant
+        self._reset(mark)
+        if (
+            (group := self.group())
+        ):
+            return group
+        self._reset(mark)
+        return None
+
+    @memoize
+    def constant(self) -> Optional[Any]:
+        # constant: 'true' | 'false' | 'none' | SELECTOR_ | STRING_ | NUMBER_
+        mark = self._mark()
+        if (
             (literal := self.expect('true'))
         ):
-            return 'true'
+            return kiwi . Token ( 'true' )
         self._reset(mark)
         if (
             (literal := self.expect('false'))
         ):
-            return 'false'
+            return kiwi . Token ( 'false' )
         self._reset(mark)
         if (
             (literal := self.expect('none'))
         ):
-            return 'none'
+            return kiwi . Token ( 'none' )
+        self._reset(mark)
+        if (
+            (SELECTOR_ := self.SELECTOR_())
+        ):
+            return SELECTOR_
         self._reset(mark)
         if (
             (STRING_ := self.STRING_())
@@ -960,11 +1186,6 @@ class KiwiParser(Parser):
             (NUMBER_ := self.NUMBER_())
         ):
             return NUMBER_
-        self._reset(mark)
-        if (
-            (group := self.group())
-        ):
-            return group
         self._reset(mark)
         return None
 
@@ -984,23 +1205,106 @@ class KiwiParser(Parser):
         return None
 
     @memoize
+    def arguments(self) -> Optional[Any]:
+        # arguments: args ','? &')'
+        # nullable=True
+        mark = self._mark()
+        if (
+            (v := self.args())
+            and
+            (opt := self.expect(','),)
+            and
+            self.positive_lookahead(self.expect, ')')
+        ):
+            return v
+        self._reset(mark)
+        return None
+
+    @memoize
+    def args(self) -> Optional[Any]:
+        # args: ','.expression+ | expression?
+        # nullable=True
+        mark = self._mark()
+        if (
+            (v := self._gather_25())
+        ):
+            return v
+        self._reset(mark)
+        if (
+            (opt := self.expression(),)
+        ):
+            return []
+        self._reset(mark)
+        return None
+
+    @memoize
+    def key_block(self) -> Optional[Any]:
+        # key_block: NEWLINE INDENT NEWLINE.match_key+ NEWLINE
+        mark = self._mark()
+        if (
+            (_newline := self.expect('NEWLINE'))
+            and
+            (_indent := self.expect('INDENT'))
+            and
+            (v := self._gather_27())
+            and
+            (_newline_1 := self.expect('NEWLINE'))
+        ):
+            return v
+        self._reset(mark)
+        return None
+
+    @memoize
+    def match_key(self) -> Optional[Any]:
+        # match_key: constant "to" constant '->' expression | constant '->' expression
+        mark = self._mark()
+        if (
+            (f := self.constant())
+            and
+            (literal := self.expect("to"))
+            and
+            (t := self.constant())
+            and
+            (literal_1 := self.expect('->'))
+            and
+            (v := self.expression())
+        ):
+            return kiwi . MatchKey ( f , t , v )
+        self._reset(mark)
+        if (
+            (f := self.constant())
+            and
+            (literal := self.expect('->'))
+            and
+            (v := self.expression())
+        ):
+            return kiwi . MatchKey ( f , f , v )
+        self._reset(mark)
+        return None
+
+    @memoize
     def data_type(self) -> Optional[Any]:
-        # data_type: 'score' | 'scoreboard' | 'auto'
+        # data_type: 'score' | 'scoreboard' | 'selector' | 'auto'
         mark = self._mark()
         if (
             (literal := self.expect('score'))
         ):
-            return 'score'
+            return kiwi . Token ( 'score' )
         self._reset(mark)
         if (
             (literal := self.expect('scoreboard'))
         ):
-            return 'scoreboard'
+            return kiwi . Token ( 'scoreboard' )
+        self._reset(mark)
+        if (
+            (literal := self.expect('selector'))
+        ):
+            return kiwi . Token ( 'selector' )
         self._reset(mark)
         if (
             (literal := self.expect('auto'))
         ):
-            return 'auto'
+            return kiwi . Token ( 'auto' )
         self._reset(mark)
         return None
 
@@ -1011,7 +1315,7 @@ class KiwiParser(Parser):
         if (
             (v := self.number())
         ):
-            return kiwi . Int ( v . string )
+            return kiwi . Number ( v . string )
         self._reset(mark)
         return None
 
@@ -1031,15 +1335,84 @@ class KiwiParser(Parser):
         # STRING_: STRING+
         mark = self._mark()
         if (
-            (v := self._loop1_18())
+            (v := self._loop1_29())
         ):
             return kiwi . String ( '' . join ( map ( lambda x : x . string [1 : - 1] , v ) ) )
         self._reset(mark)
         return None
 
     @memoize
+    def SELECTOR_(self) -> Optional[Any]:
+        # SELECTOR_: '@' NAME
+        mark = self._mark()
+        if (
+            (literal := self.expect('@'))
+            and
+            (v := self.name())
+        ):
+            return kiwi . Selector ( v . string )
+        self._reset(mark)
+        return None
+
+    @memoize
     def _loop1_1(self) -> Optional[Any]:
-        # _loop1_1: statement
+        # _loop1_1: import_stmt
+        mark = self._mark()
+        children = []
+        while (
+            (import_stmt := self.import_stmt())
+        ):
+            children.append(import_stmt)
+            mark = self._mark()
+        self._reset(mark)
+        return children
+
+    @memoize
+    def _loop1_2(self) -> Optional[Any]:
+        # _loop1_2: (NEWLINE | ';')
+        mark = self._mark()
+        children = []
+        while (
+            (_tmp_30 := self._tmp_30())
+        ):
+            children.append(_tmp_30)
+            mark = self._mark()
+        self._reset(mark)
+        return children
+
+    @memoize
+    def _loop0_4(self) -> Optional[Any]:
+        # _loop0_4: ',' dotted_as_name
+        mark = self._mark()
+        children = []
+        while (
+            (literal := self.expect(','))
+            and
+            (elem := self.dotted_as_name())
+        ):
+            children.append(elem)
+            mark = self._mark()
+        self._reset(mark)
+        return children
+
+    @memoize
+    def _gather_3(self) -> Optional[Any]:
+        # _gather_3: dotted_as_name _loop0_4
+        mark = self._mark()
+        if (
+            (elem := self.dotted_as_name())
+            is not None
+            and
+            (seq := self._loop0_4())
+            is not None
+        ):
+            return [elem] + seq
+        self._reset(mark)
+        return None
+
+    @memoize
+    def _loop1_5(self) -> Optional[Any]:
+        # _loop1_5: statement
         mark = self._mark()
         children = []
         while (
@@ -1051,8 +1424,356 @@ class KiwiParser(Parser):
         return children
 
     @memoize
-    def _tmp_2(self) -> Optional[Any]:
-        # _tmp_2: NEWLINE | ';'
+    def _loop1_6(self) -> Optional[Any]:
+        # _loop1_6: (NEWLINE | ';')
+        mark = self._mark()
+        children = []
+        while (
+            (_tmp_31 := self._tmp_31())
+        ):
+            children.append(_tmp_31)
+            mark = self._mark()
+        self._reset(mark)
+        return children
+
+    @memoize
+    def _loop1_7(self) -> Optional[Any]:
+        # _loop1_7: (NEWLINE)
+        mark = self._mark()
+        children = []
+        while (
+            (_newline := self.expect('NEWLINE'))
+        ):
+            children.append(_newline)
+            mark = self._mark()
+        self._reset(mark)
+        return children
+
+    @memoize
+    def _loop0_9(self) -> Optional[Any]:
+        # _loop0_9: ',' expression
+        mark = self._mark()
+        children = []
+        while (
+            (literal := self.expect(','))
+            and
+            (elem := self.expression())
+        ):
+            children.append(elem)
+            mark = self._mark()
+        self._reset(mark)
+        return children
+
+    @memoize
+    def _gather_8(self) -> Optional[Any]:
+        # _gather_8: expression _loop0_9
+        mark = self._mark()
+        if (
+            (elem := self.expression())
+            is not None
+            and
+            (seq := self._loop0_9())
+            is not None
+        ):
+            return [elem] + seq
+        self._reset(mark)
+        return None
+
+    @memoize
+    def _loop0_11(self) -> Optional[Any]:
+        # _loop0_11: ',' NAME_
+        mark = self._mark()
+        children = []
+        while (
+            (literal := self.expect(','))
+            and
+            (elem := self.NAME_())
+        ):
+            children.append(elem)
+            mark = self._mark()
+        self._reset(mark)
+        return children
+
+    @memoize
+    def _gather_10(self) -> Optional[Any]:
+        # _gather_10: NAME_ _loop0_11
+        mark = self._mark()
+        if (
+            (elem := self.NAME_())
+            is not None
+            and
+            (seq := self._loop0_11())
+            is not None
+        ):
+            return [elem] + seq
+        self._reset(mark)
+        return None
+
+    @memoize
+    def _loop0_13(self) -> Optional[Any]:
+        # _loop0_13: ',' expression
+        mark = self._mark()
+        children = []
+        while (
+            (literal := self.expect(','))
+            and
+            (elem := self.expression())
+        ):
+            children.append(elem)
+            mark = self._mark()
+        self._reset(mark)
+        return children
+
+    @memoize
+    def _gather_12(self) -> Optional[Any]:
+        # _gather_12: expression _loop0_13
+        mark = self._mark()
+        if (
+            (elem := self.expression())
+            is not None
+            and
+            (seq := self._loop0_13())
+            is not None
+        ):
+            return [elem] + seq
+        self._reset(mark)
+        return None
+
+    @memoize
+    def _loop0_15(self) -> Optional[Any]:
+        # _loop0_15: ',' NAME_
+        mark = self._mark()
+        children = []
+        while (
+            (literal := self.expect(','))
+            and
+            (elem := self.NAME_())
+        ):
+            children.append(elem)
+            mark = self._mark()
+        self._reset(mark)
+        return children
+
+    @memoize
+    def _gather_14(self) -> Optional[Any]:
+        # _gather_14: NAME_ _loop0_15
+        mark = self._mark()
+        if (
+            (elem := self.NAME_())
+            is not None
+            and
+            (seq := self._loop0_15())
+            is not None
+        ):
+            return [elem] + seq
+        self._reset(mark)
+        return None
+
+    @memoize
+    def _loop0_17(self) -> Optional[Any]:
+        # _loop0_17: ',' expression
+        mark = self._mark()
+        children = []
+        while (
+            (literal := self.expect(','))
+            and
+            (elem := self.expression())
+        ):
+            children.append(elem)
+            mark = self._mark()
+        self._reset(mark)
+        return children
+
+    @memoize
+    def _gather_16(self) -> Optional[Any]:
+        # _gather_16: expression _loop0_17
+        mark = self._mark()
+        if (
+            (elem := self.expression())
+            is not None
+            and
+            (seq := self._loop0_17())
+            is not None
+        ):
+            return [elem] + seq
+        self._reset(mark)
+        return None
+
+    @memoize
+    def _loop0_19(self) -> Optional[Any]:
+        # _loop0_19: ',' NAME_
+        mark = self._mark()
+        children = []
+        while (
+            (literal := self.expect(','))
+            and
+            (elem := self.NAME_())
+        ):
+            children.append(elem)
+            mark = self._mark()
+        self._reset(mark)
+        return children
+
+    @memoize
+    def _gather_18(self) -> Optional[Any]:
+        # _gather_18: NAME_ _loop0_19
+        mark = self._mark()
+        if (
+            (elem := self.NAME_())
+            is not None
+            and
+            (seq := self._loop0_19())
+            is not None
+        ):
+            return [elem] + seq
+        self._reset(mark)
+        return None
+
+    @memoize
+    def _loop0_20(self) -> Optional[Any]:
+        # _loop0_20: param_no_default
+        mark = self._mark()
+        children = []
+        while (
+            (param_no_default := self.param_no_default())
+        ):
+            children.append(param_no_default)
+            mark = self._mark()
+        self._reset(mark)
+        return children
+
+    @memoize
+    def _loop0_21(self) -> Optional[Any]:
+        # _loop0_21: param_with_default
+        mark = self._mark()
+        children = []
+        while (
+            (param_with_default := self.param_with_default())
+        ):
+            children.append(param_with_default)
+            mark = self._mark()
+        self._reset(mark)
+        return children
+
+    @memoize
+    def _loop0_23(self) -> Optional[Any]:
+        # _loop0_23: ',' lambda_param
+        mark = self._mark()
+        children = []
+        while (
+            (literal := self.expect(','))
+            and
+            (elem := self.lambda_param())
+        ):
+            children.append(elem)
+            mark = self._mark()
+        self._reset(mark)
+        return children
+
+    @memoize
+    def _gather_22(self) -> Optional[Any]:
+        # _gather_22: lambda_param _loop0_23
+        mark = self._mark()
+        if (
+            (elem := self.lambda_param())
+            is not None
+            and
+            (seq := self._loop0_23())
+            is not None
+        ):
+            return [elem] + seq
+        self._reset(mark)
+        return None
+
+    @memoize
+    def _loop1_24(self) -> Optional[Any]:
+        # _loop1_24: compare_op_sum_pair
+        mark = self._mark()
+        children = []
+        while (
+            (compare_op_sum_pair := self.compare_op_sum_pair())
+        ):
+            children.append(compare_op_sum_pair)
+            mark = self._mark()
+        self._reset(mark)
+        return children
+
+    @memoize
+    def _loop0_26(self) -> Optional[Any]:
+        # _loop0_26: ',' expression
+        mark = self._mark()
+        children = []
+        while (
+            (literal := self.expect(','))
+            and
+            (elem := self.expression())
+        ):
+            children.append(elem)
+            mark = self._mark()
+        self._reset(mark)
+        return children
+
+    @memoize
+    def _gather_25(self) -> Optional[Any]:
+        # _gather_25: expression _loop0_26
+        mark = self._mark()
+        if (
+            (elem := self.expression())
+            is not None
+            and
+            (seq := self._loop0_26())
+            is not None
+        ):
+            return [elem] + seq
+        self._reset(mark)
+        return None
+
+    @memoize
+    def _loop0_28(self) -> Optional[Any]:
+        # _loop0_28: NEWLINE match_key
+        mark = self._mark()
+        children = []
+        while (
+            (_newline := self.expect('NEWLINE'))
+            and
+            (elem := self.match_key())
+        ):
+            children.append(elem)
+            mark = self._mark()
+        self._reset(mark)
+        return children
+
+    @memoize
+    def _gather_27(self) -> Optional[Any]:
+        # _gather_27: match_key _loop0_28
+        mark = self._mark()
+        if (
+            (elem := self.match_key())
+            is not None
+            and
+            (seq := self._loop0_28())
+            is not None
+        ):
+            return [elem] + seq
+        self._reset(mark)
+        return None
+
+    @memoize
+    def _loop1_29(self) -> Optional[Any]:
+        # _loop1_29: STRING
+        mark = self._mark()
+        children = []
+        while (
+            (string := self.string())
+        ):
+            children.append(string)
+            mark = self._mark()
+        self._reset(mark)
+        return children
+
+    @memoize
+    def _tmp_30(self) -> Optional[Any]:
+        # _tmp_30: NEWLINE | ';'
         mark = self._mark()
         if (
             (_newline := self.expect('NEWLINE'))
@@ -1067,239 +1788,23 @@ class KiwiParser(Parser):
         return None
 
     @memoize
-    def _loop0_4(self) -> Optional[Any]:
-        # _loop0_4: ',' expression
-        mark = self._mark()
-        children = []
-        while (
-            (literal := self.expect(','))
-            and
-            (elem := self.expression())
-        ):
-            children.append(elem)
-            mark = self._mark()
-        self._reset(mark)
-        return children
-
-    @memoize
-    def _gather_3(self) -> Optional[Any]:
-        # _gather_3: expression _loop0_4
+    def _tmp_31(self) -> Optional[Any]:
+        # _tmp_31: NEWLINE | ';'
         mark = self._mark()
         if (
-            (elem := self.expression())
-            is not None
-            and
-            (seq := self._loop0_4())
-            is not None
+            (_newline := self.expect('NEWLINE'))
         ):
-            return [elem] + seq
+            return _newline
+        self._reset(mark)
+        if (
+            (literal := self.expect(';'))
+        ):
+            return literal
         self._reset(mark)
         return None
 
-    @memoize
-    def _loop0_6(self) -> Optional[Any]:
-        # _loop0_6: ',' NAME_
-        mark = self._mark()
-        children = []
-        while (
-            (literal := self.expect(','))
-            and
-            (elem := self.NAME_())
-        ):
-            children.append(elem)
-            mark = self._mark()
-        self._reset(mark)
-        return children
-
-    @memoize
-    def _gather_5(self) -> Optional[Any]:
-        # _gather_5: NAME_ _loop0_6
-        mark = self._mark()
-        if (
-            (elem := self.NAME_())
-            is not None
-            and
-            (seq := self._loop0_6())
-            is not None
-        ):
-            return [elem] + seq
-        self._reset(mark)
-        return None
-
-    @memoize
-    def _loop0_8(self) -> Optional[Any]:
-        # _loop0_8: ',' expression
-        mark = self._mark()
-        children = []
-        while (
-            (literal := self.expect(','))
-            and
-            (elem := self.expression())
-        ):
-            children.append(elem)
-            mark = self._mark()
-        self._reset(mark)
-        return children
-
-    @memoize
-    def _gather_7(self) -> Optional[Any]:
-        # _gather_7: expression _loop0_8
-        mark = self._mark()
-        if (
-            (elem := self.expression())
-            is not None
-            and
-            (seq := self._loop0_8())
-            is not None
-        ):
-            return [elem] + seq
-        self._reset(mark)
-        return None
-
-    @memoize
-    def _loop0_10(self) -> Optional[Any]:
-        # _loop0_10: ',' NAME_
-        mark = self._mark()
-        children = []
-        while (
-            (literal := self.expect(','))
-            and
-            (elem := self.NAME_())
-        ):
-            children.append(elem)
-            mark = self._mark()
-        self._reset(mark)
-        return children
-
-    @memoize
-    def _gather_9(self) -> Optional[Any]:
-        # _gather_9: NAME_ _loop0_10
-        mark = self._mark()
-        if (
-            (elem := self.NAME_())
-            is not None
-            and
-            (seq := self._loop0_10())
-            is not None
-        ):
-            return [elem] + seq
-        self._reset(mark)
-        return None
-
-    @memoize
-    def _loop0_12(self) -> Optional[Any]:
-        # _loop0_12: ',' expression
-        mark = self._mark()
-        children = []
-        while (
-            (literal := self.expect(','))
-            and
-            (elem := self.expression())
-        ):
-            children.append(elem)
-            mark = self._mark()
-        self._reset(mark)
-        return children
-
-    @memoize
-    def _gather_11(self) -> Optional[Any]:
-        # _gather_11: expression _loop0_12
-        mark = self._mark()
-        if (
-            (elem := self.expression())
-            is not None
-            and
-            (seq := self._loop0_12())
-            is not None
-        ):
-            return [elem] + seq
-        self._reset(mark)
-        return None
-
-    @memoize
-    def _loop0_14(self) -> Optional[Any]:
-        # _loop0_14: ',' NAME_
-        mark = self._mark()
-        children = []
-        while (
-            (literal := self.expect(','))
-            and
-            (elem := self.NAME_())
-        ):
-            children.append(elem)
-            mark = self._mark()
-        self._reset(mark)
-        return children
-
-    @memoize
-    def _gather_13(self) -> Optional[Any]:
-        # _gather_13: NAME_ _loop0_14
-        mark = self._mark()
-        if (
-            (elem := self.NAME_())
-            is not None
-            and
-            (seq := self._loop0_14())
-            is not None
-        ):
-            return [elem] + seq
-        self._reset(mark)
-        return None
-
-    @memoize
-    def _loop0_15(self) -> Optional[Any]:
-        # _loop0_15: param_no_default
-        mark = self._mark()
-        children = []
-        while (
-            (param_no_default := self.param_no_default())
-        ):
-            children.append(param_no_default)
-            mark = self._mark()
-        self._reset(mark)
-        return children
-
-    @memoize
-    def _loop0_16(self) -> Optional[Any]:
-        # _loop0_16: param_with_default
-        mark = self._mark()
-        children = []
-        while (
-            (param_with_default := self.param_with_default())
-        ):
-            children.append(param_with_default)
-            mark = self._mark()
-        self._reset(mark)
-        return children
-
-    @memoize
-    def _loop1_17(self) -> Optional[Any]:
-        # _loop1_17: compare_op_sum_pair
-        mark = self._mark()
-        children = []
-        while (
-            (compare_op_sum_pair := self.compare_op_sum_pair())
-        ):
-            children.append(compare_op_sum_pair)
-            mark = self._mark()
-        self._reset(mark)
-        return children
-
-    @memoize
-    def _loop1_18(self) -> Optional[Any]:
-        # _loop1_18: STRING
-        mark = self._mark()
-        children = []
-        while (
-            (string := self.string())
-        ):
-            children.append(string)
-            mark = self._mark()
-        self._reset(mark)
-        return children
-
-    KEYWORDS = ('false', 'none', 'if', 'public', 'function', 'namespace', 'else', 'auto', 'score', 'scoreboard', 'return', 'pass', 'private', 'true')
-    SOFT_KEYWORDS = ()
+    KEYWORDS = ('continue', 'auto', 'false', 'private', 'public', 'namespace', 'true', 'selector', 'none', 'score', 'function', 'return', 'break', 'else', 'scoreboard', 'pass', 'if')
+    SOFT_KEYWORDS = ('to', 'as', 'lambda', 'match', 'import')
 
 
 if __name__ == '__main__':
