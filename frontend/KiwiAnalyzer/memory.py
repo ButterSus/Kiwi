@@ -118,7 +118,7 @@ class KiwiAnnotations:
             return result
 
     def dump(self):
-        return self._dump(self._globalView)
+        return self._dump(self._globalView) + kiwi.colors.ResetAll
 
     def _dump(self, node, level=0) -> str:
         indent = ' ' * 4

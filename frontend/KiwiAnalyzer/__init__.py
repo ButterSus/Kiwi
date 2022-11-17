@@ -105,7 +105,7 @@ class KiwiAnalyzer:
             if result is not None:
                 for alias in result.imports:
                     print(
-                        frontend.dump(
+                        frontend._dump(
                             self.openModule(
                                 alias.name
                             )
@@ -116,6 +116,7 @@ class KiwiAnalyzer:
     def __init__(self, builder: Builder):
         self.builder = builder
         self.directories_init()
+        print('\nAST\n')
         print(
             frontend.dump(
                 self.openModule(
@@ -123,7 +124,7 @@ class KiwiAnalyzer:
                 )
             )
         )
-        print('\n')
+        print('\nANNOTATIONS\n')
         print(
             kiwiAnnotations.dump()
         )

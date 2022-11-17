@@ -73,7 +73,7 @@ assignment:
 
 annotations:
     | i=NAME_ ':' t=expression {[[i], t]}
-    | i=','.NAME_+ '=' '>' t=expression {i, t}
+    | i=','.NAME_+ '->' t=expression {i, t}
 
 annotation:
     | i=NAME_ ':' t=expression {[i, t]}
@@ -292,9 +292,9 @@ match_keys:
     | (',' NEWLINE*).match_key+
 
 match_key:
-    | "default" '=' '>' v=expression {kiwi.MatchKey(None, None, v)}
-    | f=expression "to" t=expression '=' '>' v=expression {kiwi.MatchKey(f, t, v)}
-    | f=expression '=' '>' v=expression {kiwi.MatchKey(f, f, v)}
+    | "default" '->' v=expression {kiwi.MatchKey(None, None, v)}
+    | f=expression "to" t=expression '->' v=expression {kiwi.MatchKey(f, t, v)}
+    | f=expression '->' v=expression {kiwi.MatchKey(f, f, v)}
 
 # TOKES
 # -----

@@ -275,7 +275,7 @@ class KiwiParser(Parser):
 
     @memoize
     def annotations(self) -> Optional[Any]:
-        # annotations: NAME_ ':' expression | ','.NAME_+ '=' '>' expression
+        # annotations: NAME_ ':' expression | ','.NAME_+ '->' expression
         mark = self._mark()
         if (
             (i := self.NAME_())
@@ -289,9 +289,7 @@ class KiwiParser(Parser):
         if (
             (i := self._gather_18())
             and
-            (literal := self.expect('='))
-            and
-            (literal_1 := self.expect('>'))
+            (literal := self.expect('->'))
             and
             (t := self.expression())
         ):
@@ -1412,14 +1410,12 @@ class KiwiParser(Parser):
 
     @memoize
     def match_key(self) -> Optional[Any]:
-        # match_key: "default" '=' '>' expression | expression "to" expression '=' '>' expression | expression '=' '>' expression
+        # match_key: "default" '->' expression | expression "to" expression '->' expression | expression '->' expression
         mark = self._mark()
         if (
             (literal := self.expect("default"))
             and
-            (literal_1 := self.expect('='))
-            and
-            (literal_2 := self.expect('>'))
+            (literal_1 := self.expect('->'))
             and
             (v := self.expression())
         ):
@@ -1432,9 +1428,7 @@ class KiwiParser(Parser):
             and
             (t := self.expression())
             and
-            (literal_1 := self.expect('='))
-            and
-            (literal_2 := self.expect('>'))
+            (literal_1 := self.expect('->'))
             and
             (v := self.expression())
         ):
@@ -1443,9 +1437,7 @@ class KiwiParser(Parser):
         if (
             (f := self.expression())
             and
-            (literal := self.expect('='))
-            and
-            (literal_1 := self.expect('>'))
+            (literal := self.expect('->'))
             and
             (v := self.expression())
         ):
@@ -2070,8 +2062,8 @@ class KiwiParser(Parser):
         self._reset(mark)
         return children
 
-    KEYWORDS = ('promise', 'pass', 'true', 'if', 'return', 'none', 'public', 'private', 'namespace', 'false', 'else', 'function', 'continue', 'break', 'while')
-    SOFT_KEYWORDS = ('lambda', 'as', 'match', 'import', 'case', 'default', 'to')
+    KEYWORDS = ('false', 'none', 'continue', 'public', 'private', 'namespace', 'true', 'while', 'else', 'return', 'break', 'if', 'pass', 'function', 'promise')
+    SOFT_KEYWORDS = ('lambda', 'case', 'match', 'to', 'import', 'as', 'default')
 
 
 if __name__ == '__main__':
