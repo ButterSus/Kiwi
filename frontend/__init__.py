@@ -1,23 +1,62 @@
 from frontend import KiwiAST
 
+from typing import Iterator
+from io import StringIO
 import tokenize
-import subprocess
 
 from pegen.parser import Tokenizer
 
 
-def parse(kiwiFile: str, updateGrammar: bool = False) -> KiwiAST.Module:
-    if updateGrammar:
-        subprocess.run(
-            "python -m pegen frontend/KiwiParser/grammar.gram -o frontend/KiwiParser/__init__.py -v".split(),
-            stdout=subprocess.DEVNULL
-        )
+def kiwiTokenizer(stream: Iterator[tokenize.TokenInfo], debugMode: bool):
+    for tok in stream:
+        if tok.type == 4 or tok.type == 62:
+            result = next(stream)
+            while result.type == 62:
+                if debugMode:
+                    print(tok)
+                yield tok
+                if debugMode:
+                    print(result)
+                yield result
+                if debugMode:
+                    print(tok)
+                yield tok
+                result = next(stream)
+            if result.type == 6:
+                while result.type == 6:
+                    if debugMode:
+                        print(tok)
+                    yield tok
+                    if debugMode:
+                        print(result)
+                    yield result
+                    if debugMode:
+                        print(tok)
+                    yield tok
+                    result = next(stream)
+            else:
+                if debugMode:
+                    print(tok)
+                yield tok
+                if debugMode:
+                    print(result)
+                yield result
+                continue
+            if debugMode:
+                print(result)
+            yield result
+            continue
+        if debugMode:
+            print(tok)
+        yield tok
+
+
+def parse(kiwiProgram: str, *, debugMode=False) -> KiwiAST.Module:
     from frontend.KiwiParser import KiwiParser
-    with open(kiwiFile) as module:
-        tokengen = tokenize.generate_tokens(module.readline)
-        tokenizer = Tokenizer(tokengen)
-        parser = KiwiParser(tokenizer)
-        return parser.start()
+    tokengen = tokenize.generate_tokens(StringIO(kiwiProgram).readline)
+    tokenizer = Tokenizer(kiwiTokenizer(tokengen, debugMode=debugMode))
+    parser = KiwiParser(tokenizer)
+    return parser.start()
 
 
 _newline = '\n'
@@ -37,7 +76,7 @@ def dump(ast: KiwiAST.AST | list, level=1, color=KiwiAST.AST.color, *, indent=4)
     if isinstance(ast, KiwiAST.Token):
         ast: ast | KiwiAST.Theme_Undefined
         ast_color = color if ast.color is None else ast.color
-        return f'{ast_color}<{ast}>{color}'
+        return f'{ast_color} {ast} {color}'
     length = len(annotations)
     ast_color = color if ast.color is None else ast.color
     items = [f"{_newline}{_tabulation*level}{annotations[i]}={dump(ast.__getattribute__(annotations[i]), level+1, ast_color)}" for i in range(length)]

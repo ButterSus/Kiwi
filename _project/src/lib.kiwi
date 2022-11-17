@@ -1,0 +1,23 @@
+kills: scoreboard
+
+namespace Math:
+    a, b => score
+    c: score
+
+    function abs(=a) -> =c:
+        if a < 0:
+            return -a
+        return a
+
+    function abs(a: score) -> score:
+        if a < 0:
+            return -a
+        return a
+
+    function abs(a: score) -> score:
+        return match a:
+            -2147483648 to -1 => -a,
+            default => a
+
+function main() <- load():
+    (Math.abs(5)+1)*5

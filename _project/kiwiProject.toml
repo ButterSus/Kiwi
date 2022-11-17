@@ -1,0 +1,8 @@
+[project]
+project_name = "untitled"
+entry_file = "main"
+
+
+[options]
+include_directories = ["src"]
+entry_function = "main"

@@ -5,8 +5,6 @@ from dataclasses import dataclass
 
 import frontend.KiwiAST.colors
 
-_type = Literal['score', 'scoreboard', 'auto']
-
 
 # DUMP COLORS
 # ===========
@@ -46,7 +44,7 @@ class AST(Theme_Undefined):
 @dataclass
 class Module(Theme_Start, AST):
     imports: List[Any]
-    body: List[_statement]
+    body: List[statement]
 
 
 # IMPORT STATEMENTS
@@ -60,7 +58,7 @@ class Import(Theme_Statements, AST):
 
 @dataclass
 class Alias(Theme_Expressions, AST):
-    name: List[Name]
+    name: Name
     as_name: Name
 
 
@@ -86,32 +84,32 @@ class Continue(Theme_Statements, AST):
 @dataclass
 class AnnAssignment(Theme_Statements, AST):
     targets: List[Name]
-    type: _type
-    value: List[_expression]
+    type: type
+    value: List[expression]
 
 
 @dataclass
 class Assignment(Theme_Statements, AST):
     targets: List[Name]
-    value: List[_expression]
+    value: List[expression]
 
 
 @dataclass
 class AugAssignment(Theme_Statements, AST):
     targets: List[Name]
     op: str
-    value: List[_expression]
+    value: List[expression]
 
 
 @dataclass
 class Annotation(Theme_Statements, AST):
     targets: List[Name]
-    type: _type
+    type: type
 
 
 @dataclass
 class Return(Theme_Statements, AST):
-    value: _expression
+    value: expression
 
 
 # COMPOUND STATEMENTS
@@ -121,30 +119,31 @@ class Return(Theme_Statements, AST):
 @dataclass
 class NamespaceDef(Theme_CStatements, AST):
     name: Name
-    body_private: List[_statement]
-    body_public: List[_statement]
-    body_default: List[_statement]
+    body_private: List[statement]
+    body_public: List[statement]
+    body_default: List[statement]
 
 
 @dataclass
 class FuncDef(Theme_CStatements, AST):
     name: Name
     params: List[Parameter | RefParameter]
-    default: List[_expression]
+    default: List[expression]
     returns: Parameter | RefParameter
-    body: List[_statement]
+    promiser: expression
+    body: List[statement]
 
 
 @dataclass
 class Parameter(Theme_Statements, AST):
     target: Name
-    type: _type
+    type: type
 
 
 @dataclass
 class LambdaDef(Theme_Statements, AST):
     targets: List[Name]
-    returns: _expression
+    returns: expression
 
 
 @dataclass
@@ -159,9 +158,27 @@ class RefParameter(Theme_Statements, AST):
 
 @dataclass
 class IfElse(Theme_CStatements, AST):
-    condition: _expression
-    then: List[_statement]
-    or_else: List[_statement]
+    condition: expression
+    then: List[statement]
+    or_else: List[statement]
+
+
+@dataclass
+class While(Theme_CStatements, AST):
+    condition: expression
+    body: List[statement]
+
+
+@dataclass
+class MatchCase(Theme_CStatements, AST):
+    value: expression
+    cases: List[Case]
+
+
+@dataclass
+class Case(Theme_Statements, AST):
+    key: expression
+    body: List[statement]
 
 # EXPRESSIONS
 # ===========
@@ -169,44 +186,44 @@ class IfElse(Theme_CStatements, AST):
 
 @dataclass
 class Expression(Theme_Expressions, AST):
-    value: _expression
+    value: expression
 
 
 @dataclass
 class IfExpression(Theme_Expressions, AST):
-    condition: _expression
-    then: _expression
-    or_else: _expression
+    condition: expression
+    then: expression
+    or_else: expression
 
 
 @dataclass
 class Compare(Theme_Expressions, AST):
-    values: List[_expression]
-    ops: List[str]
+    values: List[expression]
+    ops: List[Token]
 
 
 @dataclass
 class UnaryOp(Theme_Expressions, AST):
-    x: _expression
-    op: str
+    x: expression
+    op: Token
 
 
 @dataclass
 class BinaryOp(Theme_Expressions, AST):
-    x: _expression
-    y: _expression
-    op: str
+    x: expression
+    y: expression
+    op: Token
 
 
 @dataclass
 class Call(Theme_Expressions, AST):
-    target: _expression
-    args: List[_expression]
+    target: expression
+    args: List[expression]
 
 
 @dataclass
 class Attribute(Theme_Expressions, AST):
-    target: _expression
+    target: expression
     attribute: Name
 
 
@@ -216,15 +233,15 @@ class Attribute(Theme_Expressions, AST):
 
 @dataclass
 class MatchExpr(Theme_Expressions, AST):
-    value: _expression
+    value: expression
     cases: List[MatchKey]
 
 
 @dataclass
 class MatchKey(Theme_Expressions, AST):
-    from_this: _constant
-    to_this: _constant
-    value: _expression
+    from_this: expression
+    to_this: expression
+    value: expression
 
 
 class Token(Theme_Tokens):
@@ -237,6 +254,10 @@ class Token(Theme_Tokens):
         return self.value
 
 
+# TOKEN BASICS
+# ============
+
+
 class Selector(str, Token):
     ...
 
@@ -245,19 +266,19 @@ class Name(str, Token):
     ...
 
 
+class Word(str, Token):
+    ...
+
+
 class String(str, Token):
     ...
 
 
-class Number(float, Token):
+class Number(str, Token):
     ...
 
 
-class Float(float, Token):
-    ...
-
-
-_expression = \
+expression = \
     Expression | \
     IfExpression | \
     LambdaDef | \
@@ -270,26 +291,25 @@ _expression = \
     MatchExpr | \
     Name | \
     String | \
-    Number | \
-    Float
-
-_constant = \
-    str | \
-    Selector | \
-    String | \
     Number
 
-_simple_stmt = \
+simple_stmt = \
     Assignment | \
+    expression | \
     Return | \
     Pass | \
-    _expression
+    Break | \
+    Continue
 
-_compound_stmt = \
+compound_stmt = \
     FuncDef | \
     NamespaceDef | \
-    IfElse
+    IfElse | \
+    While | \
+    MatchCase
 
-_statement = \
-    _simple_stmt | \
-    _compound_stmt
+statement = \
+    simple_stmt | \
+    compound_stmt
+
+type = expression
