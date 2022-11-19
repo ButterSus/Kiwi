@@ -9,3 +9,8 @@ class Score(KiwiType):
 class Scoreboard(KiwiType):
     pass
 
+
+built_in_dict = {
+    "score": Score,
+    "scoreboard": Scoreboard
+}

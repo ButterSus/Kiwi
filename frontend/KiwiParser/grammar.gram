@@ -17,18 +17,21 @@ start[kiwi.Module]:
 # =================
 
 import_stmts:
-    | v=import_stmt+ {list(chain.from_iterable(v))}
+    | v=(import_stmt | from_import_stmt)+ {list(chain.from_iterable(v))}
 
 import_stmt:
     | "import" v=dotted_as_names (NEWLINE | ';')+ {v}
+
+from_import_stmt:
+    | "from" v=dotted_name a=import_stmt {[kiwi.Alias(''.join(v), a)]}
     
 
 dotted_as_names:
     | ','.dotted_as_name+
 
 dotted_as_name:
-    | v=dotted_name "as" a=NAME_ {kiwi.Alias(''.join(v), ''.join(a))}
-    | v=dotted_name {kiwi.Alias(''.join(v), ''.join(v))}
+    | v=dotted_name "as" a=NAME_ {kiwi.Alias(''.join(v), a)}
+    | v=dotted_name {kiwi.Alias(''.join(v), v[-1])}
 
 dotted_name:
     | v=dotted_name '.' a=NAME_ {[*v, a]}
@@ -67,16 +70,13 @@ compound_stmt:
 
 assignment:
     | a=annotations '=' v=','.expression+ {kiwi.AnnAssignment(*a, v)}
-    | i=','.NAME_+ '=' v=','.expression+ {kiwi.Assignment(i, v)}
-    | i=','.NAME_+ o=augassign v=','.expression+ {kiwi.AugAssignment(i, o, v)}
+    | i=','.expression+ '=' v=','.expression+ {kiwi.Assignment(i, v)}
+    | i=','.expression+ o=augassign v=','.expression+ {kiwi.AugAssignment(i, o, v)}
     | a=annotations {kiwi.Annotation(*a)}
 
 annotations:
-    | i=NAME_ ':' t=expression {[[i], t]}
-    | i=','.NAME_+ '->' t=expression {i, t}
-
-annotation:
-    | i=NAME_ ':' t=expression {[i, t]}
+    | i=expression ':' t=expression {[[i], t]}
+    | i=','.expression+ '->' t=expression {i, t}
 
 augassign:
     | '+=' {kiwi.Token('+=')}

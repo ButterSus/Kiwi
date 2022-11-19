@@ -43,7 +43,7 @@ class AST(Theme_Undefined):
 
 @dataclass
 class Module(Theme_Start, AST):
-    imports: List[Any]
+    imports: List[Alias]
     body: List[statement]
 
 
@@ -52,14 +52,9 @@ class Module(Theme_Start, AST):
 
 
 @dataclass
-class Import(Theme_Statements, AST):
-    names: List[Alias]
-
-
-@dataclass
 class Alias(Theme_Expressions, AST):
-    name: Name
-    as_name: Name
+    directory: Name
+    as_name: Name | List[Alias]
 
 
 # SIMPLE STATEMENTS
@@ -83,14 +78,14 @@ class Continue(Theme_Statements, AST):
 
 @dataclass
 class AnnAssignment(Theme_Statements, AST):
-    targets: List[Name]
+    targets: List[expression]
     type: type
     value: List[expression]
 
 
 @dataclass
 class Assignment(Theme_Statements, AST):
-    targets: List[Name]
+    targets: List[expression]
     value: List[expression]
 
 
@@ -103,7 +98,7 @@ class AugAssignment(Theme_Statements, AST):
 
 @dataclass
 class Annotation(Theme_Statements, AST):
-    targets: List[Name]
+    targets: List[expression]
     type: type
 
 

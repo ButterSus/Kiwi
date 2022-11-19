@@ -3,12 +3,11 @@ from __future__ import annotations
 import frontend
 from frontend import KiwiAST as kiwi
 import pathlib
-from typing import List, Set, Optional, Callable, TYPE_CHECKING
-from frontend.KiwiAnalyzer.memory import KiwiAnnotations
-import frontend.KiwiAnalyzer.objects as kiwiObject
-
-
-kiwiAnnotations = KiwiAnnotations()
+from dataclasses import dataclass
+from typing import Any, List, Optional, Type, Callable, TYPE_CHECKING
+from frontend.KiwiAnalyzer.scopes import ScopeSystem
+import frontend.std as std
+import frontend.KiwiAnalyzer.objects as kiwiBranch
 
 
 if TYPE_CHECKING:
@@ -18,7 +17,19 @@ if TYPE_CHECKING:
 Token: kiwi.Token | kiwi.AST | list
 
 
+@dataclass
+class Module:
+    name: str
+    AST: kiwi.Module
+    scope: ScopeSystem
+
+
 class KiwiVisitor:
+    scope: ScopeSystem
+
+    def __init__(self, libScope: Optional[dict] = None):
+        self.scope = ScopeSystem(libScope)
+
     def getAttributes(self, node: kiwi.AST):
         try:
             targets = node.__annotations__
@@ -33,7 +44,7 @@ class KiwiVisitor:
         if name in dir(self):
             return self.__getattribute__(name)
 
-    def visit(self, node: Token):
+    def visit(self, node: Token) -> Any:
         if isinstance(node, list):
             result = list()
             for item in node:
@@ -51,33 +62,52 @@ class KiwiVisitor:
                 result.append(self.visit(attribute))
             return result
 
-    def visitAST(self, node: kiwi.AST):
+    def visitAST(self, node: kiwi.AST) -> List[Any]:
         result = list()
         for attribute in self.getAttributes(node):
             result.append(self.visit(attribute))
         return result
 
+    def getName(self, node: kiwi.Name | kiwi.Attribute) -> List[str]:
+        if isinstance(node, kiwi.Attribute):
+            result = self.getName(node.target)
+            result.append(node.attribute)
+            return result
+        return [str(node)]
+
     # SIMPLE STATEMENTS
     # =================
 
     def Annotation(self, node: kiwi.Annotation):
-        targets = self.visit(node.targets)
-        type = self.visit(node.type)
+        names = map(lambda x: x.value, node.targets)
+        targets: List[List[str]] = list(map(self.getName, names))
+        type: Type[std.KiwiType] = self.visit(node.type)
+        assert issubclass(type, std.KiwiType)
         for target in targets:
-            kiwiAnnotations.add(target, kiwiObject.Variable(type))
+            self.scope.write(target, kiwiBranch.Variable(type))
+
+    # COMPOUND STATEMENTS
+    # ===================
+
+    def NamespaceDef(self, node: kiwi.NamespaceDef):
+        self.scope.newNamedSpace(node.name)
+        self.visit([*node.body_default, *node.body_public])
+        self.scope.enablePrivate()
+        self.visit(node.body_private)
+        self.scope.leaveSpace()
 
     # EXPRESSIONS
     # ===========
 
     def Expression(self, node: kiwi.Expression):
         if isinstance(node.value, kiwi.Name):
-            return kiwiAnnotations.get(node.value)
+            return self.scope.get(node.value)
         self.visitAST(node)
 
 
 class KiwiAnalyzer:
     builder: Builder
-    imported_files: Set[str] = set()
+
     include_directories: List[pathlib.Path] = [pathlib.Path('./')]
 
     def getFileDir(self, file: str) -> Optional[str]:
@@ -91,44 +121,33 @@ class KiwiAnalyzer:
                     return str(directory)
         return None
 
-    def openModule(self, file: str) -> Optional[kiwi.Module]:
+    def openModule(self, file: str, name: str = '__main__') -> Optional[Module]:
         file = self.getFileDir(file)
-        if file in self.imported_files:
-            return
-        self.imported_files.add(file)
         with open(file) as kiwiFile:
-            result: kiwi.Module = frontend.parse(
+            ast: kiwi.Module = frontend.parse(
                         kiwiFile.read()
                     )
-            KiwiVisitor().visit(result)
-            alias: kiwi.Alias
-            if result is not None:
-                for alias in result.imports:
-                    print(
-                        frontend._dump(
-                            self.openModule(
-                                alias.name
-                            )
-                        )
-                    )
-            return result
+            libScope = dict()
+            for alias in ast.imports:
+                importScope = self.openModule(alias.directory).scope.globalScope
+                if isinstance(alias.as_name, list):
+                    fromAliases: List[kiwi.Alias] = alias.as_name
+                    for fromAlias in fromAliases:
+                        libScope[fromAlias.as_name] = importScope.get(fromAlias.directory)
+                    continue
+                libScope[alias.as_name] = importScope
+            visitor = KiwiVisitor(libScope)
+            visitor.visit(ast)
+            return Module(name, ast, visitor.scope)
 
     def __init__(self, builder: Builder):
         self.builder = builder
         self.directories_init()
-        print('\nAST\n')
-        print(
-            frontend.dump(
-                self.openModule(
-                    self.builder.project['entry_file']
-                )
-            )
+        module = self.openModule(
+            self.builder.project['entry_file']
         )
-        print('\nANNOTATIONS\n')
-        print(
-            kiwiAnnotations.dump()
-        )
-        self.builder = builder
+
+        print(module.scope.dump())
 
     def directories_init(self):
         if self.builder.options is not None:
