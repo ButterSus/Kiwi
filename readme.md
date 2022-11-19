@@ -1,5 +1,4 @@
 # Kiwi - a language for describing datapack
-***
 
 Kiwi is a language for describing Minecraft datapack, built with
 a focus on syntax, based on Python and Rust.
@@ -56,7 +55,6 @@ every time someone kills an animal.
 See more examples [here]().
 
 ## Install Kiwi and build project
-***
 
 ### Windows:
 
@@ -99,24 +97,20 @@ Insert your path to _existing project directory_ instead of `<path>` in command 
 `python build.py <path-to-existing-project>`
 
 ## Syntax Highlighting and more
-***
 
 Kiwi provides syntax highlighting only in [Kiwi IDE]().
 Also it have a lot of constructors to create _predicates, achievements,
 loot tables, tellraw command._
 
 ## License
-***
 
 At the current time there is no license used in this project.
 
 ## Contributors
-***
 
 There is no way to help for development _at the current time._
 
 ## Contact the author
-***
 
 Questions about code are best asked on [discord](https://discord.com/):
 `ButterSus#0146`
