@@ -57,6 +57,7 @@ See more examples [here]().
 ## Install Kiwi and build project
 
 ### Windows:
+***
 
 Just install code using _green button "Code" above_, then press
 _Download ZIP_, it's not as hard as you think.
@@ -82,6 +83,7 @@ Insert your path to _new project directory_ instead of `<path>` in command above
 Insert your path to _existing project directory_ instead of `<path>` in command above.
 
 ### Linux:
+***
 
 **Installation**
 
