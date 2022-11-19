@@ -29,7 +29,7 @@ structured compared to other ones.
 There are some examples below:
 
 `hello_world.kiwi:`
-```js
+```text
 function main() <- load():
     print("Hello, World!")
 ```
@@ -37,11 +37,11 @@ function main() <- load():
 The code above prints `Hello, World!` in Minecraft every time you enter to the world.
 
 `killer.kiwi:`
-```js
+```text
 kills: scoreboard mob_kills
 
 function main(player: selector) <- killed_animal(@a):
-    print("I killed poor animal! My name is }", player)
+    print("I killed poor animal! My name is ", player)
 
 function killed_animal(player: selector) -> promise<selector> <- tick(1):
     if player.score.kills > 0:
