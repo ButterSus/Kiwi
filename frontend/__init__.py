@@ -1,3 +1,19 @@
+"""
+This code is unlicensed
+By ButterSus
+
+Previous stage:
+    is missing
+
+About current stage:
+    This stage is used to generate TOKENS
+    TOKENS -> AST
+
+Next stage:
+    AST
+"""
+
+
 from frontend import KiwiAST
 
 from typing import Iterator

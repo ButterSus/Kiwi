@@ -1,13 +1,62 @@
-class KiwiType:
-    ...
+"""
+This code is unlicensed
+By ButterSus
+
+Built-in types, structures, function, etc.
+"""
+
+
+from __future__ import annotations
+
+from typing import Type
+from abc import ABC, abstractmethod
+
+
+class KiwiType(ABC):
+    @abstractmethod
+    def Add(self, other: _KiwiType) -> _KiwiType:
+        ...
+
+    @abstractmethod
+    def Sub(self, other: _KiwiType) -> _KiwiType:
+        ...
+
+
+_KiwiType = Type[KiwiType]
+
+
+# DATA TYPES
+# ==========
 
 
 class Score(KiwiType):
-    pass
+    name: str
+    scoreboard: Scoreboard
+
+    def __init__(self, name: str, scoreboard: Scoreboard):
+        self.name = name
+        self.scoreboard = scoreboard
+
+    def Add(self, other: _KiwiType) -> _KiwiType:
+        pass
+
+    def Sub(self, other: _KiwiType) -> _KiwiType:
+        pass
 
 
 class Scoreboard(KiwiType):
-    pass
+    name: str
+    criteria: str
+
+    def __init__(self, name: str, criteria: str):
+        self.name = name
+        self.criteria = criteria
+
+    def Add(self, other: _KiwiType) -> _KiwiType:
+        pass
+
+    def Sub(self, other: _KiwiType) -> _KiwiType:
+        pass
 
 
 built_in_dict = {

@@ -1,2 +1,5 @@
-from lib import a, b
-import lib
+namespace Math:
+    a: score
+
+    function sus():
+        a: scoreboard

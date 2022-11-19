@@ -1,3 +1,19 @@
+"""
+This code is unlicensed
+By ButterSus
+
+Previous stage:
+    Tokenizer
+
+About current stage:
+    This stage is used to generate Abstract Syntax Tree
+    AST -> SAO
+
+Next stage:
+    SAO
+"""
+
+
 ResetAll = "\033[0m"
 
 Bold = "\033[1m"

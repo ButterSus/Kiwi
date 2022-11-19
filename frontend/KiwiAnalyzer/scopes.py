@@ -1,3 +1,19 @@
+"""
+This code is unlicensed
+By ButterSus
+
+Previous stage:
+    AST
+
+About current stage:
+    This stage is used to generate Semantic Analyzer Objects
+    SAO -> Compiler
+
+Next stage:
+    Compiler
+"""
+
+
 from __future__ import annotations
 
 
@@ -63,7 +79,7 @@ class ScopeType:
             return Reference(self, keys[0])
         return self.reference(keys, isAttribute=True)
 
-    def write(self, keys: Key, value: Any, *, isAttribute=False, isEntry=True, hideMode=False) -> True:
+    def write(self, keys: Key, value: Any, *, isAttribute=False) -> True:
         if isAttribute:
             if self.isHided(keys):
                 return False
@@ -77,12 +93,11 @@ class ScopeType:
                 return False
             return result.write(keys[1:], value, isAttribute=True)
         keys = [keys] if not isinstance(keys, list) else keys
-        if not self.exists(keys) and self.parent:
-            if not isEntry:
-                return self.parent.write(keys, value, isEntry=False)
         if len(keys) == 1:
             self.content[keys[0]] = value
             return True
+        if not self.exists(keys) and self.parent:
+            return self.parent.write(keys, value)
         assert self.write(keys, value, isAttribute=True)
 
     def get(self, keys: Key, *, isAttribute=False, hideMode=False) -> Any | ScopeType:

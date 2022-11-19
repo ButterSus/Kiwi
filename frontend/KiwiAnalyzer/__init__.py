@@ -1,3 +1,19 @@
+"""
+This code is unlicensed
+By ButterSus
+
+Previous stage:
+    AST
+
+About current stage:
+    This stage is used to generate Semantic Analyzer Objects
+    SAO -> Compiler
+
+Next stage:
+    Compiler
+"""
+
+
 from __future__ import annotations
 
 import frontend
@@ -11,7 +27,7 @@ import frontend.KiwiAnalyzer.objects as kiwiBranch
 
 
 if TYPE_CHECKING:
-    from main import Builder
+    from build import Builder
 
 
 Token: kiwi.Token | kiwi.AST | list
@@ -78,6 +94,21 @@ class KiwiVisitor:
     # SIMPLE STATEMENTS
     # =================
 
+    # Assignment Statements
+    # ---------------------
+
+    def AnnAssignment(self, node: kiwi.AnnAssignment):
+        names = map(lambda x: x.value, node.targets)
+        targets: List[List[str]] = list(map(self.getName, names))
+        type: Type[std.KiwiType] = self.visit(node.type)
+        assert issubclass(type, std.KiwiType)
+        for target in targets:
+            self.scope.write(target, kiwiBranch.Variable(type))
+        return
+
+    def Assignment(self, node: kiwi.Assignment):
+        return
+
     def Annotation(self, node: kiwi.Annotation):
         names = map(lambda x: x.value, node.targets)
         targets: List[List[str]] = list(map(self.getName, names))
@@ -85,6 +116,7 @@ class KiwiVisitor:
         assert issubclass(type, std.KiwiType)
         for target in targets:
             self.scope.write(target, kiwiBranch.Variable(type))
+        return
 
     # COMPOUND STATEMENTS
     # ===================
@@ -95,6 +127,13 @@ class KiwiVisitor:
         self.scope.enablePrivate()
         self.visit(node.body_private)
         self.scope.leaveSpace()
+        return
+
+    def FuncDef(self, node: kiwi.FuncDef):
+        self.scope.newLocalSpace()
+        self.visit(node.body)
+        self.scope.leaveSpace()
+        return
 
     # EXPRESSIONS
     # ===========
@@ -102,12 +141,13 @@ class KiwiVisitor:
     def Expression(self, node: kiwi.Expression):
         if isinstance(node.value, kiwi.Name):
             return self.scope.get(node.value)
+        if isinstance(node.value, kiwi.Number):
+            return node.value
         self.visitAST(node)
 
 
 class KiwiAnalyzer:
     builder: Builder
-
     include_directories: List[pathlib.Path] = [pathlib.Path('./')]
 
     def getFileDir(self, file: str) -> Optional[str]:
@@ -140,14 +180,16 @@ class KiwiAnalyzer:
             visitor.visit(ast)
             return Module(name, ast, visitor.scope)
 
-    def __init__(self, builder: Builder):
+    def __init__(self, builder: Builder, debug: bool = False):
         self.builder = builder
         self.directories_init()
         module = self.openModule(
             self.builder.project['entry_file']
         )
 
-        print(module.scope.dump())
+        if debug:
+            print(f'AST:\n{frontend.dump(module.AST)}\n')
+            print(f'Scopes:\n{module.scope.dump()}\n')
 
     def directories_init(self):
         if self.builder.options is not None:

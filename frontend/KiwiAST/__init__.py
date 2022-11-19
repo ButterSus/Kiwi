@@ -1,3 +1,19 @@
+"""
+This code is unlicensed
+By ButterSus
+
+Previous stage:
+    Tokenizer
+
+About current stage:
+    This stage is used to generate Abstract Syntax Tree
+    AST -> SAO
+
+Next stage:
+    SAO
+"""
+
+
 from __future__ import annotations
 
 from typing import List, Literal, Any
@@ -18,11 +34,11 @@ class Theme_Start:
 
 
 class Theme_Statements:
-    color = colors.LightYellow + colors.BackgroundDefault
+    color = colors.White + colors.BackgroundDefault
 
 
 class Theme_CStatements:
-    color = colors.LightYellow + colors.BackgroundDefault
+    color = colors.Yellow + colors.BackgroundDefault
 
 
 class Theme_Expressions:

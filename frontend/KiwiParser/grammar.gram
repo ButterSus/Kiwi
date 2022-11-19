@@ -1,10 +1,53 @@
+# """
+# This code is unlicensed
+# By ButterSus
+# 
+# Previous stage:
+#     Tokenizer
+# 
+# About current stage:
+#     This stage is used to generate Abstract Syntax Tree
+#     AST -> SAO
+# 
+# Next stage:
+#     SAO
+# """
+
+
 # STARTING RULES
 # ==============
 
 @class KiwiParser
+
+@header '''"""
+This code is unlicensed
+By ButterSus
+
+Previous stage:
+    Tokenizer
+
+About current stage:
+    This stage is used to generate Abstract Syntax Tree
+    AST -> SAO
+
+Next stage:
+    SAO
+
+Generated using pegen:
+    https://we-like-parsers.github.io/pegen/index.html
+    (THANK YOU SO MUCH FOR THIS BEAUTIFUL INSTRUMENT!)
+"""
+
+
+from typing import Any, Optional
+
+from pegen.parser import memoize, memoize_left_rec, logger, Parser
+'''
+
 @subheader '''
 import frontend.KiwiAST as kiwi
 from itertools import chain
+
 '''
 
 start[kiwi.Module]:
