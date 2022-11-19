@@ -86,6 +86,7 @@ Insert your path to _existing project directory_ instead of `<path>` in command 
 **Installation**
 
 `$ git clone https://github.com/ButterSus/Kiwi`
+
 `$ cd Kiwi`
 
 **Create new project**
