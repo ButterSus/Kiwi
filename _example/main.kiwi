@@ -1,6 +1,1 @@
-namespace Math:
-    function abs(a: score, b: score) -> score:
-        return a + b
-
-
-Math.abs(3, 5)
+import guten

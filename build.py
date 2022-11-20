@@ -250,13 +250,11 @@ class ModuleWirer:
         self.module = self.openModule(self.getPath(directory))
 
     def getPath(self, directory: str) -> Path:
-        for directory in map(lambda x: x / directory, self.include_directories):
-            if directory.exists():
-                return directory
-            if not directory.suffix:
-                directory = directory.with_suffix('.kiwi')
-                if directory.exists():
-                    return directory
+        for file in map(lambda x: x / directory, self.include_directories):
+            if not file.suffix:
+                file = file.with_suffix('.kiwi')
+            if file.exists():
+                return file
         assert False
 
     def openModule(self, directory: Path) -> Module:
