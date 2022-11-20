@@ -1,5 +1,6 @@
 namespace Math:
-    a: score
+    function abs(a: score, b: score) -> score:
+        return a + b
 
-    function sus():
-        a: scoreboard
+
+Math.abs(3, 5)

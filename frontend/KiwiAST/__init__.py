@@ -16,8 +16,10 @@ Next stage:
 
 from __future__ import annotations
 
-from typing import List, Literal, Any
+from typing import List
 from dataclasses import dataclass
+from frontend.KiwiAnalyzer.scopes import Reference, Names
+from frontend.std import KiwiType
 
 import frontend.KiwiAST.colors
 
@@ -107,7 +109,7 @@ class Assignment(Theme_Statements, AST):
 
 @dataclass
 class AugAssignment(Theme_Statements, AST):
-    targets: List[Name]
+    targets: List[variable]
     op: str
     value: List[expression]
 
@@ -129,7 +131,7 @@ class Return(Theme_Statements, AST):
 
 @dataclass
 class NamespaceDef(Theme_CStatements, AST):
-    name: Name
+    name: variable
     body_private: List[statement]
     body_public: List[statement]
     body_default: List[statement]
@@ -137,7 +139,7 @@ class NamespaceDef(Theme_CStatements, AST):
 
 @dataclass
 class FuncDef(Theme_CStatements, AST):
-    name: Name
+    name: variable
     params: List[Parameter | RefParameter]
     default: List[expression]
     returns: Parameter | RefParameter
@@ -147,24 +149,24 @@ class FuncDef(Theme_CStatements, AST):
 
 @dataclass
 class Parameter(Theme_Statements, AST):
-    target: Name
+    target: List[variable]
     type: type
 
 
 @dataclass
 class LambdaDef(Theme_Statements, AST):
-    targets: List[Name]
+    targets: List[variable]
     returns: expression
 
 
 @dataclass
 class LambdaParameter(Theme_Statements, AST):
-    target: Name
+    target: variable
 
 
 @dataclass
 class RefParameter(Theme_Statements, AST):
-    target: Name
+    target: variable
 
 
 @dataclass
@@ -237,6 +239,9 @@ class Attribute(Theme_Expressions, AST):
     target: expression
     attribute: Name
 
+    def dump(self) -> Names:
+        return Names(self.target.dump() + self.attribute.dump())
+
 
 # MATCH KEYS
 # ==========
@@ -274,7 +279,8 @@ class Selector(str, Token):
 
 
 class Name(str, Token):
-    ...
+    def dump(self) -> Names:
+        return Names([self])
 
 
 class Word(str, Token):
@@ -289,6 +295,8 @@ class Number(str, Token):
     ...
 
 
+variable = Name | Attribute | Reference
+
 expression = \
     Expression | \
     IfExpression | \
@@ -298,11 +306,12 @@ expression = \
     BinaryOp | \
     Selector | \
     Call | \
-    Attribute | \
     MatchExpr | \
-    Name | \
+    variable | \
     String | \
     Number
+
+type = expression | Reference
 
 simple_stmt = \
     Assignment | \
@@ -322,5 +331,3 @@ compound_stmt = \
 statement = \
     simple_stmt | \
     compound_stmt
-
-type = expression

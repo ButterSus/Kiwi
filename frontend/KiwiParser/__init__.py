@@ -1499,7 +1499,7 @@ class KiwiParser(Parser):
         if (
             (v := self._loop1_32())
         ):
-            return kiwi . String ( '' . join ( map ( lambda x : x . string [1 : - 1] , v ) ) )
+            return kiwi . String ( '' . join ( map ( lambda x : x . string , v ) ) )
         self._reset(mark)
         return None
 
@@ -2092,8 +2092,8 @@ class KiwiParser(Parser):
         self._reset(mark)
         return children
 
-    KEYWORDS = ('namespace', 'return', 'else', 'true', 'pass', 'promise', 'function', 'continue', 'false', 'private', 'break', 'if', 'while', 'none', 'public')
-    SOFT_KEYWORDS = ('lambda', 'import', 'as', 'default', 'match', 'case', 'to', 'from')
+    KEYWORDS = ('function', 'if', 'namespace', 'private', 'true', 'continue', 'promise', 'break', 'else', 'none', 'public', 'while', 'false', 'pass', 'return')
+    SOFT_KEYWORDS = ('to', 'case', 'default', 'match', 'from', 'as', 'lambda', 'import')
 
 
 if __name__ == '__main__':

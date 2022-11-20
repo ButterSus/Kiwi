@@ -12,7 +12,7 @@ About current stage:
 Next stage:
     AST
 """
-
+from inspect import isclass
 
 from frontend import KiwiAST
 
@@ -84,11 +84,20 @@ def dump(ast: KiwiAST.AST | list, *, indent=4):
 
 def _dump(ast: KiwiAST.AST | list, level=1, color=KiwiAST.AST.color, *, indent=4):
     _tabulation = ' ' * indent
+    if isinstance(ast, KiwiAST.Reference):
+        return f'{KiwiAST.colors.Cyan}<reference of {KiwiAST.colors.Magenta + KiwiAST.colors.BackgroundBlack} ' \
+               f'{".".join(ast.showKeys)} {KiwiAST.colors.BackgroundDefault + KiwiAST.colors.Cyan}>{color}'
+    if isinstance(ast, KiwiAST.Names):
+        return f'{KiwiAST.colors.Cyan}<attribute is {KiwiAST.colors.Magenta + KiwiAST.colors.BackgroundBlack} ' \
+               f'{".".join(ast)} {KiwiAST.colors.BackgroundDefault + KiwiAST.colors.Cyan}>{color}'
     if isinstance(ast, list):
         if len(ast) == 0:
             return f'[]'
-        return f'[\n{_tabulation * level}' \
+        return f'[\n{_tabulation*level}' \
                f'{(", " + _newline + _tabulation*level).join(map(lambda x: _dump(x, level + 1, color), ast))}]'
+    if isclass(ast):
+        return f'{KiwiAST.colors.Cyan}<instance of {KiwiAST.colors.Magenta + KiwiAST.colors.BackgroundBlack} ' \
+               f'{ast.__name__} {KiwiAST.colors.BackgroundDefault + KiwiAST.colors.Cyan}>{color}'
     if not isinstance(ast, KiwiAST.AST) and not isinstance(ast, KiwiAST.Token):
         return str(ast)
     try:

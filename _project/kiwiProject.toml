@@ -1,9 +1,11 @@
 [project]
 project_name = "untitled"
 entry_file = "main"
+mc_version = "1.19.2"
 
 
 [options]
 include_directories = ["src"]
 entry_function = "main"
+output_directory = "bin"
 default_scope = "public"

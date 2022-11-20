@@ -20,17 +20,13 @@ import frontend
 from frontend import KiwiAST as kiwi
 import pathlib
 from dataclasses import dataclass
-from typing import Any, List, Optional, Type, Callable, TYPE_CHECKING
-from frontend.KiwiAnalyzer.scopes import ScopeSystem
 import frontend.std as std
-import frontend.KiwiAnalyzer.objects as kiwiBranch
+from typing import Any, List, Optional, Type, Callable, TYPE_CHECKING
+from frontend.KiwiAnalyzer.scopes import ScopeSystem, Names
 
 
 if TYPE_CHECKING:
     from build import Builder
-
-
-Token: kiwi.Token | kiwi.AST | list
 
 
 @dataclass
@@ -50,21 +46,27 @@ class KiwiVisitor:
         try:
             targets = node.__annotations__
         except AttributeError:
-            return []
+            return [], []
         for annotation in targets:
             attribute = node.__getattribute__(annotation)
-            yield attribute
+            yield annotation, attribute
 
-    def knockCall(self, node: Token) -> Callable[[Token], None]:
+    def knockCall(self, node: Any) -> Callable[[Any], None]:
         name = node.__class__.__name__
         if name in dir(self):
             return self.__getattribute__(name)
 
-    def visit(self, node: Token) -> Any:
+    def visit(self, node: Any) -> Any:
         if isinstance(node, list):
             result = list()
             for item in node:
-                result.append(self.visit(item))
+                visited = self.visit(item)
+                if isinstance(visited, tuple):
+                    result.extend(visited)
+                    continue
+                if visited is None:
+                    continue
+                result.append(visited)
             return result
         if isinstance(node, kiwi.Token):
             if function := self.knockCall(node):
@@ -73,77 +75,93 @@ class KiwiVisitor:
         if isinstance(node, kiwi.AST):
             if function := self.knockCall(node):
                 return function(node)
-            result = list()
-            for attribute in self.getAttributes(node):
-                result.append(self.visit(attribute))
-            return result
+            for annotation, attribute in self.getAttributes(node):
+                visited = self.visit(attribute)
+                node.__setattr__(annotation, visited)
+            return node
 
     def visitAST(self, node: kiwi.AST) -> List[Any]:
         result = list()
-        for attribute in self.getAttributes(node):
+        for annotation, attribute in self.getAttributes(node):
             result.append(self.visit(attribute))
         return result
 
-    def getName(self, node: kiwi.Name | kiwi.Attribute) -> List[str]:
-        if isinstance(node, kiwi.Attribute):
-            result = self.getName(node.target)
-            result.append(node.attribute)
-            return result
-        return [str(node)]
-
-    # SIMPLE STATEMENTS
-    # =================
-
-    # Assignment Statements
-    # ---------------------
-
-    def AnnAssignment(self, node: kiwi.AnnAssignment):
-        names = map(lambda x: x.value, node.targets)
-        targets: List[List[str]] = list(map(self.getName, names))
-        type: Type[std.KiwiType] = self.visit(node.type)
-        assert issubclass(type, std.KiwiType)
-        for target in targets:
-            self.scope.write(target, kiwiBranch.Variable(type))
-        return
-
-    def Assignment(self, node: kiwi.Assignment):
-        return
+    # ANNOTATION STATEMENTS
+    # =====================
 
     def Annotation(self, node: kiwi.Annotation):
-        names = map(lambda x: x.value, node.targets)
-        targets: List[List[str]] = list(map(self.getName, names))
-        type: Type[std.KiwiType] = self.visit(node.type)
-        assert issubclass(type, std.KiwiType)
-        for target in targets:
-            self.scope.write(target, kiwiBranch.Variable(type))
+        """
+        This expression is always hided for compiler
+        """
+        type = self.visit(node.type)
+        for target in node.targets:
+            self.scope.write(target.value.dump(), type)
         return
 
-    # COMPOUND STATEMENTS
-    # ===================
+    def Expression(self, node: kiwi.Expression):
+        """
+        I think it is one of the most useless nodes in AST
+        """
+        return self.visit(node.value)
+
+    def Name(self, node: kiwi.Name):
+        return self.scope.ref(node.value)
+
+    def Attribute(self, node: kiwi.Attribute):
+        return self.scope.ref(node.dump())
+
+    # SCOPE STATEMENTS
+    # ================
 
     def NamespaceDef(self, node: kiwi.NamespaceDef):
-        self.scope.newNamedSpace(node.name)
-        self.visit([*node.body_default, *node.body_public])
+        self.scope.write(node.name)
+
+        name = node.name
+        self.scope.newNamedSpace(str(node.name))
+        public = self.visit(node.body_public)
+        default = self.visit(node.body_default)
         self.scope.enablePrivate()
-        self.visit(node.body_private)
+        private = self.visit(node.body_private)
         self.scope.leaveSpace()
-        return
+        return kiwi.NamespaceDef(name, private, public, default)
 
     def FuncDef(self, node: kiwi.FuncDef):
         self.scope.newLocalSpace()
-        self.visit(node.body)
+        name = node.name
+        parameters = self.visit(node.params)
+        default = self.visit(node.default)
+        returns = self.visit(node.returns)
+        promiser = self.visit(node.promiser)
+        body = self.visit(node.body)
         self.scope.leaveSpace()
-        return
 
-    # EXPRESSIONS
-    # ===========
+        result = kiwi.FuncDef(name, parameters, default, returns, promiser, body)
+        self.scope.write(name, result)
+        return result
 
-    def Expression(self, node: kiwi.Expression):
-        if isinstance(node.value, kiwi.Name):
-            return self.scope.get(node.value)
-        if isinstance(node.value, kiwi.Number):
-            return node.value
-        self.visitAST(node)
+    def Parameter(self, node: kiwi.Parameter):
+        type: std.KiwiType = self.visit(node.type)
+        targets: List[kiwi.Reference] = list()
+        for target in node.target:
+            target = target.value.dump()
+            self.scope.write(target, type)
+            targets.append(self.scope.ref(target))
+        return kiwi.Parameter(targets, type)
+
+    def IfElse(self, node: kiwi.IfElse):
+        self.scope.newLocalSpace()
+        condition = self.visit(node.condition)
+        then = self.visit(node.then)
+        or_else = self.visit(node.or_else)
+        self.scope.leaveSpace()
+        return kiwi.IfElse(condition, then, or_else)
+
+    def While(self, node: kiwi.While):
+        self.scope.newLocalSpace()
+        condition = self.visit(node.condition)
+        body = self.visit(node.body)
+        self.scope.leaveSpace()
+        return kiwi.While(condition, body)
 
 
 class KiwiAnalyzer:
@@ -161,15 +179,17 @@ class KiwiAnalyzer:
                     return str(directory)
         return None
 
-    def openModule(self, file: str, name: str = '__main__') -> Optional[Module]:
+    def openModule(self, file: str, name: str = '__main__', debug=False) -> Optional[Module]:
         file = self.getFileDir(file)
         with open(file) as kiwiFile:
             ast: kiwi.Module = frontend.parse(
                         kiwiFile.read()
                     )
+            if debug:
+                print(f'AST:\n{frontend.dump(ast)}\n')
             libScope = dict()
             for alias in ast.imports:
-                importScope = self.openModule(alias.directory).scope.globalScope
+                importScope = self.openModule(alias.directory, debug=debug).scope.globalScope
                 if isinstance(alias.as_name, list):
                     fromAliases: List[kiwi.Alias] = alias.as_name
                     for fromAlias in fromAliases:
@@ -180,16 +200,20 @@ class KiwiAnalyzer:
             visitor.visit(ast)
             return Module(name, ast, visitor.scope)
 
-    def __init__(self, builder: Builder, debug: bool = False):
+    def __init__(self, builder: Builder):
         self.builder = builder
+
+    def build(self, debug: bool = False) -> Module:
         self.directories_init()
         module = self.openModule(
-            self.builder.project['entry_file']
+            self.builder.project['entry_file'], debug=debug
         )
 
         if debug:
             print(f'AST:\n{frontend.dump(module.AST)}\n')
             print(f'Scopes:\n{module.scope.dump()}\n')
+
+        return module
 
     def directories_init(self):
         if self.builder.options is not None:

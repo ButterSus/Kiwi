@@ -14,15 +14,15 @@ from abc import ABC, abstractmethod
 
 class KiwiType(ABC):
     @abstractmethod
-    def Add(self, other: _KiwiType) -> _KiwiType:
+    def Add(self, other: KiwiObj) -> KiwiObj:
         ...
 
     @abstractmethod
-    def Sub(self, other: _KiwiType) -> _KiwiType:
+    def Sub(self, other: KiwiObj) -> KiwiObj:
         ...
 
 
-_KiwiType = Type[KiwiType]
+KiwiObj = Type[KiwiType]
 
 
 # DATA TYPES
@@ -37,10 +37,10 @@ class Score(KiwiType):
         self.name = name
         self.scoreboard = scoreboard
 
-    def Add(self, other: _KiwiType) -> _KiwiType:
+    def Add(self, other: KiwiObj) -> KiwiObj:
         pass
 
-    def Sub(self, other: _KiwiType) -> _KiwiType:
+    def Sub(self, other: KiwiObj) -> KiwiObj:
         pass
 
 
@@ -52,10 +52,10 @@ class Scoreboard(KiwiType):
         self.name = name
         self.criteria = criteria
 
-    def Add(self, other: _KiwiType) -> _KiwiType:
+    def Add(self, other: KiwiObj) -> KiwiObj:
         pass
 
-    def Sub(self, other: _KiwiType) -> _KiwiType:
+    def Sub(self, other: KiwiObj) -> KiwiObj:
         pass
 
 

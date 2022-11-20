@@ -24,16 +24,21 @@ Also check our IDE:
 import toml
 
 from time import time
-from typing import TypedDict, Optional, List
+from typing import TypedDict, Optional, List, Literal
 from frontend.KiwiAnalyzer import KiwiAnalyzer
+from backend import KiwiCompiler
 
 
 class ConfigOptions(TypedDict):
     include_directories: Optional[List[str]]
+    entry_function: Optional[str]
+    output_directory: Optional[str]
+    default_scope: Optional[Literal['private', 'public']]
 
 
 class ConfigProject(TypedDict):
     project_name: str
+    mc_version: str
     entry_file: str
 
 
@@ -43,9 +48,6 @@ class ConfigFile(TypedDict):
 
 
 class Builder:
-    """
-    It just builds...
-    """
     project: ConfigProject
     config: ConfigFile
     options: ConfigOptions
@@ -62,7 +64,9 @@ class Builder:
         self.config = toml.load('kiwiProject.toml')
         self.project = self.config['project']
         self.options_init()
-        KiwiAnalyzer(self, debug=True)
+        frontend = KiwiAnalyzer(self)
+        module = frontend.build(debug=debug)
+        KiwiCompiler(self).build(module)
 
     def options_init(self):
         if (options := self.config['options']) is not None:
@@ -75,7 +79,7 @@ if __name__ == '__main__':
     But you really want to try it out:
         Change value below <debug> to <False>
         "Builder(debug=False)".
-        
+
         Then it will compile without debug features,
         but instead you get about 20x faster compiling speed
     """

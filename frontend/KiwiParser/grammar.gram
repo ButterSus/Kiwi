@@ -352,7 +352,7 @@ WORD_:
     | v=(NUMBER | NAME)+ {kiwi.Word(''.join(list(map(str, v))))}
 
 STRING_:
-    | v=STRING+ {kiwi.String(''.join(map(lambda x: x.string[1:-1], v)))}
+    | v=STRING+ {kiwi.String(''.join(map(lambda x: x.string, v)))}
 
 SELECTOR_:
     | '@' v=NAME {kiwi.Selector(v.string)}
