@@ -3,7 +3,7 @@ from __future__ import annotations
 # Default libraries
 # -----------------
 
-from typing import Any, List, Callable
+from typing import Any, List, Callable, TYPE_CHECKING
 from inspect import isclass
 from tokenize import tok_name
 
@@ -13,6 +13,7 @@ from tokenize import tok_name
 import src.assets.kiwiColors as colors
 import src.assets.kiwiASO as kiwi
 from src.kiwiTokenizer import Tokenize, generate_tokens, StringIO, Tokenizer
+from src.assets.kiwiScope import ScopeSystem, ScopeType, Reference
 
 
 def dumpTokenizer(node: Tokenizer) -> str:
@@ -56,7 +57,43 @@ def dumpAST(node: kiwi.Module) -> str:
     return f(node) + colors.ResetAll
 
 
-class Visitor:
+def dumpScopeSystem(scope: ScopeSystem):
+    def f(node: Any, col=colors.Cyan + colors.BackgroundDefault, level=1):
+        tab = ' ' * 4
+        if isinstance(node, ScopeType):
+            items = list()
+            for key in node.content.keys():
+                prefix = str()
+                if key in node.hide:
+                    prefix = colors.Black + colors.BackgroundWhite + " private " + colors.BackgroundDefault + " "
+                if isinstance(node.content[key], ScopeType):
+                    items.append(f"\n{tab * level}{prefix}{colors.Red}{key}" + f(node.content[key],
+                                                                                 level=level + 1,
+                                                                                 col=col))
+                    continue
+                items.append(f"\n{tab * level}"
+                             f"{prefix}{colors.Yellow}{key} {colors.Blue + colors.BackgroundDefault}={col} "
+                             f"{f(node.content[key], level=level + 1, col=col)}")
+            return f'{colors.Red} is {{{", ".join(items)}{colors.Red}}}'
+        if isinstance(node, Reference):
+            return f'{colors.Cyan}<reference of {colors.Magenta + colors.BackgroundBlack} ' \
+                   f'{".".join(node.showKeys)} {colors.BackgroundDefault + colors.Cyan}>{col}'
+        if isclass(node):
+            return f'<instance of {colors.Magenta + colors.BackgroundBlack} {node.__name__} {col}>'
+        if isinstance(node, kiwi.AST):
+            items = list()
+            for key in node.__annotations__:
+                items.append(f"\n{tab * level}"
+                             f"{colors.Yellow}{key} {colors.Blue}={col} "
+                             f"{f(node.__getattribute__(key), level=level + 1, col=col)}")
+            return f'{colors.White}AST({", ".join(items)}{colors.White})'
+        node_other = str(node)
+        return "%.32s" % node_other + ('...' if len(node_other) > 32 else '')
+
+    return colors.Red + 'globals' + f(scope.globalScope) + colors.ResetAll
+
+
+class AST_Visitor:
     def getAttributes(self, node: kiwi.AST):
         try:
             targets = node.__annotations__

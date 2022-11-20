@@ -10,6 +10,7 @@ from dataclasses import dataclass
 # ----------------
 
 import src.assets.kiwiColors as colors
+from src.assets.kiwiScope import Reference, Attr
 
 
 # Colors for dumping
@@ -227,6 +228,9 @@ class Attribute(Theme_Expressions, AST):
     target: expression
     attribute: Name
 
+    def dump(self) -> Attr:
+        return Attr(self.target.dump() + self.attribute.dump())
+
 
 # MATCH KEYS
 # ==========
@@ -264,7 +268,8 @@ class Selector(str, Token):
 
 
 class Name(str, Token):
-    pass
+    def dump(self) -> Attr:
+        return Attr([self])
 
 
 class Word(str, Token):
@@ -279,7 +284,7 @@ class Number(str, Token):
     pass
 
 
-variable = Name | Attribute
+variable = Name | Attribute | Reference
 
 expression = \
     Expression | \
@@ -295,7 +300,7 @@ expression = \
     String | \
     Number
 
-data_type = expression
+data_type = expression | Reference
 
 simple_stmt = \
     Assignment | \
