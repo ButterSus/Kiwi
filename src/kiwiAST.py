@@ -1,29 +1,31 @@
-"""
-This code is unlicensed
-By ButterSus
+from __future__ import annotations
 
-Previous stage:
-    Tokenizer
-
-About current stage:
-    This stage is used to generate Abstract Syntax Tree
-    AST -> SAO
-
-Next stage:
-    SAO
-
-Generated using pegen:
-    https://we-like-parsers.github.io/pegen/index.html
-    (THANK YOU SO MUCH FOR THIS BEAUTIFUL INSTRUMENT!)
-"""
-
+# Default libraries
+# -----------------
 
 from typing import Any, Optional
-
-from pegen.parser import memoize, memoize_left_rec, logger, Parser
-
-import frontend.KiwiAST as kiwi
 from itertools import chain
+
+# Custom libraries
+# ----------------
+
+from pegen.parser import memoize, memoize_left_rec, Parser
+from pegen.tokenizer import Tokenizer
+import src.assets.kiwiASO as kiwi
+
+
+class AST:
+    """
+    The main task of this class is
+    - convert tokens to AST
+    """
+
+    parser: KiwiParser
+    module: kiwi.Module
+
+    def __init__(self, tokenizer: Tokenizer):
+        self.parser = KiwiParser(tokenizer)
+        self.module = self.parser.start()
 
 
 # Keywords and soft keywords are listed at the end of the parser definition.
@@ -2098,4 +2100,4 @@ class KiwiParser(Parser):
 
 if __name__ == '__main__':
     from pegen.parser import simple_parser_main
-    simple_parser_main(KiwiParser)
+    simple_parser_main(AST)

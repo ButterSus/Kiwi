@@ -1,0 +1,4 @@
+[project]
+project_name = "sus"
+entry_file = "main.kiwi"
+mc_version = "1.19.2"

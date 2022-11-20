@@ -14,7 +14,7 @@ Next stage:
 """
 from inspect import isclass
 
-from frontend import KiwiAST
+from before.frontend import KiwiAST
 
 from typing import Iterator
 from io import StringIO
@@ -68,7 +68,7 @@ def kiwiTokenizer(stream: Iterator[tokenize.TokenInfo], debugMode: bool):
 
 
 def parse(kiwiProgram: str, *, debugMode=False) -> KiwiAST.Module:
-    from frontend.KiwiParser import KiwiParser
+    from before.frontend.KiwiParser import KiwiParser
     tokengen = tokenize.generate_tokens(StringIO(kiwiProgram).readline)
     tokenizer = Tokenizer(kiwiTokenizer(tokengen, debugMode=debugMode))
     parser = KiwiParser(tokenizer)
@@ -79,25 +79,25 @@ _newline = '\n'
 
 
 def dump(ast: KiwiAST.AST | list, *, indent=4):
-    return _dump(ast, indent=indent) + KiwiAST.colors.ResetAll
+    return _dump(ast, indent=indent) + before.frontend.KiwiAST.colors.ResetAll
 
 
 def _dump(ast: KiwiAST.AST | list, level=1, color=KiwiAST.AST.color, *, indent=4):
     _tabulation = ' ' * indent
     if isinstance(ast, KiwiAST.Reference):
-        return f'{KiwiAST.colors.Cyan}<reference of {KiwiAST.colors.Magenta + KiwiAST.colors.BackgroundBlack} ' \
-               f'{".".join(ast.showKeys)} {KiwiAST.colors.BackgroundDefault + KiwiAST.colors.Cyan}>{color}'
+        return f'{before.frontend.KiwiAST.colors.Cyan}<reference of {before.frontend.KiwiAST.colors.Magenta + before.frontend.KiwiAST.colors.BackgroundBlack} ' \
+               f'{".".join(ast.showKeys)} {before.frontend.KiwiAST.colors.BackgroundDefault + before.frontend.KiwiAST.colors.Cyan}>{color}'
     if isinstance(ast, KiwiAST.Names):
-        return f'{KiwiAST.colors.Cyan}<attribute is {KiwiAST.colors.Magenta + KiwiAST.colors.BackgroundBlack} ' \
-               f'{".".join(ast)} {KiwiAST.colors.BackgroundDefault + KiwiAST.colors.Cyan}>{color}'
+        return f'{before.frontend.KiwiAST.colors.Cyan}<attribute is {before.frontend.KiwiAST.colors.Magenta + before.frontend.KiwiAST.colors.BackgroundBlack} ' \
+               f'{".".join(ast)} {before.frontend.KiwiAST.colors.BackgroundDefault + before.frontend.KiwiAST.colors.Cyan}>{color}'
     if isinstance(ast, list):
         if len(ast) == 0:
             return f'[]'
         return f'[\n{_tabulation*level}' \
                f'{(", " + _newline + _tabulation*level).join(map(lambda x: _dump(x, level + 1, color), ast))}]'
     if isclass(ast):
-        return f'{KiwiAST.colors.Cyan}<instance of {KiwiAST.colors.Magenta + KiwiAST.colors.BackgroundBlack} ' \
-               f'{ast.__name__} {KiwiAST.colors.BackgroundDefault + KiwiAST.colors.Cyan}>{color}'
+        return f'{before.frontend.KiwiAST.colors.Cyan}<instance of {before.frontend.KiwiAST.colors.Magenta + before.frontend.KiwiAST.colors.BackgroundBlack} ' \
+               f'{ast.__name__} {before.frontend.KiwiAST.colors.BackgroundDefault + before.frontend.KiwiAST.colors.Cyan}>{color}'
     if not isinstance(ast, KiwiAST.AST) and not isinstance(ast, KiwiAST.Token):
         return str(ast)
     try:

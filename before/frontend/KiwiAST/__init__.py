@@ -18,10 +18,7 @@ from __future__ import annotations
 
 from typing import List
 from dataclasses import dataclass
-from frontend.KiwiAnalyzer.scopes import Reference, Names
-from frontend.std import KiwiType
-
-import frontend.KiwiAST.colors
+from before.frontend.KiwiAnalyzer.scopes import Reference, Names
 
 
 # DUMP COLORS

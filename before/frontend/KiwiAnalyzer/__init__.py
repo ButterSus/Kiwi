@@ -16,17 +16,16 @@ Next stage:
 
 from __future__ import annotations
 
-import frontend
-from frontend import KiwiAST as kiwi
+from before import frontend
+from before.frontend import KiwiAST as kiwi
 import pathlib
 from dataclasses import dataclass
-import frontend.std as std
-from typing import Any, List, Optional, Type, Callable, TYPE_CHECKING
-from frontend.KiwiAnalyzer.scopes import ScopeSystem, Names
-
+import before.frontend.std as std
+from typing import Any, List, Optional, Callable, TYPE_CHECKING
+from before.frontend.KiwiAnalyzer.scopes import ScopeSystem
 
 if TYPE_CHECKING:
-    from build import Builder
+    from before.build import Builder
 
 
 @dataclass
@@ -166,7 +165,7 @@ class KiwiVisitor:
 
 class KiwiAnalyzer:
     builder: Builder
-    include_directories: List[pathlib.Path] = [pathlib.Path('./')]
+    include_directories: List[pathlib.Path] = [pathlib.Path('/')]
 
     def getFileDir(self, file: str) -> Optional[str]:
         for directory in map(lambda x: x / file, self.include_directories):

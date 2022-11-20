@@ -8,13 +8,13 @@ Project compiler
 from __future__ import annotations
 
 import json
-from typing import Optional, Any, Callable, List, TYPE_CHECKING, Literal
-from frontend.KiwiAnalyzer import ScopeSystem, Module
+from typing import Any, Callable, List, TYPE_CHECKING, Literal
+from before.frontend.KiwiAnalyzer import ScopeSystem, Module
 from pathlib import Path
-import frontend.KiwiAST as kiwi
+from before import frontend as kiwi
 
 if TYPE_CHECKING:
-    from build import Builder
+    from before.build import Builder
 
 
 class KiwiVisitor:

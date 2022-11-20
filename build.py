@@ -1,90 +1,221 @@
-"""
-This code is unlicensed
-By ButterSus
+from __future__ import annotations
 
-Project builder
-
-About Project:
-    KiwiSusCompiler is compiler for Kiwi language.
-    Kiwi language is used to describe datapack of Minecraft.
-
-    Pros:
-        - Import system
-        - Function described in one file
-        - Conditions
-        - Better expressions
-        - Namespaces
-
-Also check our IDE:
-    KiwiIDE - is the official IDE for Kiwi language:
-        https://github.com/ButterSus/KiwiIDE
-"""
-
+# Default libraries
+# -----------------
 
 import toml
+import json
+from argparse import ArgumentParser
+from typing import TypedDict, Any, List
+from pathlib import Path
 
-from time import time
-from typing import TypedDict, Optional, List, Literal
-from frontend.KiwiAnalyzer import KiwiAnalyzer
-from backend import KiwiCompiler
+# Custom libraries
+# ----------------
 
+from src.kiwiTokenizer import Tokenizer
+from src.kiwiAST import AST
+from src.assets.kiwiTools import dumpAST, dumpTokenizer
+
+
+# Dict with default values
+# ------------------------
+
+class DefaultDict(dict):
+    defaultDict: dict
+
+    def __init__(self, defaultDict: dict, value: dict):
+        self.defaultDict = defaultDict
+        super().__init__(value)
+
+    def __getitem__(self, item):
+        return self.get(item)
+
+    def get(self, __key: str) -> Any:
+        result = super().get(__key)
+        if result is None:
+            return self.defaultDict.get(__key)
+        return result
+
+    def toDict(self) -> dict:
+        return dict(self.items())
+
+
+# Config TOML
+# -----------
 
 class ConfigOptions(TypedDict):
-    include_directories: Optional[List[str]]
-    entry_function: Optional[str]
-    output_directory: Optional[str]
-    default_scope: Optional[Literal['private', 'public']]
+    include_directories: List[str]
+    entry_function: str
+    output_directory: str
+    default_scope: str
+
+
+configOptions: ConfigOptions = {
+    "include_directories": [],
+    "entry_function": "main",
+    "output_directory": "bin",
+    "default_scope": "public"
+}
 
 
 class ConfigProject(TypedDict):
     project_name: str
-    mc_version: str
     entry_file: str
+    mc_version: str
 
 
-class ConfigFile(TypedDict):
+configProject: ConfigProject = {
+    "project_name": "untitled",
+    "entry_file": "main",
+    "mc_version": "1.16.5"
+}
+
+
+class ConfigTOML(TypedDict):
     project: ConfigProject
-    options: Optional[ConfigOptions]
+    options: ConfigOptions
+
+
+configTOML: ConfigTOML = {
+    "project": configProject,
+    "options": configOptions
+}
+
+
+# Terminal arguments
+# ------------------
+
+class ConfigTerminal(TypedDict):
+    path: str
+    debug: bool
+    create_project: bool
+
+
+# General config
+# --------------
+
+class ConfigGeneral(ConfigProject, ConfigOptions, ConfigTerminal):
+    pass
+
+
+class Terminal:
+    """
+    The main task of this class is
+    - collect build options for frontend and backend without checking correctness
+    """
+
+    argparser: ArgumentParser
+    arguments: ConfigTerminal
+    configGeneral: ConfigGeneral
+    pathGeneral: Path
+
+    # Config options
+    # --------------
+
+    def __init__(self):
+        self.get_arguments()
+        self.get_options()
+
+    def get_arguments(self):
+        self.argparser = ArgumentParser(description='Kiwi Datapack Official Compiler')
+        self.argparser.add_argument('path', type=str, help='Path to your project')
+        self.argparser.add_argument('--debug', default=False, action='store_true',
+                                    help='Compiles grammar and print details (for devs)')
+        self.argparser.add_argument('--create-project', default=False, action='store_true',
+                                    help='Creates new project')
+        self.arguments = vars(self.argparser.parse_args())
+        self.pathGeneral = Path(self.arguments['path'])
+
+    def get_options(self):
+        def combineDictionaries(*values: DefaultDict | dict) -> dict:
+            result = dict()
+            for value in values:
+                if isinstance(value, DefaultDict):
+                    result |= value.toDict()
+                else:
+                    result |= value
+            return result
+
+        currentConfigTOML: ConfigTOML \
+            = DefaultDict(configTOML, toml.load(str(self.pathGeneral / 'kiwi_project.toml')))
+        currentConfigProject: ConfigProject \
+            = DefaultDict(configProject, currentConfigTOML['project'])
+        currentConfigOptions: ConfigOptions \
+            = DefaultDict(configOptions, currentConfigTOML['options'])
+        self.configGeneral = combineDictionaries(
+            self.arguments, currentConfigProject, currentConfigOptions)
+
+
+# General directories
+# -------------------
+
+class Directories(TypedDict):
+    bin: Path
+    data: Path
+    project: Path
+    functions: Path
+
+
+class Constructor:
+    """
+    The main task of this class is
+    - construct base for compiler
+    """
+
+    configGeneral: ConfigGeneral
+    directories: Directories
+
+    def __init__(self, configGeneral: ConfigGeneral):
+        self.configGeneral = configGeneral
+        self.directories = dict()
+        self.folders()
+        self.files()
+
+    def folders(self):
+        self.directories['bin'] = Path(self.configGeneral['output_directory'])
+        self.directories['bin'].mkdir(exist_ok=True)
+
+        self.directories['data'] = Path(self.directories['bin'] / 'data')
+        self.directories['data'].mkdir(exist_ok=True)
+
+        self.directories['project'] = Path(self.directories['data'] / self.configGeneral['project_name'])
+        self.directories['project'].mkdir(exist_ok=True)
+
+        self.directories['functions'] = Path(self.directories['project'] / 'functions')
+        self.directories['functions'].mkdir(exist_ok=True)
+
+    def files(self):
+        pass
 
 
 class Builder:
-    project: ConfigProject
-    config: ConfigFile
-    options: ConfigOptions
+    """
+    The main task of this class is
+    - connect all parts of compiler together
+    """
 
-    def __init__(self, debug: bool = False):
-        if debug:
-            import subprocess
-            import pathlib
-            subprocess.run(
-                f'python -m pegen {pathlib.Path(__file__).parent / "frontend/KiwiParser/grammar.gram"} -o'
-                f' {pathlib.Path(__file__).parent / "frontend/KiwiParser/__init__.py"} -v'.split(),
-                stdout=subprocess.DEVNULL
-            )
-        self.config = toml.load('kiwiProject.toml')
-        self.project = self.config['project']
-        self.options_init()
-        frontend = KiwiAnalyzer(self)
-        module = frontend.build(debug=debug)
-        KiwiCompiler(self).build(module)
+    # Parts of compiler
+    # -----------------
 
-    def options_init(self):
-        if (options := self.config['options']) is not None:
-            self.options = options
+    terminal: Terminal
+    constructor: Constructor
+    tokenizer: Tokenizer
+    ast: AST
+
+    # General parameters
+    # ------------------
+
+    configGeneral: ConfigGeneral
+
+    def __init__(self):
+        self.terminal = Terminal()
+        self.configGeneral = self.terminal.configGeneral
+        self.constructor = Constructor(self.configGeneral)
+        with open(self.configGeneral['entry_file']) as file:
+            self.tokenizer = Tokenizer(file.read())
+            self.ast = AST(self.tokenizer.lexer)
+        print(dumpAST(self.ast.module))
 
 
 if __name__ == '__main__':
-    """
-    If this project is on development,
-    But you really want to try it out:
-        Change value below <debug> to <False>
-        "Builder(debug=False)".
-
-        Then it will compile without debug features,
-        but instead you get about 20x faster compiling speed
-    """
-    start_time = time()
-    Builder(debug=True)
-    print(
-        f"Compiled without errors in %.6f seconds" % (time() - start_time)
-    )
+    Builder()

@@ -16,11 +16,11 @@ Next stage:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, List, Optional, Set
+from typing import Any, Optional, Set
 
-from frontend.std import built_in_dict
-import frontend.KiwiAST.colors as colors
-import frontend.KiwiAST as kiwi
+from before.frontend.std import built_in_dict
+import before.frontend.KiwiAST.colors as colors
+from before import frontend as kiwi
 from inspect import isclass
 
 
