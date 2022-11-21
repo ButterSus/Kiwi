@@ -30,3 +30,8 @@ class CallMethod(Command):
 class CallMethodWithCompiler(Command):
     method: Callable[[Compiler, ...], None]
     arguments: List[Any]
+
+
+@dataclass
+class ResetExpression(Command):
+    ...

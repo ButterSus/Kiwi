@@ -34,12 +34,12 @@ class Number(KiwiConst):
     def __init__(self, value: str, *_):
         self.value = int(value)
 
-    def Add(self, other: Argument) -> Argument:
-        other = toNonReference(other)
+    def Add(self, _other: Argument) -> NonRef:
+        other = toNonReference(_other)
         if isinstance(other, Number):
             self.value += other.value
             return self
-        return self
+        return other.Add(self)
 
     def toDisplay(self) -> str:
         return f'{{"text": "{self.value}"}}'
@@ -57,8 +57,12 @@ class String(KiwiConst):
         """
         self.value = value
 
-    def Add(self, other: Argument) -> Argument:
-        pass
+    def Add(self, _other: Argument) -> NonRef:
+        other = toNonReference(_other)
+        if isinstance(other, String):
+            self.value += other.value
+            return self
+        return other.Add(self)
 
     def toDisplay(self) -> str:
         return f'{{"text": "{self.value}"}}'
@@ -80,7 +84,7 @@ class Score(KiwiClass):
     def Annotation(self, scoreboard: Scoreboard = None):
         self.prefix_space = self.constructor.prefix_space
         if scoreboard is None:
-            scoreboard = self.constructor.scoreboard
+            scoreboard = self.constructor.glScoreboard
         self.scoreboard = scoreboard
 
     def Assignment(self, value: Argument):
@@ -88,8 +92,13 @@ class Score(KiwiClass):
         self.constructor.cmd(f'scoreboard players set '
                              f'{self.toName()} {self.scoreboard.toName()} {value.toName()}')
 
-    def Add(self, other: Argument) -> Argument:
-        pass
+    def Add(self, _other: Argument) -> NonRef:
+        other = toNonReference(_other)
+        if isinstance(other, Number):
+            self.constructor.cmd(f'scoreboard players add '
+                                 f'{self.toName()} {self.scoreboard.toName()} {other.toName()}')
+            return self
+        assert False
 
     def toDisplay(self) -> str:
         pass

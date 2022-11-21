@@ -109,18 +109,22 @@ class Constructor:
 
     def interface(self):
         self.fileStack, self.spaceStack = list(), list()
-        self.fileStack.append((self.directories.functions / 'init').with_suffix('.mcfunction').open('w+'))
-        self.scoreboard = Scoreboard('globals', self)
-        self.scoreboard.Annotation(String('\"dummy\"', self))
+        self.fileStack.append((self.directories.functions / 'init').with_suffix('.mcfunction').open('a'))
+        self.glScoreboard = Scoreboard(self.configGeneral['project_name'], self)
+        self.tmpScoreboard = Scoreboard(f"{self.configGeneral['project_name']}.temp", self)
+        self.glScoreboard.Annotation(String('\"dummy\"', self))
 
     def newFunction(self, name: str):
         self.spaceStack.append(name)
-        self.fileStack.append((self.directories.functions / name).with_suffix('.mcfunction').open('w+'))
+        self.fileStack.append((self.directories.functions / name).with_suffix('.mcfunction').open('a'))
 
     def closeFunction(self):
         self.spaceStack.pop(-1)
         self.fileStack[-1].close()
         self.fileStack.pop(-1)
+
+    def getTemp(self):
+        pass  # TODO: Make temporary variables
 
     def newNamespace(self, name: str):
         self.spaceStack.append(name)
@@ -138,6 +142,7 @@ class Constructor:
     # Default attributes
     # ------------------
 
-    scoreboard: Scoreboard
+    glScoreboard: Scoreboard
+    tmpScoreboard: Scoreboard
     criteria: String = String('\"dummy\"')
     prefix_space: str = property(fget=_get_prefix)

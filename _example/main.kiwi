@@ -1,2 +1,8 @@
-a: score = 5
-b: score = 4 + 5
+function jojo():
+    function suck():
+        c, d -> score = 1, 2
+
+    a, b -> score = 5, 4
+
+function suck():
+    c, d -> score = 1, 2
