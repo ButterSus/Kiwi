@@ -98,31 +98,46 @@ class Constructor:
             }, indent=4))
 
     def finish(self):
-        self.closeFunction()
+        self.fileStack[-1].close()
+        self.fileStack.pop(-1)
 
     # Interface for compiler
     # ----------------------
 
-    fileStack: List[TextIO] = []
+    fileStack: List[TextIO]
+    spaceStack: List[str]
 
     def interface(self):
-        self.newFunction('init')
+        self.fileStack, self.spaceStack = list(), list()
+        self.fileStack.append((self.directories.functions / 'init').with_suffix('.mcfunction').open('w+'))
         self.scoreboard = Scoreboard('globals', self)
         self.scoreboard.Annotation(String('\"dummy\"', self))
 
     def newFunction(self, name: str):
+        self.spaceStack.append(name)
         self.fileStack.append((self.directories.functions / name).with_suffix('.mcfunction').open('w+'))
 
     def closeFunction(self):
+        self.spaceStack.pop(-1)
         self.fileStack[-1].close()
         self.fileStack.pop(-1)
 
+    def newNamespace(self, name: str):
+        self.spaceStack.append(name)
+
+    def closeNamespace(self):
+        self.spaceStack.pop(-1)
+
     def cmd(self, text: str):
-        self.fileStack[-1].write(text)
+        self.fileStack[-1].write(text + '\n')
+
+    def _get_prefix(self) -> str:
+        postfix = '.' if self.spaceStack else ''
+        return self.configGeneral['space_separator'].join(self.spaceStack) + postfix
 
     # Default attributes
     # ------------------
 
     scoreboard: Scoreboard
     criteria: String = String('\"dummy\"')
-    prefix_space: str = ''
+    prefix_space: str = property(fget=_get_prefix)

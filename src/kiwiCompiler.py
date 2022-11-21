@@ -42,7 +42,8 @@ class Compiler(AST_Visitor):
         return node
 
     def CallMethod(self, node: cmd.CallMethod):
-        arguments = node.arguments
+        print(node)
+        arguments = map(self.visit, node.arguments)
         return node.method(*arguments)
 
     def CallMethodWithCompiler(self, node: cmd.CallMethodWithCompiler):

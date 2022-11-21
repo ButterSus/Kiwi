@@ -4,7 +4,7 @@ from __future__ import annotations
 # -----------------
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Any
 
 # Custom libraries
 # ----------------
@@ -28,21 +28,11 @@ class KiwiConst(KiwiType, ABC):
         self.value = value
 
     @abstractmethod
-    def toDisplay(self) -> str:
+    def Add(self, other: Argument) -> Argument:
         pass
 
-
-class KiwiSpace(KiwiType, ABC):
-    name: str
-    constructor: Constructor
-
     @abstractmethod
-    def __init__(self, name: str, constructor: Constructor):
-        self.name = name
-        self.constructor = constructor
-
-    @abstractmethod
-    def Annotation(self, compiler: Compiler, body: List[Command]):
+    def toDisplay(self) -> str:
         pass
 
 
@@ -64,10 +54,15 @@ class KiwiClass(KiwiType, ABC):
         pass
 
     @abstractmethod
+    def Add(self, other: Argument) -> Argument:
+        pass
+
+    @abstractmethod
     def toDisplay(self) -> str:
         pass
 
 
 StdOps = {
-    '=': 'Assignment'
+    '+': 'Add',
+    '-': 'Sub'
 }

@@ -163,6 +163,10 @@ class AST_Visitor:
                 visited = self.visit(attribute)
                 node.__setattr__(annotation, visited)
             return node
+        if isinstance(node, std.KiwiType):
+            if function := self.knockCall(node):
+                return function(node)
+            return node
 
     def visitAST(self, node: kiwi.AST | Command) -> List[Any]:
         result = list()

@@ -18,7 +18,8 @@ import std as std
 if TYPE_CHECKING:
     from build import Constructor
 
-Argument = Reference | std.KiwiClass | std.KiwiConst
+NonRef = std.KiwiClass | std.KiwiConst | std.KiwiType
+Argument = Reference | NonRef
 
 
 class Analyzer(AST_Visitor):
@@ -64,6 +65,14 @@ class Analyzer(AST_Visitor):
 
     def String(self, node: kiwi.String):
         return std.String(node.value, self.constructor)
+
+    # Operators
+    # ---------
+
+    def BinaryOp(self, node: kiwi.BinaryOp):
+        target = std.toNonReference(self.visit(node.x))
+        method = target.__getattribute__(std.StdOps[node.op.value])
+        return cmd.CallMethod(method, [self.visit(node.y)])
 
     # Annotations
     # -----------
@@ -129,7 +138,7 @@ class Analyzer(AST_Visitor):
         # -----------------------
 
         target = node.name.toAttr()
-        variable: std.KiwiSpace = std.Function(target.toString(), self.constructor)
+        variable: std.Function = std.Function(target.toString(), self.constructor)
         self.scope.write(target, variable)
 
         return cmd.CallMethodWithCompiler(
@@ -156,11 +165,11 @@ class Analyzer(AST_Visitor):
         # -----------------------
 
         target = reserve(node.name.toAttr())
-        variable = std.Namespace(
-            target.toString(),
+        variable: std.Namespace = std.Namespace(
+            target.toString()[1:],
             self.constructor)
         self.scope.write(target, variable)
 
-        return cmd.CallMethod(
+        return cmd.CallMethodWithCompiler(
             variable.Annotation, [body_private, body_public, body_default]
         )

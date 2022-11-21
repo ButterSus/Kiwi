@@ -1,2 +1,2 @@
-function a():
-    b: score = 5
+a: score = 5
+b: score = 4 + 5

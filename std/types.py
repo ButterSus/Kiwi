@@ -9,12 +9,19 @@ from __future__ import annotations
 # ----------------
 
 from std.tools import *
+from src.assets.kiwiReference import Reference
 
 if TYPE_CHECKING:
-    from src.kiwiAnalyzer import Argument
+    from src.kiwiAnalyzer import Argument, NonRef
     from src.kiwiCompiler import Compiler
     from src.assets.kiwiCommands import Command
     from build import Constructor
+
+
+def toNonReference(value: Argument) -> NonRef:
+    if isinstance(value, Reference):
+        value = value.var
+    return value
 
 
 # DATA TYPES
@@ -27,8 +34,18 @@ class Number(KiwiConst):
     def __init__(self, value: str, *_):
         self.value = int(value)
 
+    def Add(self, other: Argument) -> Argument:
+        other = toNonReference(other)
+        if isinstance(other, Number):
+            self.value += other.value
+            return self
+        return self
+
     def toDisplay(self) -> str:
         return f'{{"text": "{self.value}"}}'
+
+    def toName(self) -> str:
+        return str(self.value)
 
 
 class String(KiwiConst):
@@ -40,6 +57,9 @@ class String(KiwiConst):
         """
         self.value = value
 
+    def Add(self, other: Argument) -> Argument:
+        pass
+
     def toDisplay(self) -> str:
         return f'{{"text": "{self.value}"}}'
 
@@ -50,6 +70,7 @@ class String(KiwiConst):
 class Score(KiwiClass):
     name: str
     scoreboard: Scoreboard
+    prefix_space: str
     constructor: Constructor
 
     def __init__(self, name: str, constructor: Constructor):
@@ -57,21 +78,30 @@ class Score(KiwiClass):
         self.constructor = constructor
 
     def Annotation(self, scoreboard: Scoreboard = None):
+        self.prefix_space = self.constructor.prefix_space
         if scoreboard is None:
             scoreboard = self.constructor.scoreboard
         self.scoreboard = scoreboard
 
     def Assignment(self, value: Argument):
+        value = toNonReference(value)
         self.constructor.cmd(f'scoreboard players set '
-                             f'{self.name} {self.scoreboard.name} {value.value}')
+                             f'{self.toName()} {self.scoreboard.toName()} {value.toName()}')
+
+    def Add(self, other: Argument) -> Argument:
+        pass
 
     def toDisplay(self) -> str:
         pass
+
+    def toName(self) -> str:
+        return f'{self.prefix_space}{self.name}'
 
 
 class Scoreboard(KiwiClass):
     name: str
     criteria: str
+    prefix_space: str
     constructor: Constructor
 
     def __init__(self, name: str, constructor: Constructor):
@@ -79,11 +109,15 @@ class Scoreboard(KiwiClass):
         self.constructor = constructor
 
     def Annotation(self, criteria: String = None):
+        self.prefix_space = self.constructor.prefix_space
         if criteria is None:
             criteria = self.constructor.criteria
         self.criteria = criteria.toName()
         self.constructor.cmd(f'scoreboard objectives add '
-                             f'{self.name} {self.criteria}')
+                             f'{self.toName()} {self.criteria}')
+
+    def Add(self, other: Argument) -> Argument:
+        assert False
 
     def Assignment(self, value: Argument):
         """
@@ -92,22 +126,13 @@ class Scoreboard(KiwiClass):
         assert False
 
     def toDisplay(self) -> str:
-        pass
+        return f''
+
+    def toName(self) -> str:
+        return f'{self.prefix_space}{self.name}'
 
 
-class Namespace(KiwiSpace):
-    name: str
-    constructor: Constructor
-
-    def __init__(self, name: str, constructor: Constructor):
-        self.name = name
-        self.constructor = constructor
-
-    def Annotation(self, compiler: Compiler, body: List[Command]):
-        pass
-
-
-class Function(KiwiSpace):
+class Function(KiwiType):
     name: str
     constructor: Constructor
 
@@ -120,3 +145,17 @@ class Function(KiwiSpace):
         compiler.visit(body)
         self.constructor.closeFunction()
 
+
+class Namespace(KiwiType):
+    name: str
+    constructor: Constructor
+
+    def __init__(self, name: str, constructor: Constructor):
+        self.name = name
+        self.constructor = constructor
+
+    def Annotation(self, compiler: Compiler, body_private: List[Command],
+                   body_public: List[Command], body_default: List[Command]):
+        self.constructor.newNamespace(self.name)
+        compiler.visit(body_default)
+        self.constructor.closeNamespace()
