@@ -119,8 +119,8 @@ assignment:
     | a=annotations {kiwi.Annotation(*a)}
 
 annotations:
-    | i=expression ':' t=expression {[[i], t]}
-    | i=','.expression+ '->' t=expression {i, t}
+    | i=expression ':' t=expression a=expression* {[i], t, a}
+    | i=','.expression+ '->' t=expression a=expression* {i, t, a}
 
 augassign:
     | '+=' {kiwi.Token('+=')}

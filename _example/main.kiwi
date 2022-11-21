@@ -1,1 +1,4 @@
-import guten
+namespace a:
+    b: score
+
+a.b: score

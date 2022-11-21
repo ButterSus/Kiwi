@@ -12,7 +12,8 @@ import std
 
 
 class Attr(list):
-    ...
+    def toString(self) -> str:
+        return str(self[-1])
 
 
 Key = str | Attr

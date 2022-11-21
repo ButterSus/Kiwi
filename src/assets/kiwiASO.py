@@ -87,19 +87,20 @@ class Continue(Theme_Statements, AST):
 class AnnAssignment(Theme_Statements, AST):
     targets: List[expression]
     data_type: data_type
+    args: List[expression]
     value: List[expression]
 
 
 @dataclass
 class Assignment(Theme_Statements, AST):
     targets: List[expression]
-    value: List[expression]
+    values: List[expression]
 
 
 @dataclass
 class AugAssignment(Theme_Statements, AST):
     targets: List[variable]
-    op: str
+    op: Token
     value: List[expression]
 
 
@@ -107,6 +108,7 @@ class AugAssignment(Theme_Statements, AST):
 class Annotation(Theme_Statements, AST):
     targets: List[expression]
     data_type: data_type
+    args: List[expression]
 
 
 @dataclass
@@ -228,8 +230,8 @@ class Attribute(Theme_Expressions, AST):
     target: expression
     attribute: Name
 
-    def dump(self) -> Attr:
-        return Attr(self.target.dump() + self.attribute.dump())
+    def toAttr(self) -> Attr:
+        return Attr(self.target.toAttr() + self.attribute.toAttr())
 
 
 # MATCH KEYS
@@ -268,7 +270,7 @@ class Selector(str, Token):
 
 
 class Name(str, Token):
-    def dump(self) -> Attr:
+    def toAttr(self) -> Attr:
         return Attr([self])
 
 
@@ -311,6 +313,7 @@ simple_stmt = \
     Continue
 
 compound_stmt = \
+    Module | \
     FuncDef | \
     NamespaceDef | \
     IfElse | \
