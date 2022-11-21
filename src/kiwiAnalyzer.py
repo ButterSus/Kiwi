@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, List, Tuple, Type, Iterator
 # ----------------
 
 from src.assets.kiwiTools import AST_Visitor
-from src.assets.kiwiScope import ScopeSystem, Reference
+from src.assets.kiwiScope import ScopeSystem, Reference, reserve
 from src.kiwiAST import AST
 import src.assets.kiwiASO as kiwi
 import src.assets.kiwiCommands as cmd
@@ -18,7 +18,7 @@ import std as std
 if TYPE_CHECKING:
     from build import Constructor
 
-Argument = Reference | std.Constant
+Argument = Reference | std.KiwiClass | std.KiwiConst
 
 
 class Analyzer(AST_Visitor):
@@ -40,6 +40,10 @@ class Analyzer(AST_Visitor):
     # AST analysis
     # ------------
 
+    def Module(self, node: kiwi.Module):
+        node.body = self.visit(node.body)
+        return node
+
     def Expression(self, node: kiwi.Expression):
         return self.visit(node.value)
 
@@ -56,7 +60,10 @@ class Analyzer(AST_Visitor):
     # ---------
 
     def Number(self, node: kiwi.Number):
-        return std.Constant(int(node.value))
+        return std.Number(node.value, self.constructor)
+
+    def String(self, node: kiwi.String):
+        return std.String(node.value, self.constructor)
 
     # Annotations
     # -----------
@@ -68,7 +75,7 @@ class Analyzer(AST_Visitor):
         )
 
     def Annotation(self, node: kiwi.Annotation):
-        data_type: Type[std.KiwiType] = self.visit(node.data_type).var
+        data_type: Type[std.KiwiClass] = self.visit(node.data_type).var
         result: List[cmd.CallMethod] = list()
         for target in node.targets:
             # Target should be expression
@@ -122,10 +129,10 @@ class Analyzer(AST_Visitor):
         # -----------------------
 
         target = node.name.toAttr()
-        variable = std.Function(target.toString(), self.constructor)
+        variable: std.KiwiSpace = std.Function(target.toString(), self.constructor)
         self.scope.write(target, variable)
 
-        return cmd.CallMethod(
+        return cmd.CallMethodWithCompiler(
             variable.Annotation, [body]
         )
 
@@ -148,8 +155,10 @@ class Analyzer(AST_Visitor):
         # Forming command request
         # -----------------------
 
-        target = node.name.toAttr()
-        variable = std.Namespace(target.toString(), self.constructor)
+        target = reserve(node.name.toAttr())
+        variable = std.Namespace(
+            target.toString(),
+            self.constructor)
         self.scope.write(target, variable)
 
         return cmd.CallMethod(

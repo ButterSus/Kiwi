@@ -12,5 +12,6 @@ from std.types import *
 
 
 built_in = {
-    "score": Score
+    "score": Score,
+    "scoreboard": Scoreboard
 }

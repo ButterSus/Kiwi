@@ -4,23 +4,35 @@ from __future__ import annotations
 # -----------------
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
-from dataclasses import dataclass
+from typing import TYPE_CHECKING, List
 
 # Custom libraries
 # ----------------
 
 if TYPE_CHECKING:
-    from src.assets.kiwiScope import Argument
+    from src.kiwiAnalyzer import Argument
+    from src.kiwiCompiler import Compiler
+    from src.assets.kiwiCommands import Command
     from build import Constructor
 
 
-@dataclass
-class Constant:
-    value: int | float | str | list
+class KiwiType:
+    pass
 
 
-class KiwiType(ABC):
+class KiwiConst(KiwiType, ABC):
+    value: str
+
+    @abstractmethod
+    def __init__(self, value: str, *_):
+        self.value = value
+
+    @abstractmethod
+    def toDisplay(self) -> str:
+        pass
+
+
+class KiwiSpace(KiwiType, ABC):
     name: str
     constructor: Constructor
 
@@ -30,11 +42,29 @@ class KiwiType(ABC):
         self.constructor = constructor
 
     @abstractmethod
-    def Annotation(self, *args: Any):
+    def Annotation(self, compiler: Compiler, body: List[Command]):
+        pass
+
+
+class KiwiClass(KiwiType, ABC):
+    name: str
+    constructor: Constructor
+
+    @abstractmethod
+    def __init__(self, name: str, constructor: Constructor):
+        self.name = name
+        self.constructor = constructor
+
+    @abstractmethod
+    def Annotation(self, *args: Argument):
         pass
 
     @abstractmethod
-    def Assignment(self, value: Argument):
+    def Assignment(self, *args: Argument):
+        pass
+
+    @abstractmethod
+    def toDisplay(self) -> str:
         pass
 
 

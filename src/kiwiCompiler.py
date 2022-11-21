@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 from src.assets.kiwiTools import AST_Visitor
 from src.assets.kiwiScope import ScopeSystem, Reference
 import src.assets.kiwiASO as kiwi
-import std
+import src.assets.kiwiCommands as cmd
 from src.kiwiAST import AST
 
 if TYPE_CHECKING:
@@ -33,3 +33,18 @@ class Compiler(AST_Visitor):
         self.scope = scope
         self.constructor = constructor
         self.visit(ast.module)
+
+    # Compiling AST
+    # -------------
+
+    def Module(self, node: kiwi.Module):
+        node.body = self.visit(node.body)
+        return node
+
+    def CallMethod(self, node: cmd.CallMethod):
+        arguments = node.arguments
+        return node.method(*arguments)
+
+    def CallMethodWithCompiler(self, node: cmd.CallMethodWithCompiler):
+        arguments = node.arguments
+        return node.method(self, *arguments)

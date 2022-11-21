@@ -4,12 +4,13 @@ from __future__ import annotations
 # -----------------
 
 from dataclasses import dataclass
-from typing import Callable, Type, List, Any
+from typing import Callable, List, Any, TYPE_CHECKING
 
 # Custom libraries
 # ----------------
 
-from std.tools import KiwiType
+if TYPE_CHECKING:
+    from src.kiwiCompiler import Compiler
 
 
 class Command:
@@ -21,5 +22,11 @@ class Command:
 
 @dataclass
 class CallMethod(Command):
-    method: Callable[[Type[KiwiType], ...], None]
+    method: Callable[[...], None]
+    arguments: List[Any]
+
+
+@dataclass
+class CallMethodWithCompiler(Command):
+    method: Callable[[Compiler, ...], None]
     arguments: List[Any]

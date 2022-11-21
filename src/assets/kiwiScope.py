@@ -4,11 +4,16 @@ from __future__ import annotations
 # -----------------
 
 from dataclasses import dataclass
-from typing import Optional, Set, Any
+from typing import Optional, Set, Any, List
 
 # Custom libraries
 
 import std
+
+
+def reserve(node):
+    node[-1] = f'.{node[-1]}'
+    return node
 
 
 class Attr(list):
@@ -59,7 +64,12 @@ class ScopeType:
             assert self.exists(keys)
             assert not self.isHided(keys)
             if len(keys) == 1:
-                return Reference(self, keys[0], showKeys)
+                ref = Reference(self, keys[0], showKeys)
+                if isinstance(ref.var, ScopeType):
+                    keys = reserve(keys)
+                    assert self.exists(keys)
+                    return Reference(self, keys[0], showKeys)
+                return ref
             result: ScopeType = self.content[keys[0]]
             assert isinstance(result, ScopeType)
             return result.reference(Attr(keys[1:]), isAttribute=True, showKeys=showKeys)
@@ -70,8 +80,12 @@ class ScopeType:
             assert self.parent
             return self.parent.reference(keys, showKeys=showKeys)
         if len(keys) == 1:
-            assert self.exists(keys)
-            return Reference(self, keys[0], showKeys)
+            ref = Reference(self, keys[0], showKeys)
+            if isinstance(ref.var, ScopeType):
+                keys = reserve(keys)
+                assert self.exists(keys)
+                return Reference(self, keys[0], showKeys)
+            return ref
         return self.reference(keys, isAttribute=True, showKeys=showKeys)
 
     def write(self, keys: Key, value: Any, *, isAttribute=False) -> True:
@@ -79,6 +93,11 @@ class ScopeType:
             if self.isHided(keys):
                 return False
             if len(keys) == 1:
+                if self.exists(keys):
+                    if isinstance(self.content[keys[0]], ScopeType):
+                        keys = reserve(keys)
+                        self.content[keys[0]] = value
+                        return True
                 self.content[keys[0]] = value
                 return True
             if not self.exists(keys):
@@ -89,18 +108,29 @@ class ScopeType:
             return result.write(Attr(keys[1:]), value, isAttribute=True)
         keys = Attr([keys]) if not isinstance(keys, Attr) else keys
         if len(keys) == 1:
+            if self.exists(keys):
+                if isinstance(self.content[keys[0]], ScopeType):
+                    keys = reserve(keys)
+                    self.content[keys[0]] = value
+                    return True
             self.content[keys[0]] = value
             return True
         if not self.exists(keys) and self.parent:
             return self.parent.write(keys, value)
         assert self.write(keys, value, isAttribute=True)
 
-    def get(self, keys: Key, *, isAttribute=False) -> Any | ScopeType:
+    def get(self, keys: Key, *, isAttribute=False, ignoreScope=True) -> Any | ScopeType:
         if isAttribute:
             assert self.exists(keys)
             assert not self.isHided(keys)
             if len(keys) == 1:
-                return self.content[keys[0]]
+                result = self.content[keys[0]]
+                if isinstance(result, ScopeType) and ignoreScope:
+                    keys = reserve(keys)
+                    assert self.exists(keys)
+                    result = self.content[keys[0]]
+                    return result
+                return result
             result: ScopeType = self.content[keys[0]]
             return result.get(Attr(keys[1:]), isAttribute=True)
         keys = Attr([keys]) if not isinstance(keys, Attr) else keys
@@ -108,7 +138,13 @@ class ScopeType:
             assert self.parent
             return self.parent.get(keys)
         if len(keys) == 1:
-            return self.content[keys[0]]
+            result = self.content[keys[0]]
+            if isinstance(result, ScopeType) and ignoreScope:
+                keys = reserve(keys)
+                assert self.exists(keys)
+                result = self.content[keys[0]]
+                return result
+            return result
         return self.get(keys, isAttribute=True)
 
     def exists(self, key: Key) -> bool:
@@ -143,7 +179,7 @@ class ScopeSystem:
         self.localScope.write(
             name, ScopeType(dict(), self.localScope)
         )
-        self.localScope = self.localScope.get(name)
+        self.localScope = self.localScope.get(name, ignoreScope=False)
 
     def newLocalSpace(self):
         if self.localScope.private_mode:
@@ -151,7 +187,7 @@ class ScopeSystem:
         self.localScope.write(
             str(self._iterator), ScopeType(dict(), self.localScope)
         )
-        self.localScope = self.localScope.get(str(self._iterator))
+        self.localScope = self.localScope.get(str(self._iterator), ignoreScope=False)
         self._iterator += 1
 
     def leaveSpace(self):

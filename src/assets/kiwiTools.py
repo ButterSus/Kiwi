@@ -3,7 +3,7 @@ from __future__ import annotations
 # Default libraries
 # -----------------
 
-from typing import Any, List, Callable, TYPE_CHECKING
+from typing import Any, List, Callable
 from inspect import isclass
 from tokenize import tok_name
 from itertools import chain
@@ -13,7 +13,6 @@ from itertools import chain
 
 import src.assets.kiwiColors as colors
 import src.assets.kiwiASO as kiwi
-from src.assets.kiwiCommands import Command
 import std
 from src.assets.kiwiCommands import Command
 from src.kiwiTokenizer import Tokenize, generate_tokens, StringIO, Tokenizer
@@ -41,7 +40,7 @@ def dumpAST(module: kiwi.Module) -> str:
             node = kiwi.Token(f'&{",".join(node.showKeys)}')
         if isinstance(node, list):
             if len(node) == 0:
-                return '[]'
+                return f'{color}[]'
             prefix = f"\n{tab * lvl}" if len(node) > 1 else ""
             return f'{color}[{prefix}{(", " + new + tab * lvl).join(map(lambda x:f(x, lvl + 1, color), node))}]'
         if isclass(node):
@@ -154,7 +153,7 @@ class AST_Visitor:
                 return function(node)
             return node
         if isinstance(node, Command):
-            if function := self.knockCall(node.__class__.__name__):
+            if function := self.knockCall(node):
                 return function(node)
             return node
         if isinstance(node, kiwi.AST):
@@ -165,7 +164,7 @@ class AST_Visitor:
                 node.__setattr__(annotation, visited)
             return node
 
-    def visitAST(self, node: kiwi.AST) -> List[Any]:
+    def visitAST(self, node: kiwi.AST | Command) -> List[Any]:
         result = list()
         for annotation, attribute in self.getAttributes(node):
             result.append(self.visit(attribute))

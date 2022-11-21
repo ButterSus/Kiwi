@@ -1,4 +1,2 @@
-namespace a:
-    b: score
-
-a.b: score
+function a():
+    b: score = 5
