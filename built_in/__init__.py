@@ -3,15 +3,16 @@ from __future__ import annotations
 # Default libraries
 # -----------------
 
-from typing import Type
+...
 
 # Custom libraries
 # ----------------
 
-from std.types import *
+from built_in.types import *
+from built_in.std import stdout
 
 
 built_in = {
     "score": Score,
     "scoreboard": Scoreboard
-}
+} | stdout.scope

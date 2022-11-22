@@ -8,7 +8,7 @@ from typing import Optional, Set, Any
 # Custom libraries
 
 from src.assets.kiwiReference import Reference
-import std
+import built_in
 
 
 def reserve(node):
@@ -133,7 +133,7 @@ class ScopeType:
 
 class ScopeSystem:
     _iterator = 0
-    _builtInScope: ScopeType = ScopeType(std.built_in)
+    _builtInScope: ScopeType = ScopeType(built_in.built_in)
     globalScope: ScopeType
     localScope: ScopeType
 

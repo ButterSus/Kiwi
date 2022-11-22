@@ -1,8 +1,2 @@
-function jojo():
-    function suck():
-        c, d -> score = 1, 2
-
-    a, b -> score = 5, 4
-
-function suck():
-    c, d -> score = 1, 2
+a, b -> score = 5, 4
+tellraw("hello, the value a is ", a, ", the value b is ", b)

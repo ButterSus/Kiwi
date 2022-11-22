@@ -21,14 +21,14 @@ class Command:
 # ------------
 
 @dataclass
-class CallMethod(Command):
-    method: Callable[[...], None]
+class UseMethod(Command):
+    method: Callable[[...], Any]
     arguments: List[Any]
 
 
 @dataclass
-class CallMethodWithCompiler(Command):
-    method: Callable[[Compiler, ...], None]
+class UseMethodWithCompiler(Command):
+    method: Callable[[Compiler, ...], Any]
     arguments: List[Any]
 
 

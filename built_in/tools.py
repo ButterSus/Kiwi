@@ -12,12 +12,17 @@ from typing import TYPE_CHECKING, List, Any
 if TYPE_CHECKING:
     from src.kiwiAnalyzer import Argument
     from src.kiwiCompiler import Compiler
-    from src.assets.kiwiCommands import Command
     from build import Constructor
 
 
 class KiwiType:
     pass
+
+
+class KiwiCallable(KiwiType, ABC):
+    @abstractmethod
+    def Call(self, compiler: Compiler, *args: Argument) -> Argument:
+        pass
 
 
 class KiwiConst(KiwiType, ABC):

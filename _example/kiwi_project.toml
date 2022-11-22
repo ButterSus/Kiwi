@@ -1,2 +1,3 @@
 [options]
 include_directories = ["lib"]
+output_directory = "/home/buttersss/.local/share/multimc/instances/1.18.2/.minecraft/saves/Kiwi_Enthusiasts/datapacks/untitled"

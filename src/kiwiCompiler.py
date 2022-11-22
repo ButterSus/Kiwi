@@ -41,10 +41,10 @@ class Compiler(AST_Visitor):
         node.body = self.visit(node.body)
         return node
 
-    def CallMethod(self, node: cmd.CallMethod):
+    def UseMethod(self, node: cmd.UseMethod):
         arguments = map(self.visit, node.arguments)
         return node.method(*arguments)
 
-    def CallMethodWithCompiler(self, node: cmd.CallMethodWithCompiler):
+    def UseMethodWithCompiler(self, node: cmd.UseMethodWithCompiler):
         arguments = node.arguments
         return node.method(self, *arguments)

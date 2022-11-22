@@ -8,7 +8,7 @@ from __future__ import annotations
 # Custom libraries
 # ----------------
 
-from std.tools import *
+from built_in.tools import *
 from src.assets.kiwiReference import Reference
 
 if TYPE_CHECKING:
@@ -65,7 +65,7 @@ class String(KiwiConst):
         return other.Add(self)
 
     def toDisplay(self) -> str:
-        return f'{{"text": "{self.value}"}}'
+        return f'{{"text": "{self.toName()}"}}'
 
     def toName(self) -> str:
         return self.value[1:-1]
@@ -101,7 +101,7 @@ class Score(KiwiClass):
         assert False
 
     def toDisplay(self) -> str:
-        pass
+        return f'{{"score":{{"name": "{self.toName()}", "objective": "{self.scoreboard.toName()}"}}}}'
 
     def toName(self) -> str:
         return f'{self.prefix_space}{self.name}'
@@ -141,7 +141,7 @@ class Scoreboard(KiwiClass):
         return f'{self.prefix_space}{self.name}'
 
 
-class Function(KiwiType):
+class Function(KiwiCallable):
     name: str
     constructor: Constructor
 
@@ -153,6 +153,11 @@ class Function(KiwiType):
         self.constructor.newFunction(self.name)
         compiler.visit(body)
         self.constructor.closeFunction()
+
+    def Call(self, compiler: Compiler, *args: Argument):
+        self.constructor.cmd(
+            f'function {self.constructor.configGeneral["project_name"]}:{self.name}'
+        )
 
 
 class Namespace(KiwiType):

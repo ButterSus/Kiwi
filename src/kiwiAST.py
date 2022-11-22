@@ -2122,8 +2122,8 @@ class KiwiParser(Parser):
         self._reset(mark)
         return children
 
-    KEYWORDS = ('function', 'continue', 'while', 'pass', 'promise', 'namespace', 'false', 'else', 'true', 'none', 'private', 'public', 'break', 'if', 'return')
-    SOFT_KEYWORDS = ('case', 'from', 'lambda', 'to', 'default', 'match', 'import', 'as')
+    KEYWORDS = ('pass', 'private', 'namespace', 'function', 'else', 'none', 'break', 'return', 'promise', 'public', 'if', 'while', 'false', 'true', 'continue')
+    SOFT_KEYWORDS = ('case', 'match', 'from', 'lambda', 'import', 'to', 'as', 'default')
 
 
 if __name__ == '__main__':

@@ -13,12 +13,12 @@ from src.assets.kiwiScope import ScopeSystem, Reference, reserve
 from src.kiwiAST import AST
 import src.assets.kiwiASO as kiwi
 import src.assets.kiwiCommands as cmd
-import std as std
+import built_in
 
 if TYPE_CHECKING:
     from build import Constructor
 
-NonRef = std.KiwiClass | std.KiwiConst | std.KiwiType
+NonRef = built_in.KiwiClass | built_in.KiwiConst | built_in.KiwiType | built_in.Function
 Argument = Reference | NonRef
 
 
@@ -48,6 +48,11 @@ class Analyzer(AST_Visitor):
     def Expression(self, node: kiwi.Expression):
         return self.visit(node.value)
 
+    def Call(self, node: kiwi.Call):
+        target: built_in.KiwiCallable = built_in.toNonReference(self.visit(node.target))
+        method = target.Call
+        return cmd.UseMethodWithCompiler(method, [self.visit(node.args)])
+
     # Variables
     # ---------
 
@@ -61,18 +66,18 @@ class Analyzer(AST_Visitor):
     # ---------
 
     def Number(self, node: kiwi.Number):
-        return std.Number(node.value, self.constructor)
+        return built_in.Number(node.value, self.constructor)
 
     def String(self, node: kiwi.String):
-        return std.String(node.value, self.constructor)
+        return built_in.String(node.value, self.constructor)
 
     # Operators
     # ---------
 
     def BinaryOp(self, node: kiwi.BinaryOp):
-        target = std.toNonReference(self.visit(node.x))
-        method = target.__getattribute__(std.StdOps[node.op.value])
-        return cmd.CallMethod(method, [self.visit(node.y)])
+        target = built_in.toNonReference(self.visit(node.x))
+        method = target.__getattribute__(built_in.StdOps[node.op.value])
+        return cmd.UseMethod(method, [self.visit(node.y)])
 
     # Annotations
     # -----------
@@ -84,8 +89,8 @@ class Analyzer(AST_Visitor):
         )
 
     def Annotation(self, node: kiwi.Annotation):
-        data_type: Type[std.KiwiClass] = self.visit(node.data_type).var
-        result: List[cmd.CallMethod] = list()
+        data_type: Type[built_in.KiwiClass] = self.visit(node.data_type).var
+        result: List[cmd.UseMethod] = list()
         for target in node.targets:
             # Target should be expression
             # ---------------------------
@@ -105,7 +110,7 @@ class Analyzer(AST_Visitor):
             variable = data_type(target.toString(), self.constructor)
             self.scope.write(target, variable)
             arguments = self.visit(node.args)
-            result.append(cmd.CallMethod(variable.Annotation, arguments))
+            result.append(cmd.UseMethod(variable.Annotation, arguments))
 
         return tuple(result)
 
@@ -115,10 +120,10 @@ class Analyzer(AST_Visitor):
     def Assignment(self, node: kiwi.Assignment):
         targets: List[Reference] = list(map(self.visit, node.targets))
         values: List[Argument] = list(map(self.visit, node.values))
-        result: List[cmd.CallMethod] = list()
+        result: List[cmd.UseMethod] = list()
         assert len(values) == len(targets)
         for target, value in zip(targets, values):
-            result.append(cmd.CallMethod(
+            result.append(cmd.UseMethod(
                 target.var.Assignment, [value]
             ))
         return tuple(result)
@@ -138,10 +143,10 @@ class Analyzer(AST_Visitor):
         # -----------------------
 
         target = node.name.toAttr()
-        variable: std.Function = std.Function(target.toString(), self.constructor)
+        variable: built_in.Function = built_in.Function(target.toString(), self.constructor)
         self.scope.write(target, variable)
 
-        return cmd.CallMethodWithCompiler(
+        return cmd.UseMethodWithCompiler(
             variable.Annotation, [body]
         )
 
@@ -165,11 +170,11 @@ class Analyzer(AST_Visitor):
         # -----------------------
 
         target = reserve(node.name.toAttr())
-        variable: std.Namespace = std.Namespace(
+        variable: built_in.Namespace = built_in.Namespace(
             target.toString()[1:],
             self.constructor)
         self.scope.write(target, variable)
 
-        return cmd.CallMethodWithCompiler(
+        return cmd.UseMethodWithCompiler(
             variable.Annotation, [body_private, body_public, body_default]
         )

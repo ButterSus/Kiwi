@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TextIO
 from pathlib import Path
-from std import *
+from built_in import *
 from shutil import rmtree
 import json
 
@@ -48,7 +48,7 @@ class Constructor:
         """
 
         self.directories.bin = Path(self.configGeneral['output_directory'])
-        rmtree(self.directories.bin)
+        rmtree(self.directories.bin, ignore_errors=True)
         self.directories.bin.mkdir(exist_ok=True)
 
         self.directories.data = Path(self.directories.bin / 'data')

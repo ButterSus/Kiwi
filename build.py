@@ -15,7 +15,7 @@ from pathlib import Path
 
 from src.kiwiTokenizer import Tokenizer
 from src.kiwiAST import AST
-from std import Namespace
+from built_in import Namespace
 from src.assets.kiwiASO import Alias
 from src.assets.kiwiConstructor import Constructor
 from src.kiwiAnalyzer import Analyzer

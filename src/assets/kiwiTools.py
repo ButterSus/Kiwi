@@ -13,7 +13,7 @@ from itertools import chain
 
 import src.assets.kiwiColors as colors
 import src.assets.kiwiASO as kiwi
-import std
+import built_in
 from src.assets.kiwiCommands import Command
 from src.kiwiTokenizer import Tokenize, generate_tokens, StringIO, Tokenizer
 from src.assets.kiwiScope import ScopeSystem, ScopeType, Reference
@@ -46,9 +46,12 @@ def dumpAST(module: kiwi.Module) -> str:
         if isclass(node):
             return f'{colors.Cyan}<instance of {colors.Magenta+colors.BackgroundBlack} ' \
                    f'{node.__name__} {colors.BackgroundDefault + colors.Cyan}>{color}'
-        if isinstance(node, std.KiwiType):
+        if isinstance(node, built_in.KiwiClass):
             return f'{colors.Cyan}<{node.__class__.__name__} {colors.Magenta + colors.BackgroundBlack} ' \
                    f'{node.name} {colors.BackgroundDefault + colors.Cyan}>{color}'
+        if isinstance(node, built_in.KiwiConst):
+            return f'{colors.Cyan}<{node.__class__.__name__} {colors.Magenta + colors.BackgroundBlack} ' \
+                   f'{node.value} {colors.BackgroundDefault + colors.Cyan}>{color}'
         if isinstance(node, kiwi.Token):
             ast_color = color if node.color is None else node.color
             return f'{ast_color} {node} {color}'
@@ -72,7 +75,7 @@ def dumpAST(module: kiwi.Module) -> str:
             return f'{colors.Yellow + colors.Underlined + colors.BackgroundDefault}' \
                    f'{node.__class__.__name__ + colors.ResetUnderlined}' \
                    f'({", ".join(items)}{colors.Yellow}){color}'
-        return colors.White + str(node)
+        return colors.White + str(node) + color
 
     return f(module) + colors.ResetAll
 
@@ -100,7 +103,7 @@ def dumpScopeSystem(scope: ScopeSystem):
                    f'{".".join(node.showKeys)} {colors.BackgroundDefault + colors.Cyan}>{col}'
         if isclass(node):
             return f'<instance of {colors.Magenta + colors.BackgroundBlack} {node.__name__} {col}>'
-        if isinstance(node, std.KiwiType):
+        if isinstance(node, built_in.KiwiType):
             return f'<{node.__class__.__name__} {colors.Magenta + colors.BackgroundBlack} {node.name} {col}>'
         if isinstance(node, kiwi.AST):
             items = list()
@@ -163,7 +166,7 @@ class AST_Visitor:
                 visited = self.visit(attribute)
                 node.__setattr__(annotation, visited)
             return node
-        if isinstance(node, std.KiwiType):
+        if isinstance(node, built_in.KiwiType):
             if function := self.knockCall(node):
                 return function(node)
             return node
