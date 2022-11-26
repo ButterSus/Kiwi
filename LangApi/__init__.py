@@ -1,7 +1,5 @@
-"""@package docstring
-Documentation for this module.
+"""
 
-More details.
 """
 
 from __future__ import annotations
