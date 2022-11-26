@@ -10,18 +10,15 @@ from dataclasses import dataclass
 from typing import TypedDict, Any, List
 from pathlib import Path
 
+from LangApi import API
 # Custom libraries
 # ----------------
 
-from src.kiwiTokenizer import Tokenizer
-from src.kiwiAST import AST
-from built_in import Namespace
-from src.assets.kiwiASO import Alias
-from src.assets.kiwiConstructor import Constructor
-from src.kiwiAnalyzer import Analyzer
-from src.kiwiCompiler import Compiler
-from src.assets.kiwiTools import dumpAST, dumpTokenizer, dumpScopeSystem
-from src.assets.kiwiScope import ScopeType
+from header.kiwiTokenizer import Tokenizer
+from header.kiwiAST import AST
+from header.components.kiwiConstructor import Constructor
+from header.kiwiAnalyzer import Analyzer
+from header.components.kiwiTools import dumpAST, dumpTokenizer, dumpScopeSystem
 
 
 # Dict with default values
@@ -214,33 +211,8 @@ class ModuleWirer:
 
             libScope = dict()
             for alias in ast.module.imports:
-                # If used <from ... import ...>
-                # -----------------------------
-
-                if isinstance(alias.as_name, list):
-                    result = self.openModule(
-                        self.getPath(alias.directory)
-                    ).analyzer.scope
-
-                    for fromAlias in alias.as_name:
-                        fromAlias: Alias
-                        found_content = result.globalScope.get(fromAlias.directory, ignoreScope=False)
-                        libScope[fromAlias.as_name] = found_content
-                        if isinstance(found_content, ScopeType):
-                            libScope[f'.{fromAlias.as_name}'] = result.globalScope.get(fromAlias.directory)
-                    continue
-
-                # If not used
-                # -----------
-
-                libScope[alias.as_name] = self.openModule(
-                    self.getPath(alias.directory)
-                ).analyzer.scope.globalScope
-
-                libScope[f'.{alias.as_name}'] = Namespace(
-                    f'.{alias.as_name}',
-                    self.constructor
-                )
+                ...
+                # TODO: IMPORT SYSTEM
 
             # Compiling process
             # -----------------
@@ -264,7 +236,6 @@ class Builder:
     ast: AST
     analyzer: Analyzer
     moduleWirer: ModuleWirer
-    compiler: Compiler
 
     # General parameters
     # ------------------
@@ -279,8 +250,8 @@ class Builder:
         if self.configGeneral['debug']:
             from subprocess import run, DEVNULL
             run(
-                f'python -m pegen {Path(__file__).parent / "src/assets/kiwi.gram"} -o'
-                f' {Path(__file__).parent / "src/kiwiAST.py"} -v'.split(),
+                f'python -m pegen {Path(__file__).parent / "header/components/kiwi.gram"} -o'
+                f' {Path(__file__).parent / "header/kiwiAST.py"} -v'.split(),
                 stdout=DEVNULL
             )
 
@@ -297,15 +268,9 @@ class Builder:
             self.tokenizer = self.moduleWirer.module.tokenizer
             self.ast = self.moduleWirer.module.ast
             self.analyzer = self.moduleWirer.module.analyzer
-            self.compiler = Compiler(self.ast, self.analyzer.scope, self.constructor)
-
             print(dumpAST(self.ast.module))
-            print(dumpScopeSystem(self.analyzer.scope))
 
-        # Some clear after finish
-        # -----------------------
-
-        self.constructor.finish()
+        self.analyzer.api.visit(self.ast.module.body)
 
 
 if __name__ == '__main__':

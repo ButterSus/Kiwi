@@ -9,8 +9,8 @@ from dataclasses import dataclass
 # Custom libraries
 # ----------------
 
-import src.assets.kiwiColors as colors
-from src.assets.kiwiScope import Reference, Attr
+import header.components.kiwiColors as colors
+from header.components.kiwiScope import Attr
 
 
 # Colors for dumping
@@ -286,7 +286,7 @@ class Number(str, Token):
     pass
 
 
-variable = Name | Attribute | Reference
+variable = Name | Attribute
 
 expression = \
     Expression | \
@@ -302,7 +302,7 @@ expression = \
     String | \
     Number
 
-data_type = expression | Reference
+data_type = expression
 
 simple_stmt = \
     Assignment | \

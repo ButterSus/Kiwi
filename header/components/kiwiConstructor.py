@@ -3,9 +3,8 @@ from __future__ import annotations
 # Default libraries
 # -----------------
 
-from typing import TYPE_CHECKING, TextIO
+from typing import TYPE_CHECKING
 from pathlib import Path
-from built_in import *
 from shutil import rmtree
 import json
 
@@ -40,7 +39,6 @@ class Constructor:
         self.directories = Directories()
         self.folders()
         self.files()
-        self.interface()
 
     def folders(self):
         """
@@ -96,53 +94,3 @@ class Constructor:
                     "description": (self.configGeneral['description'])
                 }
             }, indent=4))
-
-    def finish(self):
-        self.fileStack[-1].close()
-        self.fileStack.pop(-1)
-
-    # Interface for compiler
-    # ----------------------
-
-    fileStack: List[TextIO]
-    spaceStack: List[str]
-
-    def interface(self):
-        self.fileStack, self.spaceStack = list(), list()
-        self.fileStack.append((self.directories.functions / 'init').with_suffix('.mcfunction').open('a'))
-        self.glScoreboard = Scoreboard(self.configGeneral['project_name'], self)
-        self.tmpScoreboard = Scoreboard(f"{self.configGeneral['project_name']}.temp", self)
-        self.glScoreboard.Annotation(String('\"dummy\"', self))
-
-    def newFunction(self, name: str):
-        self.spaceStack.append(name)
-        self.fileStack.append((self.directories.functions / name).with_suffix('.mcfunction').open('a'))
-
-    def closeFunction(self):
-        self.spaceStack.pop(-1)
-        self.fileStack[-1].close()
-        self.fileStack.pop(-1)
-
-    def getTemp(self):
-        pass  # TODO: Make temporary variables
-
-    def newNamespace(self, name: str):
-        self.spaceStack.append(name)
-
-    def closeNamespace(self):
-        self.spaceStack.pop(-1)
-
-    def cmd(self, text: str):
-        self.fileStack[-1].write(text + '\n')
-
-    def _get_prefix(self) -> str:
-        postfix = '.' if self.spaceStack else ''
-        return self.configGeneral['space_separator'].join(self.spaceStack) + postfix
-
-    # Default attributes
-    # ------------------
-
-    glScoreboard: Scoreboard
-    tmpScoreboard: Scoreboard
-    criteria: String = String('\"dummy\"')
-    prefix_space: str = property(fget=_get_prefix)

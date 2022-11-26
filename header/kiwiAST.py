@@ -11,7 +11,7 @@ from itertools import chain
 
 from pegen.parser import memoize, memoize_left_rec, Parser
 from pegen.tokenizer import Tokenizer
-import src.assets.kiwiASO as kiwi
+import header.components.kiwiASO as kiwi
 
 
 class AST:
@@ -2122,8 +2122,8 @@ class KiwiParser(Parser):
         self._reset(mark)
         return children
 
-    KEYWORDS = ('pass', 'private', 'namespace', 'function', 'else', 'none', 'break', 'return', 'promise', 'public', 'if', 'while', 'false', 'true', 'continue')
-    SOFT_KEYWORDS = ('case', 'match', 'from', 'lambda', 'import', 'to', 'as', 'default')
+    KEYWORDS = ('namespace', 'break', 'continue', 'else', 'if', 'public', 'function', 'none', 'while', 'private', 'return', 'true', 'promise', 'false', 'pass')
+    SOFT_KEYWORDS = ('lambda', 'match', 'import', 'case', 'default', 'as', 'to', 'from')
 
 
 if __name__ == '__main__':

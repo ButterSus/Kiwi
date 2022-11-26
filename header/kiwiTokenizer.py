@@ -6,7 +6,6 @@ from __future__ import annotations
 from tokenize import TokenInfo, NEWLINE, NL, DEDENT, generate_tokens
 from io import StringIO
 from typing import Iterator
-from copy import copy
 
 # Custom libraries
 # ----------------

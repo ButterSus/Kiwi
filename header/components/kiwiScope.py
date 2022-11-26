@@ -7,13 +7,7 @@ from typing import Optional, Set, Any
 
 # Custom libraries
 
-from src.assets.kiwiReference import Reference
-import built_in
-
-
-def reserve(node):
-    node[-1] = f'.{node[-1]}'
-    return node
+...
 
 
 class Attr(list):
@@ -34,45 +28,11 @@ class ScopeType:
         self.content = content
         self.parent = parent
 
-    def reference(self, keys: Key, *, isAttribute=False, showKeys: Key = None) -> Reference:
-        if isAttribute:
-            assert self.exists(keys)
-            assert not self.isHided(keys)
-            if len(keys) == 1:
-                ref = Reference(self, keys[0], showKeys)
-                if isinstance(ref.var, ScopeType):
-                    keys = reserve(keys)
-                    assert self.exists(keys)
-                    return Reference(self, keys[0], showKeys)
-                return ref
-            result: ScopeType = self.content[keys[0]]
-            assert isinstance(result, ScopeType)
-            return result.reference(Attr(keys[1:]), isAttribute=True, showKeys=showKeys)
-        keys = Attr([keys]) if not isinstance(keys, Attr) else keys
-        if showKeys is None:
-            showKeys = keys
-        if not self.exists(keys):
-            assert self.parent
-            return self.parent.reference(keys, showKeys=showKeys)
-        if len(keys) == 1:
-            ref = Reference(self, keys[0], showKeys)
-            if isinstance(ref.var, ScopeType):
-                keys = reserve(keys)
-                assert self.exists(keys)
-                return Reference(self, keys[0], showKeys)
-            return ref
-        return self.reference(keys, isAttribute=True, showKeys=showKeys)
-
     def write(self, keys: Key, value: Any, *, isAttribute=False) -> True:
         if isAttribute:
             if self.isHided(keys):
                 return False
             if len(keys) == 1:
-                if self.exists(keys):
-                    if isinstance(self.content[keys[0]], ScopeType):
-                        keys = reserve(keys)
-                        self.content[keys[0]] = value
-                        return True
                 self.content[keys[0]] = value
                 return True
             if not self.exists(keys):
@@ -83,11 +43,6 @@ class ScopeType:
             return result.write(Attr(keys[1:]), value, isAttribute=True)
         keys = Attr([keys]) if not isinstance(keys, Attr) else keys
         if len(keys) == 1:
-            if self.exists(keys):
-                if isinstance(self.content[keys[0]], ScopeType):
-                    keys = reserve(keys)
-                    self.content[keys[0]] = value
-                    return True
             self.content[keys[0]] = value
             return True
         if not self.exists(keys) and self.parent:
@@ -100,11 +55,6 @@ class ScopeType:
             assert not self.isHided(keys)
             if len(keys) == 1:
                 result = self.content[keys[0]]
-                if isinstance(result, ScopeType) and ignoreScope:
-                    keys = reserve(keys)
-                    assert self.exists(keys)
-                    result = self.content[keys[0]]
-                    return result
                 return result
             result: ScopeType = self.content[keys[0]]
             return result.get(Attr(keys[1:]), isAttribute=True)
@@ -114,11 +64,6 @@ class ScopeType:
             return self.parent.get(keys)
         if len(keys) == 1:
             result = self.content[keys[0]]
-            if isinstance(result, ScopeType) and ignoreScope:
-                keys = reserve(keys)
-                assert self.exists(keys)
-                result = self.content[keys[0]]
-                return result
             return result
         return self.get(keys, isAttribute=True)
 
@@ -133,7 +78,7 @@ class ScopeType:
 
 class ScopeSystem:
     _iterator = 0
-    _builtInScope: ScopeType = ScopeType(built_in.built_in)
+    _builtInScope: ScopeType = ScopeType(dict())
     globalScope: ScopeType
     localScope: ScopeType
 
@@ -171,9 +116,6 @@ class ScopeSystem:
 
     # VARIABLE METHODS
     # ================
-
-    def ref(self, name: Key) -> Reference:
-        return self.localScope.reference(name)
 
     def get(self, name: Key) -> Any | ScopeType:
         return self.localScope.get(name)
