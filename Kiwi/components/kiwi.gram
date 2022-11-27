@@ -32,7 +32,7 @@ from itertools import chain
 
 from pegen.parser import memoize, memoize_left_rec, Parser
 from pegen.tokenizer import Tokenizer
-import header.components.kiwiASO as kiwi
+import Kiwi.components.kiwiASO as kiwi
 
 
 class AST:
@@ -49,6 +49,7 @@ class AST:
         self.module = self.parser.start()
 
 
+#
 '''
 
 start[kiwi.Module]:

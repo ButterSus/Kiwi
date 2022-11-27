@@ -14,11 +14,11 @@ from LangApi import API
 # Custom libraries
 # ----------------
 
-from header.kiwiTokenizer import Tokenizer
-from header.kiwiAST import AST
-from header.components.kiwiConstructor import Constructor
-from header.kiwiAnalyzer import Analyzer
-from header.components.kiwiTools import dumpAST, dumpTokenizer, dumpScopeSystem
+from Kiwi.kiwiTokenizer import Tokenizer
+from Kiwi.kiwiAST import AST
+from Kiwi.components.kiwiConstructor import Constructor
+from Kiwi.kiwiAnalyzer import Analyzer
+from Kiwi.components.kiwiTools import dumpAST, dumpTokenizer, dumpScopeSystem
 
 
 # Dict with default values
@@ -166,6 +166,7 @@ class Module:
     tokenizer: Tokenizer
     ast: AST
     analyzer: Analyzer
+    api: API
 
 
 class ModuleWirer:
@@ -218,7 +219,7 @@ class ModuleWirer:
             # -----------------
 
             analyzer = Analyzer(ast, libScope, self.constructor)
-            return Module(tokenizer, analyzer.ast, analyzer)
+            return Module(tokenizer, analyzer.ast, analyzer, analyzer.api)
 
 
 class Builder:
@@ -235,6 +236,7 @@ class Builder:
     tokenizer: Tokenizer
     ast: AST
     analyzer: Analyzer
+    api: API
     moduleWirer: ModuleWirer
 
     # General parameters
@@ -250,8 +252,8 @@ class Builder:
         if self.configGeneral['debug']:
             from subprocess import run, DEVNULL
             run(
-                f'python -m pegen {Path(__file__).parent / "header/components/kiwi.gram"} -o'
-                f' {Path(__file__).parent / "header/kiwiAST.py"} -v'.split(),
+                f'python -m pegen {Path(__file__).parent / "Kiwi/components/kiwi.gram"} -o'
+                f' {Path(__file__).parent / "Kiwi/kiwiAST.py"} -v'.split(),
                 stdout=DEVNULL
             )
 
@@ -261,16 +263,21 @@ class Builder:
         self.moduleWirer = ModuleWirer(self.configGeneral['entry_file'],
                                        self.configGeneral, self.constructor)
 
+        self.tokenizer = self.moduleWirer.module.tokenizer
+        self.ast = self.moduleWirer.module.ast
+        self.analyzer = self.moduleWirer.module.analyzer
+        self.api = self.moduleWirer.module.api
+
         # Only for debugging (POST)
         # -------------------------
 
         if self.configGeneral['debug']:
-            self.tokenizer = self.moduleWirer.module.tokenizer
-            self.ast = self.moduleWirer.module.ast
-            self.analyzer = self.moduleWirer.module.analyzer
             print(dumpAST(self.ast.module))
+            print(dumpScopeSystem(self.analyzer.scope))
 
-        self.analyzer.api.visit(self.ast.module.body)
+        self.api.visit(
+            self.ast.module.body)
+        self.api.finish()
 
 
 if __name__ == '__main__':

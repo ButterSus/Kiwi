@@ -14,6 +14,9 @@ class Attr(list):
     def toString(self) -> str:
         return str(self[-1])
 
+    def toName(self) -> str:
+        return '.'.join(self)
+
 
 Key = str | Attr
 
@@ -23,6 +26,7 @@ class ScopeType:
     content: dict
     hide: Set[str] = set()
     parent: Optional[ScopeType]
+    name: str
 
     def __init__(self, content: dict, parent: Optional[ScopeType] = None):
         self.content = content
@@ -100,6 +104,20 @@ class ScopeSystem:
             name, ScopeType(dict(), self.localScope)
         )
         self.localScope = self.localScope.get(name, ignoreScope=False)
+        self.localScope.name = name
+
+    def useCustomSpace(self, name: str, space: ScopeType, hideMode=False):
+        if self.localScope.private_mode:
+            name = name[0] if isinstance(name, Attr) else name
+            self.localScope.hide.add(name)
+        space.content = dict()
+        space.parent = self.localScope
+        self.localScope.write(
+            name, space
+        )
+        self.localScope = self.localScope.get(name, ignoreScope=False)
+        self.localScope.name = name
+        self.localScope.private_mode = hideMode
 
     def newLocalSpace(self):
         if self.localScope.private_mode:
@@ -108,6 +126,7 @@ class ScopeSystem:
             str(self._iterator), ScopeType(dict(), self.localScope)
         )
         self.localScope = self.localScope.get(str(self._iterator), ignoreScope=False)
+        self.localScope.name = str(self._iterator)
         self._iterator += 1
 
     def leaveSpace(self):
@@ -134,3 +153,10 @@ class ScopeSystem:
 
     def disablePrivate(self):
         self.localScope.private_mode = False
+
+    def getAttr(self, scope: ScopeType = None) -> Attr:
+        if scope is None:
+            return self.getAttr(self.localScope)
+        if scope is self.globalScope:
+            return Attr()
+        return Attr(self.getAttr(scope.parent) + Attr([scope.name]))

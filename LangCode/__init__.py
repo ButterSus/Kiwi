@@ -10,4 +10,5 @@ from __future__ import annotations
 
 from LangCode.constant import *
 from LangCode.math import *
-from LangCode.built_in import built_init
+from LangCode.etc import *
+from LangCode.built_in import built_annotationsInit, built_codeInit

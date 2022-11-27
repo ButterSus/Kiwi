@@ -1,2 +1,10 @@
-score
-score
+namespace Kringe:
+        b: score = 4
+
+namespace Math:
+    a: score
+    a = 5
+
+
+
+    Kringe.b = 5

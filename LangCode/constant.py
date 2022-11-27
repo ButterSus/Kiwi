@@ -11,78 +11,58 @@ from __future__ import annotations
 from LangApi import *
 
 
-class Number(Constant, SupportArithmetic):
+class Number(Formalizable, SupportAdd, SupportSub,
+             SupportMul, SupportDiv, SupportMod):
     value: int
 
-    def Annotation(self, token: str, *args: Argument) -> Number:
+    def Formalize(self, token: str) -> Number:
         self.value = int(token)
         return self
 
-    def Add(self, other: Argument) -> Optional[Argument]:
-        if isinstance(other, Number):
-            self.value += other.value
-            return self
-        assert False
-
-    def Sub(self, other: Argument) -> Optional[Argument]:
-        if isinstance(other, Number):
-            self.value -= other.value
-            return self
-        assert False
-
-    def Mul(self, other: Argument) -> Optional[Argument]:
-        if isinstance(other, Number):
-            self.value *= other.value
-            return self
-        assert False
-
-    def Div(self, other: Argument) -> Optional[Argument]:
-        if isinstance(other, Number):
-            self.value /= other.value
-            return self
-        assert False
-
-    def Mod(self, other: Argument) -> Optional[Argument]:
-        if isinstance(other, Number):
-            self.value %= other.value
-            return self
-        assert False
-
-
-class String(Constant, SupportArithmetic):
-    value: str
-
-    def Annotation(self, token: str, *args: Argument) -> String:
-        self.value = str(token)
+    def Add(self, other: Number) -> Number:
+        self.value += other.value
         return self
 
-    def Add(self, other: Argument) -> Optional[Argument]:
+    def Sub(self, other: Number) -> Number:
+        self.value -= other.value
+        return self
+
+    def Mul(self, other: Number) -> Number:
+        self.value *= other.value
+        return self
+
+    def Div(self, other: Number) -> Number:
+        self.value /= other.value
+        return self
+
+    def Mod(self, other: Number) -> Number:
+        self.value %= other.value
+        return self
+
+
+class String(Formalizable, SupportAdd,
+             SupportSub, SupportMul):
+    value: str
+
+    def Formalize(self, token: str) -> String:
+        self.value = str(token)[1:-1]
+        return self
+
+    def Add(self, other: Abstract) -> Optional[Abstract]:
         if isinstance(other, String):
             self.value += other.value
             return self
         assert False
 
-    def Sub(self, other: Argument) -> Optional[Argument]:
+    def Sub(self, other: Abstract) -> Optional[Abstract]:
         if isinstance(other, String):
             self.value -= other.value
             return self
         assert False
 
-    def Mul(self, other: Argument) -> Optional[Argument]:
+    def Mul(self, other: Abstract) -> Optional[Abstract]:
         if isinstance(other, String):
             self.value *= other.value
-            return self
-        assert False
-
-    def Div(self, other: Argument) -> Optional[Argument]:
-        if isinstance(other, String):
-            self.value /= other.value
-            return self
-        assert False
-
-    def Mod(self, other: Argument) -> Optional[Argument]:
-        if isinstance(other, String):
-            self.value %= other.value
             return self
         assert False
 

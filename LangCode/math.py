@@ -11,6 +11,6 @@ from __future__ import annotations
 from LangApi import *
 
 
-class Expression(Abstract):
-    def Annotation(self, value: Construct, *_) -> list | Construct:
+class Expression(Formalizable):
+    def Formalize(self, value: Construct) -> Abstract:
         return self.api.visit(value)

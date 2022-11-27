@@ -9,17 +9,17 @@ from __future__ import annotations
 # Default libraries
 # -----------------
 
-from typing import Optional, Any, Type
+from typing import Optional, Any
 from abc import ABC, abstractmethod
 
 # Custom libraries
 # ----------------
 
-from LangApi.api import API, Construct
+from LangApi.api import API, Attr
 
 
-# BASIC OBJECTS
-# =============
+# BASIC CLASS
+# ===========
 
 
 class Abstract(ABC):
@@ -29,75 +29,203 @@ class Abstract(ABC):
         self.api = api
 
 
-class Argument(Abstract, ABC):
-    @abstractmethod
-    def Annotation(self, *args: Argument) -> Optional[Argument]:
-        ...
+# BASIC PROPERTIES
+# ================
 
 
-class Constant(Argument, ABC):
-    value: Any
+class ChangeableType(Abstract, ABC):
+    """
+    <self.name>: <self> <ARGS>
 
-    @abstractmethod
-    def Annotation(self, token: str, *args: Argument) -> Type[Constant]:
+    # except for Undefined:
+    <self>: <PARENT> <ARGS>
+    """
+
+    def ChangeType(self, *args: Abstract) -> Optional[Abstract]:
         ...
 
 
 class Callable(Abstract, ABC):
+    """
+    <self> ( <ARGS> )
+    """
+
     @abstractmethod
-    def Call(self, *args: Argument) -> Optional[Argument]:
+    def Call(self, *args: Abstract) -> Optional[Abstract]:
         ...
 
 
-class Function(Argument, Callable, ABC):
-    ...
+class Assignable(Abstract, ABC):
+    """
+    <self> = <ARG>
+    """
+
+    @abstractmethod
+    def Assign(self, arg: Abstract) -> Optional[Abstract]:
+        ...
 
 
-class Class(Argument, Callable, ABC):
-    child: Type[Argument]
+class Formalizable(Abstract, ABC):
+    """
+    <TOKEN>
+    """
+
+    @abstractmethod
+    def Formalize(self, token: str) -> Optional[Abstract]:
+        ...
+
+
+class Declareable(Abstract, ABC):
+    """
+    function <NAME>
+    """
+
+    attr: Attr
+
+    @abstractmethod
+    def Declare(self, *args: Any):
+        ...
+
+
+# BASIC OBJECT TYPES
+# ==================
+
+
+class Class(Callable, ABC):
+    """
+    Used properties:
+    - Callable
+
+    Also:
+    - Added child for <ChangeableType> objects
+    """
+
+    @abstractmethod
+    def GetChild(self) -> Abstract:
+        ...
+
+
+class Variable(ChangeableType, ABC):
+    """
+    Used properties:
+    - ChangeableType
+
+    Also:
+    - Added name for getting a name
+    """
+
+    name: Attr
+
+    def ChangeType(self, name: Attr, *args: Abstract) -> Optional[Abstract]:
+        ...
 
 
 # MATH EXPRESSIONS
 # ================
 
 
-class SupportAdd(Argument, ABC):
+# Arithmetic operators
+# --------------------
+
+
+class SupportAdd(Abstract, ABC):
+    """
+    <self> + <OTHER>
+    """
+
     @abstractmethod
-    def Add(self, other: Argument) -> Optional[Argument]:
+    def Add(self, other: Abstract) -> Optional[Abstract]:
         pass
 
 
-class SupportSub(Argument, ABC):
+class SupportSub(Abstract, ABC):
+    """
+    <self> - <OTHER>
+    """
+
     @abstractmethod
-    def Sub(self, other: Argument) -> Optional[Argument]:
+    def Sub(self, other: Abstract) -> Optional[Abstract]:
         pass
 
 
-class SupportAddSub(SupportAdd, SupportSub, ABC):
-    ...
-
-
-class SupportMul(Argument, ABC):
+class SupportMul(Abstract, ABC):
+    """
+    <self> * <OTHER>
+    """
     @abstractmethod
-    def Mul(self, other: Argument) -> Optional[Argument]:
+    def Mul(self, other: Abstract) -> Optional[Abstract]:
         pass
 
 
-class SupportDiv(Argument, ABC):
+class SupportDiv(Abstract, ABC):
+    """
+    <self> / <OTHER>
+    """
+
     @abstractmethod
-    def Div(self, other: Argument) -> Optional[Argument]:
+    def Div(self, other: Abstract) -> Optional[Abstract]:
         pass
 
 
-class SupportMod(Argument, ABC):
+class SupportMod(Abstract, ABC):
+    """
+    <self> % <OTHER>
+    """
+
     @abstractmethod
-    def Mod(self, other: Argument) -> Optional[Argument]:
+    def Mod(self, other: Abstract) -> Optional[Abstract]:
         pass
 
 
-class SupportMulDivMod(SupportMul, SupportDiv, SupportMod, ABC):
-    ...
+# AugAssignment operators
+# -----------------------
 
 
-class SupportArithmetic(SupportAddSub, SupportMulDivMod, ABC):
-    ...
+class SupportIAdd(Abstract, ABC):
+    """
+    <self> += <OTHER>
+    """
+
+    @abstractmethod
+    def IAdd(self, other: Abstract) -> Optional[Abstract]:
+        pass
+
+
+class SupportISub(Abstract, ABC):
+    """
+    <self> -= <OTHER>
+    """
+
+    @abstractmethod
+    def ISub(self, other: Abstract) -> Optional[Abstract]:
+        pass
+
+
+class SupportIMul(Abstract, ABC):
+    """
+    <self> *= <OTHER>
+    """
+
+    @abstractmethod
+    def IMul(self, other: Abstract) -> Optional[Abstract]:
+        pass
+
+
+class SupportIDiv(Abstract, ABC):
+    """
+    <self> /= <OTHER>
+    """
+
+    @abstractmethod
+    def IDiv(self, other: Abstract) -> Optional[Abstract]:
+        pass
+
+
+class SupportIMod(Abstract, ABC):
+    """
+    <self> %= <OTHER>
+    """
+
+    @abstractmethod
+    def IMod(self, other: Abstract) -> Optional[Abstract]:
+        pass

@@ -9,8 +9,8 @@ from dataclasses import dataclass
 # Custom libraries
 # ----------------
 
-import header.components.kiwiColors as colors
-from header.components.kiwiScope import Attr
+import Kiwi.components.kiwiColors as colors
+from Kiwi.components.kiwiScope import Attr
 
 
 # Colors for dumping
@@ -88,7 +88,7 @@ class AnnAssignment(Theme_Statements, AST):
     targets: List[expression]
     data_type: data_type
     args: List[expression]
-    value: List[expression]
+    values: List[expression]
 
 
 @dataclass

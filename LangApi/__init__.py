@@ -1,7 +1,3 @@
-"""
-
-"""
-
 from __future__ import annotations
 
 # Default libraries
@@ -13,3 +9,4 @@ from __future__ import annotations
 # ----------------
 
 from LangApi.abstract import *
+from LangApi.api import Construct
