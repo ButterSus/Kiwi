@@ -14,39 +14,49 @@ from Kiwi.components.kiwiScope import ScopeType
 import Kiwi.components.kiwiASO as kiwi
 
 
-class Undefined(Declareable, ChangeableType):
+class Undefined(Declareable, InitableType):
     attr: Attr
+    address: Attr
 
-    def Declare(self, name: Attr) -> Undefined:
-        assert isinstance(name, Attr)
-        self.attr = Attr(self.api.analyzer.scope.getAttr() + name)
+    def Declare(self, attr: Attr) -> Undefined:
+        assert isinstance(attr, Attr)
+        self.address = Attr(attr)
+        self.attr = Attr(self.api.analyzer.scope.getAttr() + attr)
         return self
 
-    def ChangeType(self, parent: Variable, *args: Abstract):
+    def InitsType(self, parent: Variable, *args: Abstract):
         self.api.analyzer.scope.write(
-            self.attr, parent.ChangeType(self.attr, *args))
+            self.address, parent.InitsType(self.attr, self.address, *args))
 
 
-class Function(Declareable, ScopeType):
+class Function(ScopeType, Declareable):
     attr: Attr
+
+    def __init__(self, apiObject: API):
+        self.api = apiObject
+        super().__init__(dict())
 
     def Declare(self, name: Attr, body: kiwi.AST):
         assert isinstance(name, Attr)
         self.attr = Attr(self.api.analyzer.scope.getAttr() + name)
 
-        self.api.enterFunction(self.attr.toString())
         self.api.analyzer.scope.useCustomSpace(
             self.attr.toString(), self, hideMode=True
         )
         body = self.api.analyzer.visit(body)
         self.api.analyzer.scope.leaveSpace()
-        return *body, Construct(
-            'Finish',
-            self,
-            []
+        return Construct(
+            'Start', self, [self.attr]
+        ), *body, Construct(
+            'Finish', self, []
         )
 
+    def Start(self, attr: Attr):
+        self.api.enterScope(attr.toString())
+        self.api.enterFunction(attr)
+
     def Finish(self):
+        self.api.closeScope()
         self.api.closeFunction()
 
 
@@ -63,4 +73,14 @@ class Namespace(Declareable, ScopeType):
         )
         default_body = self.api.analyzer.visit(default_body)
         self.api.analyzer.scope.leaveSpace()
-        return tuple(default_body)
+        return Construct(
+            'Start', self, [self.attr]
+        ), *default_body, Construct(
+            'Finish', self, []
+        )
+
+    def Start(self, attr: Attr):
+        self.api.enterScope(attr.toString())
+
+    def Finish(self):
+        self.api.closeScope()

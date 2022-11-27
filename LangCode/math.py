@@ -12,5 +12,8 @@ from LangApi import *
 
 
 class Expression(Formalizable):
-    def Formalize(self, value: Construct) -> Abstract:
-        return self.api.visit(value)
+    def Formalize(self, value: Construct = None) -> Optional[Abstract]:
+        if value is None:
+            return
+        result = self.api.visit(value)
+        return result

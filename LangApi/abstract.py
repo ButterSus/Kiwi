@@ -33,7 +33,7 @@ class Abstract(ABC):
 # ================
 
 
-class ChangeableType(Abstract, ABC):
+class InitableType(Abstract, ABC):
     """
     <self.name>: <self> <ARGS>
 
@@ -41,7 +41,7 @@ class ChangeableType(Abstract, ABC):
     <self>: <PARENT> <ARGS>
     """
 
-    def ChangeType(self, *args: Abstract) -> Optional[Abstract]:
+    def InitsType(self, *args: Abstract) -> Optional[Abstract]:
         ...
 
 
@@ -61,7 +61,7 @@ class Assignable(Abstract, ABC):
     """
 
     @abstractmethod
-    def Assign(self, arg: Abstract) -> Optional[Abstract]:
+    def Assign(self, other: Abstract) -> Optional[Abstract]:
         ...
 
 
@@ -105,7 +105,7 @@ class Class(Callable, ABC):
         ...
 
 
-class Variable(ChangeableType, ABC):
+class Variable(InitableType, ABC):
     """
     Used properties:
     - ChangeableType
@@ -114,9 +114,10 @@ class Variable(ChangeableType, ABC):
     - Added name for getting a name
     """
 
-    name: Attr
+    attr: Attr
+    address: Attr
 
-    def ChangeType(self, name: Attr, *args: Abstract) -> Optional[Abstract]:
+    def InitsType(self, attr: Attr, address: Attr, *args: Abstract) -> Optional[Abstract]:
         ...
 
 

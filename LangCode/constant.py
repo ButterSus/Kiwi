@@ -32,7 +32,7 @@ class Number(Formalizable, SupportAdd, SupportSub,
         return self
 
     def Div(self, other: Number) -> Number:
-        self.value /= other.value
+        self.value //= other.value
         return self
 
     def Mod(self, other: Number) -> Number:
@@ -65,6 +65,3 @@ class String(Formalizable, SupportAdd,
             self.value *= other.value
             return self
         assert False
-
-
-

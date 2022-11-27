@@ -15,7 +15,7 @@ from LangCode import Number, String
 class Scoreboard(Variable):
     criteria: String
 
-    def ChangeType(self, name: Attr, criteria: String = None) -> Scoreboard:
+    def InitsType(self, name: Attr, criteria: String = None) -> Scoreboard:
         # Handle <NAME>
         # -------------
 
@@ -42,15 +42,27 @@ class ScoreboardClass(Class):
         return Scoreboard(self.api)
 
 
-class Score(Variable):
+class Score(Variable, Assignable,
+            SupportAdd, SupportSub,
+            SupportIAdd, SupportISub):
+    attr: Attr
+    address: Attr
     scoreboard: Scoreboard
 
-    def ChangeType(self, name: Attr, scoreboard: Abstract = None) -> Score:
-        # Handle <NAME>
+    def InitsType(self, attr: Attr, address: Attr = None, scoreboard: Abstract = None) -> Score:
+        # Handle <ADDRESS>
+        # ----------------
+
+        if address is None:
+            address = attr
+        assert isinstance(address, Attr)
+        self.address = address
+
+        # Handle <ATTR>
         # -------------
 
-        assert isinstance(name, Attr)
-        self.name = name
+        assert isinstance(attr, Attr)
+        self.attr = attr
 
         # Handle <SCOREBOARD>
         # -------------------
@@ -62,11 +74,68 @@ class Score(Variable):
 
         return self
 
-    def Assign(self, arg: Abstract):
-        if isinstance(arg, Number):
-            self.api.system(f'scoreboard players set {self.name.toName()} '
-                            f'{self.scoreboard.name.toName()} {arg.value}')
-            return
+    def Assign(self, other: Abstract) -> Score:
+        if isinstance(other, Number):
+            self.api.system(f'scoreboard players set {self.attr.toName()} '
+                            f'{self.scoreboard.name.toName()} {other.value}')
+            return self
+        if isinstance(other, Score):
+            self.api.system(f'scoreboard players operation {self.attr.toName()} '
+                            f'{self.scoreboard.name.toName()} = '
+                            f'{other.attr.toName()} {other.scoreboard.name.toName()}')
+            return self
+        assert False
+
+    def Add(self, other: Abstract) -> Score:
+        if isinstance(other, Number):
+            temp = Score(self.api).InitsType(
+                self.api.getTemp()
+            ).Assign(self).IAdd(other)
+            return temp
+        if isinstance(other, Score):
+            temp = Score(self.api).InitsType(
+                self.api.getTemp()
+            ).Assign(self).IAdd(other)
+            return temp
+        assert False
+
+    def IAdd(self, other: Abstract) -> Score:
+        if isinstance(other, Number):
+            self.api.system(f'scoreboard players operation {self.attr.toName()} '
+                            f'{self.scoreboard.name.toName()} add '
+                            f'{other.value}')
+            return self
+        if isinstance(other, Score):
+            self.api.system(f'scoreboard players operation {self.attr.toName()} '
+                            f'{self.scoreboard.name.toName()} += '
+                            f'{other.attr.toName()} {other.scoreboard.name.toName()}')
+            return self
+        assert False
+
+    def Sub(self, other: Abstract) -> Score:
+        if isinstance(other, Number):
+            temp = Score(self.api).InitsType(
+                self.api.getTemp()
+            ).Assign(self).ISub(other)
+            return temp
+        if isinstance(other, Score):
+            temp = Score(self.api).InitsType(
+                self.api.getTemp()
+            ).Assign(self).ISub(other)
+            return temp
+        assert False
+
+    def ISub(self, other: Abstract) -> Score:
+        if isinstance(other, Number):
+            self.api.system(f'scoreboard players operation {self.attr.toName()} '
+                            f'{self.scoreboard.name.toName()} remove '
+                            f'{other.value}')
+            return self
+        if isinstance(other, Score):
+            self.api.system(f'scoreboard players operation {self.attr.toName()} '
+                            f'{self.scoreboard.name.toName()} += '
+                            f'{other.attr.toName()} {other.scoreboard.name.toName()}')
+            return self
         assert False
 
 
@@ -89,7 +158,7 @@ def built_codeInit(apiObject: API):
     # General scoreboard
     # ------------------
 
-    scoreboard = Scoreboard(apiObject).ChangeType(
+    scoreboard = Scoreboard(apiObject).InitsType(
         Attr([apiObject.config['project_name']]))
     apiObject.analyzer.scope.write(
         apiObject.config['project_name'],

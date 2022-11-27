@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from Kiwi.kiwiAnalyzer import Analyzer
     from build import ConfigGeneral
 
+from Kiwi.components.kiwiScope import ScopeType
 from Kiwi.components.kiwiASO import Attr
 
 
@@ -60,11 +61,29 @@ class API:
 
     def _init(self):
         self._path = self.analyzer.constructor.directories.functions
-        self.enterFunction(self.config['project_name'])
+        self.enterFunction(Attr([self.config['project_name']]))
         self.general = self.General()
 
     def finish(self):
         self.closeFunction()
+
+    _scope = Attr()
+
+    def enterScope(self, name: str):
+        self._scope.append(name)
+
+    def closeScope(self):
+        self._scope.pop(-1)
+
+    _counter = 0
+
+    def getTemp(self) -> Attr:
+        result = Attr(self._scope + Attr([f'TMP.{self._counter}']))
+        self._counter += 1
+        return result
+
+    def resetExpression(self):
+        self._counter = 0
 
     def _unpackTuple(self, value: tuple) -> tuple:
         try:
@@ -72,7 +91,7 @@ class API:
         except TypeError:
             return value
 
-    def visit(self, expr: list | Construct) -> list | LangApi.Abstract:
+    def visit(self, expr: list | Construct | ScopeType) -> list | LangApi.Abstract | ScopeType:
         if isinstance(expr, Attr):
             return expr
         if isinstance(expr, list):
@@ -90,13 +109,13 @@ class API:
             parent = self.visit(expr.parent)
             args = self.visit(expr.arguments)
             return parent.__getattribute__(expr.method)(*args)
-        if isclass(expr):
+        if isclass(expr) and not isinstance(expr, ScopeType):
             expr: Any
             return expr(self)
         return expr
 
-    def enterFunction(self, name: str):
-        self._files.append((self._path / name).with_suffix
+    def enterFunction(self, attr: Attr):
+        self._files.append((self._path / attr.toPath()).with_suffix
                            ('.mcfunction').open('a'))
 
     def closeFunction(self):

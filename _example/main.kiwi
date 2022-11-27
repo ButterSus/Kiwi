@@ -1,2 +1,3 @@
-function a():
-    a: score = 5
+function Math():
+    a, b -> score = 1, 2
+    c: score = (a + b) - 3 + 3

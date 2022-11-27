@@ -49,6 +49,13 @@ class Analyzer(AST_Visitor):
             [self.visit(node.value)]
         )
 
+    def Call(self, node: kiwi.Call):
+        return Construct(
+            'Call',
+            self.visit(node.target),
+            self.visit(node.args)
+        )
+
     # CONSTANT / TOKENS
     # =================
 
@@ -90,7 +97,7 @@ class Analyzer(AST_Visitor):
         for target in node.targets:
             self.api.visit(
                 Construct(
-                    'ChangeType',
+                    'InitsType',
                     self.visit(target),
                     [Construct(
                         'GetChild',
@@ -130,7 +137,7 @@ class Analyzer(AST_Visitor):
         return self.api.visit(
             Construct(
                 'Declare',
-                LangCode.Function,
+                LangCode.Function(self.api),
                 [node.name.toAttr(),
                  node.body]
             )

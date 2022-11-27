@@ -4,6 +4,8 @@ from __future__ import annotations
 # -----------------
 
 from typing import Optional, Set, Any
+from pathlib import Path
+from functools import reduce
 
 # Custom libraries
 
@@ -16,6 +18,10 @@ class Attr(list):
 
     def toName(self) -> str:
         return '.'.join(self)
+
+    def toPath(self) -> Path:
+        return reduce(lambda x, y: x / y,
+                      [Path(), *self])
 
 
 Key = str | Attr
@@ -110,7 +116,6 @@ class ScopeSystem:
         if self.localScope.private_mode:
             name = name[0] if isinstance(name, Attr) else name
             self.localScope.hide.add(name)
-        space.content = dict()
         space.parent = self.localScope
         self.localScope.write(
             name, space
