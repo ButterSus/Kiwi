@@ -1,10 +1,2 @@
-namespace Kringe:
-        b: score = 4
-
-namespace Math:
-    a: score
-    a = 5
-
-
-
-    Kringe.b = 5
+function a():
+    a: score = 5
