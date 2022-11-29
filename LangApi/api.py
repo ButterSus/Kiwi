@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 from Kiwi.components.kiwiScope import ScopeType
 from Kiwi.components.kiwiASO import Attr
+from Kiwi.kiwiTokenizer import Tokenizer
 
 
 @dataclass
@@ -124,6 +125,14 @@ class API:
 
     def system(self, text: str):
         self._files[-1].write(text + '\n')
+
+    def eval(self, text: str) -> list | LangApi.Abstract | ScopeType:
+        result = self.analyzer.ast.eval(Tokenizer(text).lexer)
+        return self.visit(self.analyzer.visit(result))
+
+    def exec(self, text: str) -> list | LangApi.Abstract | ScopeType:
+        result = self.analyzer.ast.exec(Tokenizer(text).lexer)
+        return self.visit(self.analyzer.visit(result))
 
     @classmethod
     def build(cls, module_name, scope: Dict[str, Type[LangApi.Abstract]]):

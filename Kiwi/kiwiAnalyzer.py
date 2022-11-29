@@ -49,6 +49,13 @@ class Analyzer(AST_Visitor):
             [self.visit(node.value)]
         )
 
+    def NotFullExpression(self, node: kiwi.NotFullExpression):
+        return Construct(
+            'Formalize',
+            LangCode.NotFullExpression,
+            [self.visit(node.value)]
+        )
+
     def Call(self, node: kiwi.Call):
         return Construct(
             'Call',
@@ -69,11 +76,21 @@ class Analyzer(AST_Visitor):
 
     @staticmethod
     def String(node: kiwi.String):
-        return Construct(
-            'Formalize',
-            LangCode.String,
-            [node.value]
-        )
+        prefix = node.getPrefix()
+        if not prefix:
+            return Construct(
+                'Formalize',
+                LangCode.String,
+                [node]
+            )
+        match prefix:
+            case "f":
+                return Construct(
+                    'Formalize',
+                    LangCode.FString,
+                    [node]
+                )
+        assert False
 
     # VARIABLE NOTATIONS
     # ==================

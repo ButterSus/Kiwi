@@ -11,6 +11,7 @@ from itertools import chain
 
 from pegen.parser import memoize, memoize_left_rec, Parser
 from pegen.tokenizer import Tokenizer
+from typing import List as _List
 import Kiwi.components.kiwiASO as kiwi
 
 
@@ -26,6 +27,12 @@ class AST:
     def __init__(self, tokenizer: Tokenizer):
         self.parser = KiwiParser(tokenizer)
         self.module = self.parser.start()
+
+    def eval(self, tokenizer: Tokenizer) -> kiwi.expression:
+        return KiwiParser(tokenizer).expression()
+
+    def exec(self, tokenizer: Tokenizer) -> _List[kiwi.statement]:
+        return KiwiParser(tokenizer).start().body
 
 
 #
@@ -950,6 +957,35 @@ class KiwiParser(Parser):
         return None
 
     @memoize
+    def notfull_expression(self) -> Optional[Any]:
+        # notfull_expression: lambda_def | inversion '?' inversion ':' inversion | inversion
+        mark = self._mark()
+        if (
+            (lambda_def := self.lambda_def())
+        ):
+            return lambda_def
+        self._reset(mark)
+        if (
+            (c := self.inversion())
+            and
+            (literal := self.expect('?'))
+            and
+            (t := self.inversion())
+            and
+            (literal_1 := self.expect(':'))
+            and
+            (e := self.inversion())
+        ):
+            return kiwi . IfExpression ( c , t , e )
+        self._reset(mark)
+        if (
+            (v := self.inversion())
+        ):
+            return kiwi . NotFullExpression ( v )
+        self._reset(mark)
+        return None
+
+    @memoize
     def lambda_def(self) -> Optional[Any]:
         # lambda_def: "lambda" lambda_parameters ':' expression
         mark = self._mark()
@@ -1360,12 +1396,12 @@ class KiwiParser(Parser):
 
     @memoize
     def group(self) -> Optional[Any]:
-        # group: '(' expression ')'
+        # group: '(' notfull_expression ')'
         mark = self._mark()
         if (
             (literal := self.expect('('))
             and
-            (v := self.expression())
+            (v := self.notfull_expression())
             and
             (literal_1 := self.expect(')'))
         ):
@@ -2125,8 +2161,8 @@ class KiwiParser(Parser):
         self._reset(mark)
         return children
 
-    KEYWORDS = ('private', 'false', 'namespace', 'pass', 'function', 'public', 'promise', 'true', 'continue', 'if', 'while', 'else', 'break', 'none', 'return')
-    SOFT_KEYWORDS = ('import', 'from', 'to', 'as', 'lambda', 'match', 'case', 'default')
+    KEYWORDS = ('public', 'if', 'break', 'function', 'false', 'private', 'while', 'promise', 'none', 'pass', 'return', 'else', 'continue', 'true', 'namespace')
+    SOFT_KEYWORDS = ('match', 'default', 'from', 'lambda', 'case', 'import', 'to', 'as')
 
 
 if __name__ == '__main__':

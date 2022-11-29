@@ -194,6 +194,11 @@ class Expression(Theme_Expressions, AST):
 
 
 @dataclass
+class NotFullExpression(Theme_Expressions, AST):
+    value: expression
+
+
+@dataclass
 class IfExpression(Theme_Expressions, AST):
     condition: expression
     then: expression
@@ -279,7 +284,26 @@ class Word(str, Token):
 
 
 class String(str, Token):
-    pass
+    def getString(self) -> str:
+        value = str()
+        match self.value[-1]:
+            case "\"":
+                value = self.value[self.index("\""):]
+            case "\'":
+                value = self.value[self.index("\'"):]
+
+        match value[-1]:
+            case "\"":
+                return value.strip("\"")
+            case "\'":
+                return value.strip("\'")
+
+    def getPrefix(self) -> str:
+        match self.value[-1]:
+            case "\"":
+                return self.value[:self.index("\"")]
+            case "\'":
+                return self.value[:self.index("\'")]
 
 
 class Number(str, Token):

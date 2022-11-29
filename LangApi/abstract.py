@@ -41,7 +41,7 @@ class InitableType(Abstract, ABC):
     <self>: <PARENT> <ARGS>
     """
 
-    def InitsType(self, *args: Abstract) -> Optional[Abstract]:
+    def InitsType(self, *args: Abstract | Attr) -> Optional[Abstract]:
         ...
 
 
@@ -72,6 +72,16 @@ class Formalizable(Abstract, ABC):
 
     @abstractmethod
     def Formalize(self, token: str) -> Optional[Abstract]:
+        ...
+
+
+class Printable(Abstract, ABC):
+    """
+    print(<self>
+    """
+
+    @abstractmethod
+    def PrintSource(self) -> str:
         ...
 
 

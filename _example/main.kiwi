@@ -1,3 +1,3 @@
-function Math():
-    a, b -> score = 1, 2
-    c: score = (a + b) - 3 + 3
+a, b -> score = 4, 5
+
+print(f"Hello, sum of a + b is {a + b} and it's gud")

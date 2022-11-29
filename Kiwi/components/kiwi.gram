@@ -1,14 +1,14 @@
 # """
 # This code is unlicensed
 # By ButterSus
-# 
+#
 # Previous stage:
 #     Tokenizer
-# 
+#
 # About current stage:
 #     This stage is used to generate Abstract Syntax Tree
 #     AST -> SAO
-# 
+#
 # Next stage:
 #     SAO
 # """
@@ -32,6 +32,7 @@ from itertools import chain
 
 from pegen.parser import memoize, memoize_left_rec, Parser
 from pegen.tokenizer import Tokenizer
+from typing import List as _List
 import Kiwi.components.kiwiASO as kiwi
 
 
@@ -47,6 +48,12 @@ class AST:
     def __init__(self, tokenizer: Tokenizer):
         self.parser = KiwiParser(tokenizer)
         self.module = self.parser.start()
+
+    def eval(self, tokenizer: Tokenizer) -> kiwi.expression:
+        return KiwiParser(tokenizer).expression()
+
+    def exec(self, tokenizer: Tokenizer) -> _List[kiwi.statement]:
+        return KiwiParser(tokenizer).start().body
 
 
 #
@@ -227,6 +234,11 @@ expression:
     | c=inversion '?' t=inversion ':' e=inversion {kiwi.IfExpression(c, t, e)}
     | v=inversion {kiwi.Expression(v)}
 
+notfull_expression:
+    | lambda_def
+    | c=inversion '?' t=inversion ':' e=inversion {kiwi.IfExpression(c, t, e)}
+    | v=inversion {kiwi.NotFullExpression(v)}
+
 lambda_def:
     | "lambda" p=lambda_parameters ':' r=expression {kiwi.LambdaDef(p, r)}
 
@@ -316,7 +328,7 @@ atom:
     | group
 
 group:
-    | '(' v=expression ')' {v}
+    | '(' v=notfull_expression ')' {v}
 
 # FUNCTION CALL ARGUMENTS
 # =======================
