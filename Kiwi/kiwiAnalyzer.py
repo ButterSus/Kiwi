@@ -34,9 +34,7 @@ class Analyzer(AST_Visitor):
         self.ast = ast
         self.scope = ScopeSystem(libScope)
         self.constructor = constructor
-        LangCode.built_annotationsInit(API)
-        self.api = API(self)
-        LangCode.built_codeInit(self.api)
+        self.api = API(LangCode, self)
         self.visit(ast.module)
 
     # EXPRESSIONS

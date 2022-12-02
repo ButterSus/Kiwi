@@ -1,0 +1,7 @@
+a: score = 5
+
+
+b: score = a + 5
+
+
+print(f"Hello, the value is {a + b}")

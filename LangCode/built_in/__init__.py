@@ -140,7 +140,7 @@ class Score(Variable, Assignable,
                             f'{other.value}')
             return self
         if isinstance(other, Score):
-            self.api.system(f'scoreboard players operation {self.attr.toName()} '
+            self.api.system(f'scoreboard players operation {self.atti89o0r.toName()} '
                             f'{self.scoreboard.attr.toName()} += '
                             f'{other.attr.toName()} {other.scoreboard.attr.toName()}')
             return self
@@ -168,7 +168,7 @@ class Print(Callable):
         self.api.system(f'tellraw @a [{",".join(result)}]')
 
 
-def built_annotationsInit(apiObject: Type[API]):
+def built_annotationsInit(apiObject: API):
     apiObject.build('builtins', {
         'score': ScoreClass,
         'scoreboard': ScoreboardClass,
@@ -182,11 +182,16 @@ def built_codeInit(apiObject: API):
     # General scoreboard
     # ------------------
 
+    apiObject.enterScope(Module(apiObject))
     scoreboard = Scoreboard(apiObject).InitsType(
-        Attr([apiObject.config['project_name']]),
-        Attr([apiObject.config['project_name']]))
+        apiObject.useGlobalPrefix([apiObject.config['project_name']]),
+        apiObject.useGlobalPrefix([apiObject.config['project_name']]))
     apiObject.analyzer.scope.write(
         apiObject.config['project_name'],
         scoreboard
     )
     apiObject.general.scoreboard = scoreboard
+
+
+def built_codeFinish(apiObject: API):
+    apiObject.leaveScope()

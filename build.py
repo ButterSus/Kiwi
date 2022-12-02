@@ -54,15 +54,24 @@ class ConfigOptions(TypedDict):
     entry_function: str
     output_directory: str
     default_scope: str
-    space_separator: str
 
 
 configOptions: ConfigOptions = {
     "include_directories": [],
     "entry_function": "main",
     "output_directory": "bin",
-    "default_scope": "public",
-    "space_separator": "."
+    "default_scope": "public"
+}
+
+
+class ConfigExtended(TypedDict):
+    space_separator: str
+    temporary: str
+
+
+configExtended: ConfigExtended = {
+    "space_separator": ".",
+    "temporary": "TMP"
 }
 
 
@@ -84,11 +93,13 @@ configProject: ConfigProject = {
 class ConfigTOML(TypedDict):
     project: ConfigProject
     options: ConfigOptions
+    extended: ConfigExtended
 
 
 configTOML: ConfigTOML = {
     "project": configProject,
-    "options": configOptions
+    "options": configOptions,
+    "extended": configExtended
 }
 
 
@@ -150,10 +161,13 @@ class Terminal:
             = DefaultDict(configTOML, toml.load(str(self.pathGeneral / 'kiwi_project.toml')))
         currentConfigProject: ConfigProject \
             = DefaultDict(configProject, currentConfigTOML['project'])
+        currentConfigExtended: ConfigExtended \
+            = DefaultDict(configExtended, currentConfigTOML['extended'])
         currentConfigOptions: ConfigOptions \
             = DefaultDict(configOptions, currentConfigTOML['options'])
         self.configGeneral = combineDictionaries(
-            self.arguments, currentConfigProject, currentConfigOptions)
+            self.arguments, currentConfigProject,
+            currentConfigExtended, currentConfigOptions)
         self.configGeneral['include_directories'].append('./')
 
 
@@ -210,15 +224,40 @@ class ModuleWirer:
             # Libraries importing
             # -------------------
 
-            libScope = dict()
-            for alias in ast.module.imports:
-                ...
-                # TODO: IMPORT SYSTEM
+            # libScope = dict()
+            # for alias in ast.module.imports:
+            #     # If used <from ... import ...>
+            #     # -----------------------------
+            #
+            #     if isinstance(alias.as_name, list):
+            #         result = self.openModule(
+            #             self.getPath(alias.directory)
+            #         ).analyzer.scope
+            #
+            #         for fromAlias in alias.as_name:
+            #             fromAlias: kiwi.Alias
+            #             found_content = result.globalScope.get(fromAlias.directory, ignoreScope=False)
+            #             libScope[fromAlias.as_name] = found_content
+            #             if isinstance(found_content, ScopeType):
+            #                 libScope[f'.{fromAlias.as_name}'] = result.globalScope.get(fromAlias.directory)
+            #         continue
+            #
+            #     # If not used
+            #     # -----------
+            #
+            #     libScope[alias.as_name] = self.openModule(
+            #         self.getPath(alias.directory)
+            #     ).analyzer.scope.globalScope
+            #
+            #     libScope[f'.{alias.as_name}'] = Namespace(
+            #         f'.{alias.as_name}',
+            #         self.constructor
+            #     )
 
             # Compiling process
             # -----------------
 
-            analyzer = Analyzer(ast, libScope, self.constructor)
+            analyzer = Analyzer(ast, dict(), self.constructor)
             return Module(tokenizer, analyzer.ast, analyzer, analyzer.api)
 
 
@@ -272,6 +311,7 @@ class Builder:
         # -------------------------
 
         if self.configGeneral['debug']:
+            print(dumpTokenizer(self.tokenizer))
             print(dumpAST(self.ast.module))
             print(dumpScopeSystem(self.analyzer.scope))
 

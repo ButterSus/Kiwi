@@ -22,7 +22,7 @@ mc_version = "1.16.5"
 [options]
 
 # Directories with libraries
-include_directories = []
+include_directories = ["lib"]
 
 # Entry point function
 entry_function = "main"

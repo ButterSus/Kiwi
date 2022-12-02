@@ -5,7 +5,7 @@ from inspect import isclass
 # -----------------
 
 from typing import Dict, TYPE_CHECKING, Any,\
-    List, Type, TextIO
+    List, Type
 from dataclasses import dataclass
 from pathlib import Path
 from itertools import chain
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from Kiwi.kiwiAnalyzer import Analyzer
     from build import ConfigGeneral
 
-from Kiwi.components.kiwiScope import ScopeType
+from Kiwi.components.kiwiScope import ScopeType, CodeScope
 from Kiwi.components.kiwiASO import Attr
 from Kiwi.kiwiTokenizer import Tokenizer
 
@@ -38,14 +38,16 @@ class API:
     analyzer: Analyzer
     config: ConfigGeneral
     _path: Path
-    _files: List[TextIO] = list()
+    _files: List[str] = list()
 
     class General:
         scoreboard: LangCode.Scoreboard
     general = General()
-    code: str
+    code: LangCode
 
-    def __init__(self, analyzer: Analyzer):
+    def __init__(self, code: LangCode, analyzer: Analyzer):
+        API.code = code
+        self.code.built_annotationsInit(self.__class__)
         self.analyzer = analyzer
         self.config = analyzer.constructor.configGeneral
         self._init()
@@ -59,29 +61,13 @@ class API:
                 self.analyzer.scope.write(
                     name, value)
             self.analyzer.scope.leaveSpace()
+        self.code.built_codeInit(self)
 
     def _init(self):
-        self._path = self.analyzer.constructor.directories.functions
-        self.enterFunction(Attr([self.config['project_name']]))
         self.general = self.General()
 
     def finish(self):
-        self.closeFunction()
-
-    _scope = Attr()
-
-    def enterScope(self, name: str):
-        self._scope.append(name)
-
-    def closeScope(self):
-        self._scope.pop(-1)
-
-    _counter = 0
-
-    def getTemp(self) -> Attr:
-        result = Attr(self._scope + Attr([f'TMP.{self._counter}']))
-        self._counter += 1
-        return result
+        self.code.built_codeFinish(self)
 
     def resetExpression(self):
         self._counter = 0
@@ -115,16 +101,26 @@ class API:
             return expr(self)
         return expr
 
-    def enterFunction(self, attr: Attr):
-        self._files.append((self._path / attr.toPath()).with_suffix
-                           ('.mcfunction').open('a'))
+    _counter = 0
+    _scopes: List[ScopeType | CodeScope] = list()
 
-    def closeFunction(self):
-        self._files[-1].close()
-        self._files.pop(-1)
+    def getTemp(self) -> Attr:
+        pass
+
+    def useLocalPrefix(self, attr: list | Attr) -> Attr:
+        return Attr(attr)
+
+    def useGlobalPrefix(self, attr: list | Attr) -> Attr:
+        return Attr(['sus'] + attr)
+
+    def enterScope(self, scope: ScopeType):
+        self._scopes.append(scope)
+
+    def leaveScope(self):
+        self._scopes.pop(-1)
 
     def system(self, text: str):
-        self._files[-1].write(text + '\n')
+        self._scopes[-1].code.append(text)
 
     def eval(self, text: str) -> list | LangApi.Abstract | ScopeType:
         result = self.analyzer.ast.eval(Tokenizer(text).lexer)

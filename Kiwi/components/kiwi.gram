@@ -337,7 +337,7 @@ arguments:
     | v=args ','? &')' {v}
 
 args:
-    | v=','.expression+ {v}
+    | v=','.notfull_expression+ {v}
 
 # MATCH KEYS
 # ==========
@@ -349,9 +349,9 @@ match_keys:
     | (',' NEWLINE*).match_key+
 
 match_key:
-    | "default" '->' v=expression {kiwi.MatchKey(None, None, v)}
-    | f=expression "to" t=expression '->' v=expression {kiwi.MatchKey(f, t, v)}
-    | f=expression '->' v=expression {kiwi.MatchKey(f, f, v)}
+    | "default" '->' v=notfull_expression {kiwi.MatchKey(None, None, v)}
+    | f=notfull_expression "to" t=notfull_expression '->' v=expression {kiwi.MatchKey(f, t, v)}
+    | f=notfull_expression '->' v=notfull_expression {kiwi.MatchKey(f, f, v)}
 
 # TOKES
 # -----

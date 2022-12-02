@@ -1,9 +1,3 @@
-"""
-# Abstract
-
-Pass
-"""
-
 from __future__ import annotations
 
 # Default libraries

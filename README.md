@@ -1,7 +1,7 @@
 # Kiwi - a language for describing datapack
 
 Kiwi is a language for describing Minecraft datapack, built with
-a focus on syntax, based on Python and Rust.
+a focus on syntax, based on Python.
 
 Kiwi can be used to any minecraft datapack major project by using import
 systems and high structured code.

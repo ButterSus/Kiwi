@@ -3,13 +3,14 @@ from __future__ import annotations
 # Default libraries
 # -----------------
 
-from typing import Optional, Set, Any
+from typing import Optional, Set, Any, List, TYPE_CHECKING
 from pathlib import Path
 from functools import reduce
 
 # Custom libraries
 
-...
+if TYPE_CHECKING:
+    from LangApi.bytecode import CodeType
 
 
 class Attr(list):
@@ -32,11 +33,12 @@ class ScopeType:
     content: dict
     hide: Set[str] = set()
     parent: Optional[ScopeType]
-    name: str
+    name: str = None
 
-    def __init__(self, content: dict, parent: Optional[ScopeType] = None):
+    def __init__(self, content: dict, parent: Optional[ScopeType] = None, name: str = None):
         self.content = content
         self.parent = parent
+        self.name = name
 
     def write(self, keys: Key, value: Any, *, isAttribute=False) -> True:
         if isAttribute:
@@ -86,6 +88,14 @@ class ScopeType:
         return key[0] in self.hide
 
 
+class CodeScope(ScopeType):
+    code: List[CodeType]
+
+    def __init__(self, *args, **kwargs):
+        self.code = list()
+        super().__init__(*args, **kwargs)
+
+
 class ScopeSystem:
     _iterator = 0
     _builtInScope: ScopeType = ScopeType(dict())
@@ -103,14 +113,16 @@ class ScopeSystem:
     # =============
 
     def newNamedSpace(self, name: str):
+        """
+        Not recommended feature
+        """
         if self.localScope.private_mode:
             name = name[0] if isinstance(name, Attr) else name
             self.localScope.hide.add(name)
         self.localScope.write(
-            name, ScopeType(dict(), self.localScope)
+            name, ScopeType(dict(), self.localScope, name)
         )
         self.localScope = self.localScope.get(name, ignoreScope=False)
-        self.localScope.name = name
 
     def useCustomSpace(self, name: str, space: ScopeType, hideMode=False):
         if self.localScope.private_mode:
@@ -125,13 +137,15 @@ class ScopeSystem:
         self.localScope.private_mode = hideMode
 
     def newLocalSpace(self):
+        """
+        Not recommended feature
+        """
         if self.localScope.private_mode:
             self.localScope.hide.add(str(self._iterator))
         self.localScope.write(
-            str(self._iterator), ScopeType(dict(), self.localScope)
+            str(self._iterator), ScopeType(dict(), self.localScope, str(self._iterator))
         )
         self.localScope = self.localScope.get(str(self._iterator), ignoreScope=False)
-        self.localScope.name = str(self._iterator)
         self._iterator += 1
 
     def leaveSpace(self):
@@ -158,10 +172,3 @@ class ScopeSystem:
 
     def disablePrivate(self):
         self.localScope.private_mode = False
-
-    def getAttr(self, scope: ScopeType = None) -> Attr:
-        if scope is None:
-            return self.getAttr(self.localScope)
-        if scope is self.globalScope:
-            return Attr()
-        return Attr(self.getAttr(scope.parent) + Attr([scope.name]))

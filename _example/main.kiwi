@@ -1,3 +1,2 @@
-a, b -> score = 4, 5
-
-print(f"Hello, sum of a + b is {a + b} and it's gud")
+function a():
+    print("sus")

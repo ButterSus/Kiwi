@@ -1426,7 +1426,7 @@ class KiwiParser(Parser):
 
     @memoize
     def args(self) -> Optional[Any]:
-        # args: ','.expression+
+        # args: ','.notfull_expression+
         mark = self._mark()
         if (
             (v := self._gather_29())
@@ -1467,23 +1467,23 @@ class KiwiParser(Parser):
 
     @memoize
     def match_key(self) -> Optional[Any]:
-        # match_key: "default" '->' expression | expression "to" expression '->' expression | expression '->' expression
+        # match_key: "default" '->' notfull_expression | notfull_expression "to" notfull_expression '->' expression | notfull_expression '->' notfull_expression
         mark = self._mark()
         if (
             (literal := self.expect("default"))
             and
             (literal_1 := self.expect('->'))
             and
-            (v := self.expression())
+            (v := self.notfull_expression())
         ):
             return kiwi . MatchKey ( None , None , v )
         self._reset(mark)
         if (
-            (f := self.expression())
+            (f := self.notfull_expression())
             and
             (literal := self.expect("to"))
             and
-            (t := self.expression())
+            (t := self.notfull_expression())
             and
             (literal_1 := self.expect('->'))
             and
@@ -1492,11 +1492,11 @@ class KiwiParser(Parser):
             return kiwi . MatchKey ( f , t , v )
         self._reset(mark)
         if (
-            (f := self.expression())
+            (f := self.notfull_expression())
             and
             (literal := self.expect('->'))
             and
-            (v := self.expression())
+            (v := self.notfull_expression())
         ):
             return kiwi . MatchKey ( f , f , v )
         self._reset(mark)
@@ -1961,13 +1961,13 @@ class KiwiParser(Parser):
 
     @memoize
     def _loop0_30(self) -> Optional[Any]:
-        # _loop0_30: ',' expression
+        # _loop0_30: ',' notfull_expression
         mark = self._mark()
         children = []
         while (
             (literal := self.expect(','))
             and
-            (elem := self.expression())
+            (elem := self.notfull_expression())
         ):
             children.append(elem)
             mark = self._mark()
@@ -1976,10 +1976,10 @@ class KiwiParser(Parser):
 
     @memoize
     def _gather_29(self) -> Optional[Any]:
-        # _gather_29: expression _loop0_30
+        # _gather_29: notfull_expression _loop0_30
         mark = self._mark()
         if (
-            (elem := self.expression())
+            (elem := self.notfull_expression())
             is not None
             and
             (seq := self._loop0_30())
@@ -2161,8 +2161,8 @@ class KiwiParser(Parser):
         self._reset(mark)
         return children
 
-    KEYWORDS = ('public', 'if', 'break', 'function', 'false', 'private', 'while', 'promise', 'none', 'pass', 'return', 'else', 'continue', 'true', 'namespace')
-    SOFT_KEYWORDS = ('match', 'default', 'from', 'lambda', 'case', 'import', 'to', 'as')
+    KEYWORDS = ('continue', 'public', 'namespace', 'else', 'true', 'false', 'pass', 'while', 'if', 'function', 'none', 'promise', 'return', 'break', 'private')
+    SOFT_KEYWORDS = ('lambda', 'from', 'import', 'case', 'default', 'as', 'to', 'match')
 
 
 if __name__ == '__main__':
