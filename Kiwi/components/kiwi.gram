@@ -60,10 +60,22 @@ class AST:
 '''
 
 start[kiwi.Module]:
-    | i=import_stmts v=statements ENDMARKER {kiwi.Module(i, v)}
-    | i=import_stmts ENDMARKER {kiwi.Module(i, [])}
-    | v=statements ENDMARKER {kiwi.Module([], v)}
-    | ENDMARKER {kiwi.Module([], [])}
+    | i=import_stmts v=statements ENDMARKER {
+        i[0].start, v[-1].end,
+        kiwi.Module(i, v)
+        }
+    | i=import_stmts ENDMARKER {kiwi.Module(
+        i[0].start, i[-1].end,
+        i, []
+        )}
+    | v=statements ENDMARKER {kiwi.Module(
+        v[0].start, v[-1].end,
+        [], v
+        )}
+    | ENDMARKER {kiwi.Module(
+        ..., ...,
+        [], []
+        )}
 
 # IMPORT STATEMENTS
 # =================
@@ -75,15 +87,24 @@ import_stmt:
     | "import" v=dotted_as_names (NEWLINE | ';')+ {v}
 
 from_import_stmt:
-    | "from" v=dotted_name a=import_stmt {[kiwi.Alias(''.join(v), a)]}
+    | s="from" v=dotted_name a=import_stmt {[
+        s.start, a[-1].end,
+        kiwi.Alias(''.join(v), a)
+        ]}
     
 
 dotted_as_names:
     | ','.dotted_as_name+
 
 dotted_as_name:
-    | v=dotted_name "as" a=NAME_ {kiwi.Alias(''.join(v), a)}
-    | v=dotted_name {kiwi.Alias(''.join(v), v[-1])}
+    | v=dotted_name "as" a=NAME_ {kiwi.Alias(
+        v[0].start, a.end,
+        ''.join(v), a
+        )}
+    | v=dotted_name {kiwi.Alias(
+        v[0].start, v[-1].end,
+        ''.join(v), v[-1]
+        )}
 
 dotted_name:
     | v=dotted_name '.' a=NAME_ {[*v, a]}
@@ -106,9 +127,15 @@ simple_stmt:
     | assignment
     | expression
     | return_stmt
-    | 'pass' {kiwi.Pass()}
-    | 'break' {kiwi.Break()}
-    | 'continue' {kiwi.Continue()}
+    | s='pass' {kiwi.Pass(
+        s.start, s.end
+    )}
+    | s='break' {kiwi.Break(
+        s.start, s.end
+    )}
+    | s='continue' {kiwi.Continue(
+        s.start, s.end
+    )}
 
 compound_stmt:
     | function_def
@@ -121,24 +148,54 @@ compound_stmt:
 # =================
 
 assignment:
-    | a=annotations '=' v=','.expression+ {kiwi.AnnAssignment(*a, v)}
-    | i=','.expression+ '=' v=','.expression+ {kiwi.Assignment(i, v)}
-    | i=','.expression+ o=augassign v=','.expression+ {kiwi.AugAssignment(i, o, v)}
-    | a=annotations {kiwi.Annotation(*a)}
+    | a=annotations '=' v=','.expression+ {kiwi.AnnAssignment(
+        a[0][0].start, v[-1].end,
+        *a, v
+        )}
+    | i=','.expression+ '=' v=','.expression+ {kiwi.Assignment(
+        i[0].start, v[-1].end,
+        i, v
+        )}
+    | i=','.expression+ o=augassign v=','.expression+ {kiwi.AugAssignment(
+        i[0].start, v[-1].end,
+        i, o, v
+        )}
+    | a=annotations {kiwi.Annotation(
+        a[0][0].start, a[-1][-1].end
+        *a
+        )}
 
 annotations:
     | i=expression ':' t=expression a=expression* {[i], t, a}
     | i=','.expression+ '->' t=expression a=expression* {i, t, a}
 
 augassign:
-    | '+=' {kiwi.Token('+=')}
-    | '-=' {kiwi.Token('-=')}
-    | '*=' {kiwi.Token('*=')}
-    | '/=' {kiwi.Token('/=')}
-    | '%=' {kiwi.Token('%=')}
+    | s='+=' {kiwi.Token(
+        s.start, s.end,
+        '+='
+        )}
+    | s='-=' {kiwi.Token(
+        s.start, s.end,
+        '-='
+        )}
+    | s='*=' {kiwi.Token(
+        s.start, s.end,
+        '*='
+        )}
+    | s='/=' {kiwi.Token(
+        s.start, s.end,
+        '/='
+        )}
+    | s='%=' {kiwi.Token(
+        s.start, s.end,
+        '%='
+        )}
 
 return_stmt:
-    | 'return' v=expression {kiwi.Return(v)}
+    | s='return' v=expression {kiwi.Return(
+        s.start, v.end,
+        v
+        )}
 
 # COMPOUND STATEMENTS
 # ===================
@@ -176,46 +233,106 @@ public_block:
 # ---------------------
 
 namespace_def:
-    | 'namespace' i=NAME_ ':' b=hiding_block {kiwi.NamespaceDef(i, *b)}
+    | s='namespace' i=NAME_ ':' b=hiding_block {kiwi.NamespaceDef(
+        s.start, b[-1][-1][-1].end,
+        i, *b
+        )}
 
 # Function definitions
 # --------------------
 
 function_def:
-    | 'function' i=NAME_ '(' p=parameters ')' '->' r=return_param '<' '-' pr=expression ':' b=block {kiwi.FuncDef(i, p[0], p[1], r, pr, b)}
-    | 'function' i=NAME_ '(' p=parameters ')' '<' '-' pr=expression ':' b=block {kiwi.FuncDef(i, p[0], p[1], None, pr, b)}
-    | 'function' i=NAME_ '(' p=parameters ')' '->' r=return_param ':' b=block {kiwi.FuncDef(i, p[0], p[1], r, None, b)}
-    | 'function' i=NAME_ '(' p=parameters ')' ':' b=block {kiwi.FuncDef(i, p[0], p[1], None, None, b)}
+    | s='function' i=NAME_ '(' p=parameters ')' '->' r=return_param '<' '-' pr=expression ':' b=block {kiwi.FuncDef(
+        s.start, b[-1].end,
+        i, p[0], p[1], r, pr, b
+        )}
+    | s='function' i=NAME_ '(' p=parameters ')' '<' '-' pr=expression ':' b=block {kiwi.FuncDef(
+        s.start, b[-1].end,
+        i, p[0], p[1], None, pr, b
+        )}
+    | s='function' i=NAME_ '(' p=parameters ')' '->' r=return_param ':' b=block {kiwi.FuncDef(
+        s.start, b[-1].end,
+        i, p[0], p[1], r, None, b
+        )}
+    | s='function' i=NAME_ '(' p=parameters ')' ':' b=block {kiwi.FuncDef(
+        s.start, b[-1].end,
+        i, p[0], p[1], None, None, b
+        )}
 
 parameters:
     | p=param_no_default* d=param_with_default* {[*p, *map(lambda x: x[0], d)], list(map(lambda x: x[1], d))}
 
 param_no_default:
-    | v=annotations ',' {kiwi.Parameter(v[0], v[1])}
-    | v=annotations &')'{kiwi.Parameter(v[0], v[1])}
-    | '=' i=NAME_ ',' {kiwi.RefParameter(i)}
-    | '=' i=NAME_ &')' {kiwi.RefParameter(i)}
+    | v=annotations ',' {kiwi.Parameter(
+        v[0][0].start, v[-1][-1].end,
+        v[0], v[1]
+        )}
+    | v=annotations &')'{kiwi.Parameter(
+        v[0][0].start, v[-1][-1].end,
+        v[0], v[1]
+        )}
+    | s='=' i=NAME_ ',' {kiwi.RefParameter(
+        s.start, i.end,
+        i
+        )}
+    | s='=' i=NAME_ &')' {kiwi.RefParameter(
+        s.start, i.end,
+        i
+        )}
 
 param_with_default:
-    | a=annotations '=' v=expression ',' {kiwi.Parameter(a[0], a[1]), v}
-    | a=annotations '=' v=expression &')' {kiwi.Parameter(a[0], a[1]), v}
-    | '=' i=NAME_ '=' v=expression ',' {kiwi.RefParameter(i), v}
-    | '=' i=NAME_ '=' v=expression &')' {kiwi.RefParameter(i), v}
+    | a=annotations '=' v=expression e=',' {kiwi.Parameter(
+        a[0][0].start, v.end,
+        a[0], a[1]), v
+        }
+    | a=annotations '=' v=expression &')' {kiwi.Parameter(
+        a[0][0].start, v.end,
+        a[0], a[1]
+        ), v
+        }
+    | s='=' i=NAME_ '=' v=expression ',' {kiwi.RefParameter(
+        s.start, v.end,
+        i
+        ), v
+        }
+    | s='=' i=NAME_ '=' v=expression &')' {kiwi.RefParameter(
+        s.start, v.end,
+        i
+        ), v
+        }
 
 return_param:
     | expression
-    | '=' i=NAME_ {kiwi.RefParameter(i)}
+    | s='=' i=NAME_ {kiwi.RefParameter(
+        s.start, i.end,
+        i
+        )}
 
 if_stmt:
-    | 'if' c=expression ':' t=block 'else' e=if_stmt {kiwi.IfElse(c, t, e)}
-    | 'if' c=expression ':' t=block 'else' ':' e=block {kiwi.IfElse(c, t, e)}
-    | 'if' c=expression ':' t=block {kiwi.IfElse(c, t, [])}
+    | s='if' c=expression ':' t=block 'else' e=if_stmt {kiwi.IfElse(
+        s.start, e.end,
+        c, t, e
+        )}
+    | s='if' c=expression ':' t=block 'else' ':' e=block {kiwi.IfElse(
+        s.start, e[-1].end,
+        c, t, e
+        )}
+    | s='if' c=expression ':' t=block {kiwi.IfElse(
+        s.start, t[-1].end,
+        c, t, []
+        )}
 
 while_stmt:
-    | 'while' c=expression ':' b=block {kiwi.While(c, b)}
+    | s='while' c=expression ':' b=block {kiwi.While(
+        s.start, b[-1].end,
+        c, b
+        )}
 
 match_stmt:
-    | "match" v=expression ':' c=case_block {kiwi.MatchCase(v, c)}
+    | s="match" v=expression ':' c=case_block {kiwi.MatchCase(
+        s.start, c[-1].end,
+        v, c
+        )}
 
 case_block:
     | NEWLINE INDENT v=cases DEDENT NEWLINE {v}
@@ -224,40 +341,63 @@ cases:
     | (',' NEWLINE*).case+
 
 case:
-    | "case" k=expression ':' b=block {kiwi.Case(k, b)}
+    | s="case" k=expression ':' b=block {kiwi.Case(
+        s.start, b[-1].end,
+        k, b
+        )}
 
 # EXPRESSIONS
 # -----------
 
 expression:
     | lambda_def
-    | c=inversion '?' t=inversion ':' e=inversion {kiwi.IfExpression(c, t, e)}
-    | v=inversion {kiwi.Expression(v)}
+    | c=inversion '?' t=inversion ':' e=inversion {kiwi.IfExpression(
+        c.start, e.end,
+        c, t, e)}
+    | v=inversion {kiwi.Expression(
+        v.start, v.end,
+        v
+        )}
 
 notfull_expression:
     | lambda_def
-    | c=inversion '?' t=inversion ':' e=inversion {kiwi.IfExpression(c, t, e)}
-    | v=inversion {kiwi.NotFullExpression(v)}
+    | c=inversion '?' t=inversion ':' e=inversion {kiwi.IfExpression(
+        c.start, e.end,
+        c, t, e)}
+    | v=inversion {kiwi.NotFullExpression(
+        v.start, v.end,
+        v)}
 
 lambda_def:
-    | "lambda" p=lambda_parameters ':' r=expression {kiwi.LambdaDef(p, r)}
+    | s="lambda" p=lambda_parameters ':' r=expression {kiwi.LambdaDef(
+        s.start, r.end,
+        p, r
+        )}
 
 lambda_parameters:
     | v=','.lambda_param+ {v}
     | [lambda_param] {[]}
 
 lambda_param:
-    | v=NAME_ {kiwi.LambdaParameter(v)}
+    | v=NAME_ {kiwi.LambdaParameter(
+        v.start, v.end,
+        v)}
 
 inversion:
-    | '!' x=inversion {kiwi.UnaryOp(x, '!')}
+    | s='!' x=inversion {kiwi.UnaryOp(
+        s.start, x.end,
+        x, '!'
+        )}
     | comparison
 
 # Comparison operators
 # --------------------
 
 comparison:
-    | f=sum v=compare_op_sum_pair+ {kiwi.Compare([f, *list(map(lambda x: x[1], v))], list(map(lambda x: x[0], v)))}
+    | f=sum v=compare_op_sum_pair+ {kiwi.Compare(
+        f.start, v[-1].end,
+        [f, *list(map(lambda x: x[1], v))], list(map(lambda x: x[0], v))
+        )}
     | sum
 
 compare_op_sum_pair:
@@ -269,59 +409,149 @@ compare_op_sum_pair:
     | gt_sum
 
 eq_sum:
-    | '==' v=sum {kiwi.Token('=='), v}
+    | s='==' v=sum {kiwi.Token(
+        s.start, s.end,
+        '=='
+        ), v}
 
 noteq_sum:
-    | '!=' v=sum {kiwi.Token('!='), v}
+    | s='!=' v=sum {kiwi.Token(
+        s.start, s.end,
+        '!='
+        ), v}
 
 lte_sum:
-    | '<=' v=sum {kiwi.Token('<='), v}
+    | s='<=' v=sum {kiwi.Token(
+        s.start, s.end,
+        '<='
+        ), v}
 
 lt_sum:
-    | '<' v=sum {kiwi.Token('<'), v}
+    | s='<' v=sum {kiwi.Token(
+        s.start, s.end,
+        '<'
+        ), v}
 
 gte_sum:
-    | '>=' v=sum {kiwi.Token('>='), v}
+    | s='>=' v=sum {kiwi.Token(
+        s.start, s.end,
+        '>='
+        ), v}
 
 gt_sum:
-    | '>' v=sum {kiwi.Token('>'), v}
+    | s='>' v=sum {kiwi.Token(
+        s.start, s.end,
+        '>'
+        ), v}
 
 # Arithmetic operators
 # --------------------
 
 sum:
-    | x=sum '+' y=term {kiwi.BinaryOp(x, y, kiwi.Token('+'))}
-    | x=sum '-' y=term {kiwi.BinaryOp(x, y, kiwi.Token('-'))}
+    | x=sum s='+' y=term {kiwi.BinaryOp(
+        x.start, y.end,
+        x, y, kiwi.Token(
+            s.start, s.end,
+            '+'
+            )
+        )}
+    | x=sum s='-' y=term {kiwi.BinaryOp(
+        x.start, y.end,
+        x, y, kiwi.Token(
+            s.start, s.end,
+            '-'
+            )
+    )}
     | term
 
 term:
-    | x=term '*' y=factor {kiwi.BinaryOp(x, y, kiwi.Token('*'))}
-    | x=term '/' y=factor {kiwi.BinaryOp(x, y, kiwi.Token('/'))}
-    | x=term '%' y=factor {kiwi.BinaryOp(x, y, kiwi.Token('%'))}
+    | x=term s='*' y=factor {kiwi.BinaryOp(
+        x.start, y.end,
+        x, y, kiwi.Token(
+            s.start, s.end,
+            '*'
+            )
+        )}
+    | x=term s='/' y=factor {kiwi.BinaryOp(
+        x.start, y.end,
+        x, y, kiwi.Token(
+            s.start, s.end,
+            '/'
+            )
+        )}
+    | x=term s='%' y=factor {kiwi.BinaryOp(
+        x.start, y.end,
+        x, y, kiwi.Token(
+            s.start, s.end,
+            '%'
+            )
+        )}
     | factor
 
 factor:
-    | '+' x=factor {kiwi.UnaryOp(x, kiwi.Token('+'))}
-    | '-' x=factor {kiwi.UnaryOp(x, kiwi.Token('-'))}
+    | s='+' x=factor {kiwi.UnaryOp(
+        s.start, x.end,
+        x, kiwi.Token(
+            s.start, s.end,
+            '+'
+            )
+        )}
+    | s='-' x=factor {kiwi.UnaryOp(
+        s.start, x.end,
+        x, kiwi.Token(
+            s.start, s.end,
+            '-'
+            )
+        )}
     | power
 
 power:
-    | x=primary '**' y=factor {kiwi.BinaryOp(x, y, kiwi.Token('**'))}
+    | x=primary s='**' y=factor {kiwi.BinaryOp(
+        x.start, y.end,
+        x, y, kiwi.Token(
+            s.start, s.end,
+            '**'
+            )
+        )}
     | primary
 
 primary:
-    | "match" k=expression ':' c=key_block {kiwi.MatchExpr(k, c)}
-    | v=primary '.' a=NAME_ {kiwi.Attribute(v, a)}
-    | i=primary '(' v=arguments ')' {kiwi.Call(i, v)}
-    | i=primary '(' ')' {kiwi.Call(i, [])}
+    | s="match" k=expression ':' c=key_block {kiwi.MatchExpr(
+        s.start, c[-1].end,
+        k, c
+        )}
+    | v=primary '.' a=NAME_ {kiwi.Attribute(
+        v.start, a.end,
+        v, a
+        )}
+    | i=primary '(' v=arguments e=')' {kiwi.Call(
+        i.start, e.end,
+        i, v
+        )}
+    | i=primary '(' e=')' {kiwi.Call(
+        i.start, e.end,
+        i, []
+        )}
     | atom
 
 atom:
     | NAME_
-    | 'true' {kiwi.Token('true')}
-    | 'false' {kiwi.Token('false')}
-    | 'none' {kiwi.Token('none')}
-    | 'promise' {kiwi.Token('promise')}
+    | s='true' {kiwi.Token(
+        s.start, s.end,
+        'true'
+        )}
+    | s='false' {kiwi.Token(
+        s.start, s.end,
+        'false'
+        )}
+    | s='none' {kiwi.Token(
+        s.start, s.end,
+        'none'
+        )}
+    | s='promise' {kiwi.Token(
+        s.start, s.end,
+        'promise'
+        )}
     | SELECTOR_
     | STRING_
     | NUMBER_
@@ -353,20 +583,20 @@ match_key:
     | f=notfull_expression "to" t=notfull_expression '->' v=expression {kiwi.MatchKey(f, t, v)}
     | f=notfull_expression '->' v=notfull_expression {kiwi.MatchKey(f, f, v)}
 
-# TOKES
-# -----
+# TOKENS
+# ------
 
 NUMBER_:
-    | v=NUMBER {kiwi.Number(v.string)}
+    | v=NUMBER {kiwi.Number(v.start, v.end, v.string)}
 
 NAME_:
-    | v=NAME {kiwi.Name(v.string)}
+    | v=NAME {kiwi.Name(v.start, v.end, v.string)}
 
 WORD_:
-    | v=(NUMBER | NAME)+ {kiwi.Word(''.join(list(map(str, v))))}
+    | v=(NUMBER | NAME)+ {kiwi.Word(v[0].start, v[-1].end, ''.join(list(map(str, v))))}
 
 STRING_:
-    | v=STRING+ {kiwi.String(''.join(map(lambda x: x.string, v)))}
+    | v=STRING+ {kiwi.String(v[0].start, v[-1].end, ''.join(map(lambda x: x.string, v)))}
 
 SELECTOR_:
-    | '@' v=NAME {kiwi.Selector(v.string)}
+    | '@' v=NAME {kiwi.Selector(v.start, v.end, v.string)}

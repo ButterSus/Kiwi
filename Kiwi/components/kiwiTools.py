@@ -41,7 +41,7 @@ def dumpAST(module: _kiwi.Module) -> str:
 
     def f(node, lvl=1, color=_kiwi.AST.color) -> str:
         if isinstance(node, Attr):
-            node = _kiwi.Token('.'.join(node))
+            node = _kiwi.Token(..., ..., '.'.join(map(str, node)))
         if isinstance(node, list):
             if len(node) == 0:
                 return f'{color}[]'

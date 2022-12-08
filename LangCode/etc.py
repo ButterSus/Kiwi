@@ -29,16 +29,16 @@ class Undefined(Declareable, InitableType):
             self.address, parent.InitsType(self.attr, self.address, *args))
 
 
-class Module(CodeScope):
+class Module(CodeScope, Abstract):
     attr: Attr
     address: Attr
 
     def __init__(self, apiObject: API):
         self.api = apiObject
-        super().__init__(dict())
+        super().__init__(dict(), name=self.api.config['project_name'])
 
 
-class Function(Declareable, CodeScope):
+class Function(CodeScope, Declareable):
     attr: Attr
     address: Attr
 

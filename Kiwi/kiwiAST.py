@@ -50,26 +50,26 @@ class KiwiParser(Parser):
             and
             (_endmarker := self.expect('ENDMARKER'))
         ):
-            return kiwi . Module ( i , v )
+            return i [0] . start , v [- 1] . end , kiwi . Module ( i , v )
         self._reset(mark)
         if (
             (i := self.import_stmts())
             and
             (_endmarker := self.expect('ENDMARKER'))
         ):
-            return kiwi . Module ( i , [] )
+            return kiwi . Module ( i [0] . start , i [- 1] . end , i , [] )
         self._reset(mark)
         if (
             (v := self.statements())
             and
             (_endmarker := self.expect('ENDMARKER'))
         ):
-            return kiwi . Module ( [] , v )
+            return kiwi . Module ( v [0] . start , v [- 1] . end , [] , v )
         self._reset(mark)
         if (
             (_endmarker := self.expect('ENDMARKER'))
         ):
-            return kiwi . Module ( [] , [] )
+            return kiwi . Module ( ... , ... , [] , [] )
         self._reset(mark)
         return None
 
@@ -104,13 +104,13 @@ class KiwiParser(Parser):
         # from_import_stmt: "from" dotted_name import_stmt
         mark = self._mark()
         if (
-            (literal := self.expect("from"))
+            (s := self.expect("from"))
             and
             (v := self.dotted_name())
             and
             (a := self.import_stmt())
         ):
-            return [kiwi . Alias ( '' . join ( v ) , a )]
+            return [s . start , a [- 1] . end , kiwi . Alias ( '' . join ( v ) , a )]
         self._reset(mark)
         return None
 
@@ -136,12 +136,12 @@ class KiwiParser(Parser):
             and
             (a := self.NAME_())
         ):
-            return kiwi . Alias ( '' . join ( v ) , a )
+            return kiwi . Alias ( v [0] . start , a . end , '' . join ( v ) , a )
         self._reset(mark)
         if (
             (v := self.dotted_name())
         ):
-            return kiwi . Alias ( '' . join ( v ) , v [- 1] )
+            return kiwi . Alias ( v [0] . start , v [- 1] . end , '' . join ( v ) , v [- 1] )
         self._reset(mark)
         return None
 
@@ -227,19 +227,19 @@ class KiwiParser(Parser):
             return return_stmt
         self._reset(mark)
         if (
-            (literal := self.expect('pass'))
+            (s := self.expect('pass'))
         ):
-            return kiwi . Pass ( )
+            return kiwi . Pass ( s . start , s . end )
         self._reset(mark)
         if (
-            (literal := self.expect('break'))
+            (s := self.expect('break'))
         ):
-            return kiwi . Break ( )
+            return kiwi . Break ( s . start , s . end )
         self._reset(mark)
         if (
-            (literal := self.expect('continue'))
+            (s := self.expect('continue'))
         ):
-            return kiwi . Continue ( )
+            return kiwi . Continue ( s . start , s . end )
         self._reset(mark)
         return None
 
@@ -285,7 +285,7 @@ class KiwiParser(Parser):
             and
             (v := self._gather_8())
         ):
-            return kiwi . AnnAssignment ( * a , v )
+            return kiwi . AnnAssignment ( a [0] [0] . start , v [- 1] . end , * a , v )
         self._reset(mark)
         if (
             (i := self._gather_10())
@@ -294,7 +294,7 @@ class KiwiParser(Parser):
             and
             (v := self._gather_12())
         ):
-            return kiwi . Assignment ( i , v )
+            return kiwi . Assignment ( i [0] . start , v [- 1] . end , i , v )
         self._reset(mark)
         if (
             (i := self._gather_14())
@@ -303,12 +303,12 @@ class KiwiParser(Parser):
             and
             (v := self._gather_16())
         ):
-            return kiwi . AugAssignment ( i , o , v )
+            return kiwi . AugAssignment ( i [0] . start , v [- 1] . end , i , o , v )
         self._reset(mark)
         if (
             (a := self.annotations())
         ):
-            return kiwi . Annotation ( * a )
+            return kiwi . Annotation ( a [0] [0] . start , a [- 1] [- 1] . end* a )
         self._reset(mark)
         return None
 
@@ -345,29 +345,29 @@ class KiwiParser(Parser):
         # augassign: '+=' | '-=' | '*=' | '/=' | '%='
         mark = self._mark()
         if (
-            (literal := self.expect('+='))
+            (s := self.expect('+='))
         ):
-            return kiwi . Token ( '+=' )
+            return kiwi . Token ( s . start , s . end , '+=' )
         self._reset(mark)
         if (
-            (literal := self.expect('-='))
+            (s := self.expect('-='))
         ):
-            return kiwi . Token ( '-=' )
+            return kiwi . Token ( s . start , s . end , '-=' )
         self._reset(mark)
         if (
-            (literal := self.expect('*='))
+            (s := self.expect('*='))
         ):
-            return kiwi . Token ( '*=' )
+            return kiwi . Token ( s . start , s . end , '*=' )
         self._reset(mark)
         if (
-            (literal := self.expect('/='))
+            (s := self.expect('/='))
         ):
-            return kiwi . Token ( '/=' )
+            return kiwi . Token ( s . start , s . end , '/=' )
         self._reset(mark)
         if (
-            (literal := self.expect('%='))
+            (s := self.expect('%='))
         ):
-            return kiwi . Token ( '%=' )
+            return kiwi . Token ( s . start , s . end , '%=' )
         self._reset(mark)
         return None
 
@@ -376,11 +376,11 @@ class KiwiParser(Parser):
         # return_stmt: 'return' expression
         mark = self._mark()
         if (
-            (literal := self.expect('return'))
+            (s := self.expect('return'))
             and
             (v := self.expression())
         ):
-            return kiwi . Return ( v )
+            return kiwi . Return ( s . start , v . end , v )
         self._reset(mark)
         return None
 
@@ -567,15 +567,15 @@ class KiwiParser(Parser):
         # namespace_def: 'namespace' NAME_ ':' hiding_block
         mark = self._mark()
         if (
-            (literal := self.expect('namespace'))
+            (s := self.expect('namespace'))
             and
             (i := self.NAME_())
             and
-            (literal_1 := self.expect(':'))
+            (literal := self.expect(':'))
             and
             (b := self.hiding_block())
         ):
-            return kiwi . NamespaceDef ( i , * b )
+            return kiwi . NamespaceDef ( s . start , b [- 1] [- 1] [- 1] . end , i , * b )
         self._reset(mark)
         return None
 
@@ -584,42 +584,19 @@ class KiwiParser(Parser):
         # function_def: 'function' NAME_ '(' parameters ')' '->' return_param '<' '-' expression ':' block | 'function' NAME_ '(' parameters ')' '<' '-' expression ':' block | 'function' NAME_ '(' parameters ')' '->' return_param ':' block | 'function' NAME_ '(' parameters ')' ':' block
         mark = self._mark()
         if (
-            (literal := self.expect('function'))
+            (s := self.expect('function'))
             and
             (i := self.NAME_())
             and
-            (literal_1 := self.expect('('))
+            (literal := self.expect('('))
             and
             (p := self.parameters())
             and
-            (literal_2 := self.expect(')'))
+            (literal_1 := self.expect(')'))
             and
-            (literal_3 := self.expect('->'))
+            (literal_2 := self.expect('->'))
             and
             (r := self.return_param())
-            and
-            (literal_4 := self.expect('<'))
-            and
-            (literal_5 := self.expect('-'))
-            and
-            (pr := self.expression())
-            and
-            (literal_6 := self.expect(':'))
-            and
-            (b := self.block())
-        ):
-            return kiwi . FuncDef ( i , p [0] , p [1] , r , pr , b )
-        self._reset(mark)
-        if (
-            (literal := self.expect('function'))
-            and
-            (i := self.NAME_())
-            and
-            (literal_1 := self.expect('('))
-            and
-            (p := self.parameters())
-            and
-            (literal_2 := self.expect(')'))
             and
             (literal_3 := self.expect('<'))
             and
@@ -631,45 +608,68 @@ class KiwiParser(Parser):
             and
             (b := self.block())
         ):
-            return kiwi . FuncDef ( i , p [0] , p [1] , None , pr , b )
+            return kiwi . FuncDef ( s . start , b [- 1] . end , i , p [0] , p [1] , r , pr , b )
         self._reset(mark)
         if (
-            (literal := self.expect('function'))
+            (s := self.expect('function'))
             and
             (i := self.NAME_())
             and
-            (literal_1 := self.expect('('))
+            (literal := self.expect('('))
             and
             (p := self.parameters())
             and
-            (literal_2 := self.expect(')'))
+            (literal_1 := self.expect(')'))
             and
-            (literal_3 := self.expect('->'))
+            (literal_2 := self.expect('<'))
             and
-            (r := self.return_param())
+            (literal_3 := self.expect('-'))
+            and
+            (pr := self.expression())
             and
             (literal_4 := self.expect(':'))
             and
             (b := self.block())
         ):
-            return kiwi . FuncDef ( i , p [0] , p [1] , r , None , b )
+            return kiwi . FuncDef ( s . start , b [- 1] . end , i , p [0] , p [1] , None , pr , b )
         self._reset(mark)
         if (
-            (literal := self.expect('function'))
+            (s := self.expect('function'))
             and
             (i := self.NAME_())
             and
-            (literal_1 := self.expect('('))
+            (literal := self.expect('('))
             and
             (p := self.parameters())
             and
-            (literal_2 := self.expect(')'))
+            (literal_1 := self.expect(')'))
+            and
+            (literal_2 := self.expect('->'))
+            and
+            (r := self.return_param())
             and
             (literal_3 := self.expect(':'))
             and
             (b := self.block())
         ):
-            return kiwi . FuncDef ( i , p [0] , p [1] , None , None , b )
+            return kiwi . FuncDef ( s . start , b [- 1] . end , i , p [0] , p [1] , r , None , b )
+        self._reset(mark)
+        if (
+            (s := self.expect('function'))
+            and
+            (i := self.NAME_())
+            and
+            (literal := self.expect('('))
+            and
+            (p := self.parameters())
+            and
+            (literal_1 := self.expect(')'))
+            and
+            (literal_2 := self.expect(':'))
+            and
+            (b := self.block())
+        ):
+            return kiwi . FuncDef ( s . start , b [- 1] . end , i , p [0] , p [1] , None , None , b )
         self._reset(mark)
         return None
 
@@ -696,32 +696,32 @@ class KiwiParser(Parser):
             and
             (literal := self.expect(','))
         ):
-            return kiwi . Parameter ( v [0] , v [1] )
+            return kiwi . Parameter ( v [0] [0] . start , v [- 1] [- 1] . end , v [0] , v [1] )
         self._reset(mark)
         if (
             (v := self.annotations())
             and
             self.positive_lookahead(self.expect, ')')
         ):
-            return kiwi . Parameter ( v [0] , v [1] )
+            return kiwi . Parameter ( v [0] [0] . start , v [- 1] [- 1] . end , v [0] , v [1] )
         self._reset(mark)
         if (
-            (literal := self.expect('='))
+            (s := self.expect('='))
             and
             (i := self.NAME_())
             and
-            (literal_1 := self.expect(','))
+            (literal := self.expect(','))
         ):
-            return kiwi . RefParameter ( i )
+            return kiwi . RefParameter ( s . start , i . end , i )
         self._reset(mark)
         if (
-            (literal := self.expect('='))
+            (s := self.expect('='))
             and
             (i := self.NAME_())
             and
             self.positive_lookahead(self.expect, ')')
         ):
-            return kiwi . RefParameter ( i )
+            return kiwi . RefParameter ( s . start , i . end , i )
         self._reset(mark)
         return None
 
@@ -736,9 +736,9 @@ class KiwiParser(Parser):
             and
             (v := self.expression())
             and
-            (literal_1 := self.expect(','))
+            (e := self.expect(','))
         ):
-            return kiwi . Parameter ( a [0] , a [1] ) , v
+            return kiwi . Parameter ( a [0] [0] . start , v . end , a [0] , a [1] ) , v
         self._reset(mark)
         if (
             (a := self.annotations())
@@ -749,33 +749,33 @@ class KiwiParser(Parser):
             and
             self.positive_lookahead(self.expect, ')')
         ):
-            return kiwi . Parameter ( a [0] , a [1] ) , v
+            return kiwi . Parameter ( a [0] [0] . start , v . end , a [0] , a [1] ) , v
         self._reset(mark)
         if (
-            (literal := self.expect('='))
+            (s := self.expect('='))
             and
             (i := self.NAME_())
             and
-            (literal_1 := self.expect('='))
+            (literal := self.expect('='))
             and
             (v := self.expression())
             and
-            (literal_2 := self.expect(','))
+            (literal_1 := self.expect(','))
         ):
-            return kiwi . RefParameter ( i ) , v
+            return kiwi . RefParameter ( s . start , v . end , i ) , v
         self._reset(mark)
         if (
-            (literal := self.expect('='))
+            (s := self.expect('='))
             and
             (i := self.NAME_())
             and
-            (literal_1 := self.expect('='))
+            (literal := self.expect('='))
             and
             (v := self.expression())
             and
             self.positive_lookahead(self.expect, ')')
         ):
-            return kiwi . RefParameter ( i ) , v
+            return kiwi . RefParameter ( s . start , v . end , i ) , v
         self._reset(mark)
         return None
 
@@ -789,11 +789,11 @@ class KiwiParser(Parser):
             return expression
         self._reset(mark)
         if (
-            (literal := self.expect('='))
+            (s := self.expect('='))
             and
             (i := self.NAME_())
         ):
-            return kiwi . RefParameter ( i )
+            return kiwi . RefParameter ( s . start , i . end , i )
         self._reset(mark)
         return None
 
@@ -802,47 +802,47 @@ class KiwiParser(Parser):
         # if_stmt: 'if' expression ':' block 'else' if_stmt | 'if' expression ':' block 'else' ':' block | 'if' expression ':' block
         mark = self._mark()
         if (
-            (literal := self.expect('if'))
+            (s := self.expect('if'))
             and
             (c := self.expression())
             and
-            (literal_1 := self.expect(':'))
+            (literal := self.expect(':'))
             and
             (t := self.block())
             and
-            (literal_2 := self.expect('else'))
+            (literal_1 := self.expect('else'))
             and
             (e := self.if_stmt())
         ):
-            return kiwi . IfElse ( c , t , e )
+            return kiwi . IfElse ( s . start , e . end , c , t , e )
         self._reset(mark)
         if (
-            (literal := self.expect('if'))
+            (s := self.expect('if'))
             and
             (c := self.expression())
             and
-            (literal_1 := self.expect(':'))
+            (literal := self.expect(':'))
             and
             (t := self.block())
             and
-            (literal_2 := self.expect('else'))
+            (literal_1 := self.expect('else'))
             and
-            (literal_3 := self.expect(':'))
+            (literal_2 := self.expect(':'))
             and
             (e := self.block())
         ):
-            return kiwi . IfElse ( c , t , e )
+            return kiwi . IfElse ( s . start , e [- 1] . end , c , t , e )
         self._reset(mark)
         if (
-            (literal := self.expect('if'))
+            (s := self.expect('if'))
             and
             (c := self.expression())
             and
-            (literal_1 := self.expect(':'))
+            (literal := self.expect(':'))
             and
             (t := self.block())
         ):
-            return kiwi . IfElse ( c , t , [] )
+            return kiwi . IfElse ( s . start , t [- 1] . end , c , t , [] )
         self._reset(mark)
         return None
 
@@ -851,15 +851,15 @@ class KiwiParser(Parser):
         # while_stmt: 'while' expression ':' block
         mark = self._mark()
         if (
-            (literal := self.expect('while'))
+            (s := self.expect('while'))
             and
             (c := self.expression())
             and
-            (literal_1 := self.expect(':'))
+            (literal := self.expect(':'))
             and
             (b := self.block())
         ):
-            return kiwi . While ( c , b )
+            return kiwi . While ( s . start , b [- 1] . end , c , b )
         self._reset(mark)
         return None
 
@@ -868,15 +868,15 @@ class KiwiParser(Parser):
         # match_stmt: "match" expression ':' case_block
         mark = self._mark()
         if (
-            (literal := self.expect("match"))
+            (s := self.expect("match"))
             and
             (v := self.expression())
             and
-            (literal_1 := self.expect(':'))
+            (literal := self.expect(':'))
             and
             (c := self.case_block())
         ):
-            return kiwi . MatchCase ( v , c )
+            return kiwi . MatchCase ( s . start , c [- 1] . end , v , c )
         self._reset(mark)
         return None
 
@@ -915,15 +915,15 @@ class KiwiParser(Parser):
         # case: "case" expression ':' block
         mark = self._mark()
         if (
-            (literal := self.expect("case"))
+            (s := self.expect("case"))
             and
             (k := self.expression())
             and
-            (literal_1 := self.expect(':'))
+            (literal := self.expect(':'))
             and
             (b := self.block())
         ):
-            return kiwi . Case ( k , b )
+            return kiwi . Case ( s . start , b [- 1] . end , k , b )
         self._reset(mark)
         return None
 
@@ -947,12 +947,12 @@ class KiwiParser(Parser):
             and
             (e := self.inversion())
         ):
-            return kiwi . IfExpression ( c , t , e )
+            return kiwi . IfExpression ( c . start , e . end , c , t , e )
         self._reset(mark)
         if (
             (v := self.inversion())
         ):
-            return kiwi . Expression ( v )
+            return kiwi . Expression ( v . start , v . end , v )
         self._reset(mark)
         return None
 
@@ -976,12 +976,12 @@ class KiwiParser(Parser):
             and
             (e := self.inversion())
         ):
-            return kiwi . IfExpression ( c , t , e )
+            return kiwi . IfExpression ( c . start , e . end , c , t , e )
         self._reset(mark)
         if (
             (v := self.inversion())
         ):
-            return kiwi . NotFullExpression ( v )
+            return kiwi . NotFullExpression ( v . start , v . end , v )
         self._reset(mark)
         return None
 
@@ -990,15 +990,15 @@ class KiwiParser(Parser):
         # lambda_def: "lambda" lambda_parameters ':' expression
         mark = self._mark()
         if (
-            (literal := self.expect("lambda"))
+            (s := self.expect("lambda"))
             and
             (p := self.lambda_parameters())
             and
-            (literal_1 := self.expect(':'))
+            (literal := self.expect(':'))
             and
             (r := self.expression())
         ):
-            return kiwi . LambdaDef ( p , r )
+            return kiwi . LambdaDef ( s . start , r . end , p , r )
         self._reset(mark)
         return None
 
@@ -1026,7 +1026,7 @@ class KiwiParser(Parser):
         if (
             (v := self.NAME_())
         ):
-            return kiwi . LambdaParameter ( v )
+            return kiwi . LambdaParameter ( v . start , v . end , v )
         self._reset(mark)
         return None
 
@@ -1035,11 +1035,11 @@ class KiwiParser(Parser):
         # inversion: '!' inversion | comparison
         mark = self._mark()
         if (
-            (literal := self.expect('!'))
+            (s := self.expect('!'))
             and
             (x := self.inversion())
         ):
-            return kiwi . UnaryOp ( x , '!' )
+            return kiwi . UnaryOp ( s . start , x . end , x , '!' )
         self._reset(mark)
         if (
             (comparison := self.comparison())
@@ -1057,7 +1057,7 @@ class KiwiParser(Parser):
             and
             (v := self._loop1_28())
         ):
-            return kiwi . Compare ( [f , * list ( map ( lambda x : x [1] , v ) )] , list ( map ( lambda x : x [0] , v ) ) )
+            return kiwi . Compare ( f . start , v [- 1] . end , [f , * list ( map ( lambda x : x [1] , v ) )] , list ( map ( lambda x : x [0] , v ) ) )
         self._reset(mark)
         if (
             (sum := self.sum())
@@ -1107,11 +1107,11 @@ class KiwiParser(Parser):
         # eq_sum: '==' sum
         mark = self._mark()
         if (
-            (literal := self.expect('=='))
+            (s := self.expect('=='))
             and
             (v := self.sum())
         ):
-            return kiwi . Token ( '==' ) , v
+            return kiwi . Token ( s . start , s . end , '==' ) , v
         self._reset(mark)
         return None
 
@@ -1120,11 +1120,11 @@ class KiwiParser(Parser):
         # noteq_sum: '!=' sum
         mark = self._mark()
         if (
-            (literal := self.expect('!='))
+            (s := self.expect('!='))
             and
             (v := self.sum())
         ):
-            return kiwi . Token ( '!=' ) , v
+            return kiwi . Token ( s . start , s . end , '!=' ) , v
         self._reset(mark)
         return None
 
@@ -1133,11 +1133,11 @@ class KiwiParser(Parser):
         # lte_sum: '<=' sum
         mark = self._mark()
         if (
-            (literal := self.expect('<='))
+            (s := self.expect('<='))
             and
             (v := self.sum())
         ):
-            return kiwi . Token ( '<=' ) , v
+            return kiwi . Token ( s . start , s . end , '<=' ) , v
         self._reset(mark)
         return None
 
@@ -1146,11 +1146,11 @@ class KiwiParser(Parser):
         # lt_sum: '<' sum
         mark = self._mark()
         if (
-            (literal := self.expect('<'))
+            (s := self.expect('<'))
             and
             (v := self.sum())
         ):
-            return kiwi . Token ( '<' ) , v
+            return kiwi . Token ( s . start , s . end , '<' ) , v
         self._reset(mark)
         return None
 
@@ -1159,11 +1159,11 @@ class KiwiParser(Parser):
         # gte_sum: '>=' sum
         mark = self._mark()
         if (
-            (literal := self.expect('>='))
+            (s := self.expect('>='))
             and
             (v := self.sum())
         ):
-            return kiwi . Token ( '>=' ) , v
+            return kiwi . Token ( s . start , s . end , '>=' ) , v
         self._reset(mark)
         return None
 
@@ -1172,11 +1172,11 @@ class KiwiParser(Parser):
         # gt_sum: '>' sum
         mark = self._mark()
         if (
-            (literal := self.expect('>'))
+            (s := self.expect('>'))
             and
             (v := self.sum())
         ):
-            return kiwi . Token ( '>' ) , v
+            return kiwi . Token ( s . start , s . end , '>' ) , v
         self._reset(mark)
         return None
 
@@ -1187,20 +1187,20 @@ class KiwiParser(Parser):
         if (
             (x := self.sum())
             and
-            (literal := self.expect('+'))
+            (s := self.expect('+'))
             and
             (y := self.term())
         ):
-            return kiwi . BinaryOp ( x , y , kiwi . Token ( '+' ) )
+            return kiwi . BinaryOp ( x . start , y . end , x , y , kiwi . Token ( s . start , s . end , '+' ) )
         self._reset(mark)
         if (
             (x := self.sum())
             and
-            (literal := self.expect('-'))
+            (s := self.expect('-'))
             and
             (y := self.term())
         ):
-            return kiwi . BinaryOp ( x , y , kiwi . Token ( '-' ) )
+            return kiwi . BinaryOp ( x . start , y . end , x , y , kiwi . Token ( s . start , s . end , '-' ) )
         self._reset(mark)
         if (
             (term := self.term())
@@ -1216,29 +1216,29 @@ class KiwiParser(Parser):
         if (
             (x := self.term())
             and
-            (literal := self.expect('*'))
+            (s := self.expect('*'))
             and
             (y := self.factor())
         ):
-            return kiwi . BinaryOp ( x , y , kiwi . Token ( '*' ) )
+            return kiwi . BinaryOp ( x . start , y . end , x , y , kiwi . Token ( s . start , s . end , '*' ) )
         self._reset(mark)
         if (
             (x := self.term())
             and
-            (literal := self.expect('/'))
+            (s := self.expect('/'))
             and
             (y := self.factor())
         ):
-            return kiwi . BinaryOp ( x , y , kiwi . Token ( '/' ) )
+            return kiwi . BinaryOp ( x . start , y . end , x , y , kiwi . Token ( s . start , s . end , '/' ) )
         self._reset(mark)
         if (
             (x := self.term())
             and
-            (literal := self.expect('%'))
+            (s := self.expect('%'))
             and
             (y := self.factor())
         ):
-            return kiwi . BinaryOp ( x , y , kiwi . Token ( '%' ) )
+            return kiwi . BinaryOp ( x . start , y . end , x , y , kiwi . Token ( s . start , s . end , '%' ) )
         self._reset(mark)
         if (
             (factor := self.factor())
@@ -1252,18 +1252,18 @@ class KiwiParser(Parser):
         # factor: '+' factor | '-' factor | power
         mark = self._mark()
         if (
-            (literal := self.expect('+'))
+            (s := self.expect('+'))
             and
             (x := self.factor())
         ):
-            return kiwi . UnaryOp ( x , kiwi . Token ( '+' ) )
+            return kiwi . UnaryOp ( s . start , x . end , x , kiwi . Token ( s . start , s . end , '+' ) )
         self._reset(mark)
         if (
-            (literal := self.expect('-'))
+            (s := self.expect('-'))
             and
             (x := self.factor())
         ):
-            return kiwi . UnaryOp ( x , kiwi . Token ( '-' ) )
+            return kiwi . UnaryOp ( s . start , x . end , x , kiwi . Token ( s . start , s . end , '-' ) )
         self._reset(mark)
         if (
             (power := self.power())
@@ -1279,11 +1279,11 @@ class KiwiParser(Parser):
         if (
             (x := self.primary())
             and
-            (literal := self.expect('**'))
+            (s := self.expect('**'))
             and
             (y := self.factor())
         ):
-            return kiwi . BinaryOp ( x , y , kiwi . Token ( '**' ) )
+            return kiwi . BinaryOp ( x . start , y . end , x , y , kiwi . Token ( s . start , s . end , '**' ) )
         self._reset(mark)
         if (
             (primary := self.primary())
@@ -1297,15 +1297,15 @@ class KiwiParser(Parser):
         # primary: "match" expression ':' key_block | primary '.' NAME_ | primary '(' arguments ')' | primary '(' ')' | atom
         mark = self._mark()
         if (
-            (literal := self.expect("match"))
+            (s := self.expect("match"))
             and
             (k := self.expression())
             and
-            (literal_1 := self.expect(':'))
+            (literal := self.expect(':'))
             and
             (c := self.key_block())
         ):
-            return kiwi . MatchExpr ( k , c )
+            return kiwi . MatchExpr ( s . start , c [- 1] . end , k , c )
         self._reset(mark)
         if (
             (v := self.primary())
@@ -1314,7 +1314,7 @@ class KiwiParser(Parser):
             and
             (a := self.NAME_())
         ):
-            return kiwi . Attribute ( v , a )
+            return kiwi . Attribute ( v . start , a . end , v , a )
         self._reset(mark)
         if (
             (i := self.primary())
@@ -1323,18 +1323,18 @@ class KiwiParser(Parser):
             and
             (v := self.arguments())
             and
-            (literal_1 := self.expect(')'))
+            (e := self.expect(')'))
         ):
-            return kiwi . Call ( i , v )
+            return kiwi . Call ( i . start , e . end , i , v )
         self._reset(mark)
         if (
             (i := self.primary())
             and
             (literal := self.expect('('))
             and
-            (literal_1 := self.expect(')'))
+            (e := self.expect(')'))
         ):
-            return kiwi . Call ( i , [] )
+            return kiwi . Call ( i . start , e . end , i , [] )
         self._reset(mark)
         if (
             (atom := self.atom())
@@ -1353,24 +1353,24 @@ class KiwiParser(Parser):
             return NAME_
         self._reset(mark)
         if (
-            (literal := self.expect('true'))
+            (s := self.expect('true'))
         ):
-            return kiwi . Token ( 'true' )
+            return kiwi . Token ( s . start , s . end , 'true' )
         self._reset(mark)
         if (
-            (literal := self.expect('false'))
+            (s := self.expect('false'))
         ):
-            return kiwi . Token ( 'false' )
+            return kiwi . Token ( s . start , s . end , 'false' )
         self._reset(mark)
         if (
-            (literal := self.expect('none'))
+            (s := self.expect('none'))
         ):
-            return kiwi . Token ( 'none' )
+            return kiwi . Token ( s . start , s . end , 'none' )
         self._reset(mark)
         if (
-            (literal := self.expect('promise'))
+            (s := self.expect('promise'))
         ):
-            return kiwi . Token ( 'promise' )
+            return kiwi . Token ( s . start , s . end , 'promise' )
         self._reset(mark)
         if (
             (SELECTOR_ := self.SELECTOR_())
@@ -1509,7 +1509,7 @@ class KiwiParser(Parser):
         if (
             (v := self.number())
         ):
-            return kiwi . Number ( v . string )
+            return kiwi . Number ( v . start , v . end , v . string )
         self._reset(mark)
         return None
 
@@ -1520,7 +1520,7 @@ class KiwiParser(Parser):
         if (
             (v := self.name())
         ):
-            return kiwi . Name ( v . string )
+            return kiwi . Name ( v . start , v . end , v . string )
         self._reset(mark)
         return None
 
@@ -1531,7 +1531,7 @@ class KiwiParser(Parser):
         if (
             (v := self._loop1_33())
         ):
-            return kiwi . Word ( '' . join ( list ( map ( str , v ) ) ) )
+            return kiwi . Word ( v [0] . start , v [- 1] . end , '' . join ( list ( map ( str , v ) ) ) )
         self._reset(mark)
         return None
 
@@ -1542,7 +1542,7 @@ class KiwiParser(Parser):
         if (
             (v := self._loop1_34())
         ):
-            return kiwi . String ( '' . join ( map ( lambda x : x . string , v ) ) )
+            return kiwi . String ( v [0] . start , v [- 1] . end , '' . join ( map ( lambda x : x . string , v ) ) )
         self._reset(mark)
         return None
 
@@ -1555,7 +1555,7 @@ class KiwiParser(Parser):
             and
             (v := self.name())
         ):
-            return kiwi . Selector ( v . string )
+            return kiwi . Selector ( v . start , v . end , v . string )
         self._reset(mark)
         return None
 
@@ -2161,8 +2161,8 @@ class KiwiParser(Parser):
         self._reset(mark)
         return children
 
-    KEYWORDS = ('continue', 'public', 'namespace', 'else', 'true', 'false', 'pass', 'while', 'if', 'function', 'none', 'promise', 'return', 'break', 'private')
-    SOFT_KEYWORDS = ('lambda', 'from', 'import', 'case', 'default', 'as', 'to', 'match')
+    KEYWORDS = ('break', 'promise', 'pass', 'true', 'function', 'if', 'else', 'while', 'private', 'public', 'namespace', 'none', 'return', 'continue', 'false')
+    SOFT_KEYWORDS = ('to', 'as', 'match', 'import', 'case', 'from', 'default', 'lambda')
 
 
 if __name__ == '__main__':

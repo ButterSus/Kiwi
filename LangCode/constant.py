@@ -21,28 +21,42 @@ class Number(Formalizable, SupportAdd, SupportSub,
         self.value = int(token)
         return self
 
-    def Add(self, other: Number) -> Number:
-        self.value += other.value
-        return self
+    def Add(self, other: Abstract) -> Optional[Abstract]:
+        if isinstance(other, Number):
+            self.value += other.value
+            return self
+        assert False
 
-    def Sub(self, other: Number) -> Number:
-        self.value -= other.value
-        return self
+    def Sub(self, other: Number) -> Optional[Abstract]:
+        if isinstance(other, Number):
+            self.value -= other.value
+            return self
+        assert False
 
-    def Mul(self, other: Number) -> Number:
-        self.value *= other.value
-        return self
+    def Mul(self, other: Number) -> Optional[Abstract]:
+        if isinstance(other, Number):
+            self.value *= other.value
+            return self
+        assert False
 
-    def Div(self, other: Number) -> Number:
-        self.value //= other.value
-        return self
+    def Div(self, other: Number) -> Optional[Abstract]:
+        if isinstance(other, Number):
+            self.value /= other.value
+            return self
+        assert False
 
-    def Mod(self, other: Number) -> Number:
-        self.value %= other.value
-        return self
+    def Mod(self, other: Number) -> Optional[Abstract]:
+        if isinstance(other, Number):
+            self.value %= other.value
+            return self
+        if isinstance(other, ...):
+            ...
+        assert False
 
-    def PrintSource(self) -> str:
-        return f'{{"text":"{self.value}"}}'
+    def PrintSource(self) -> NBTLiteral:
+        return {
+            "text": int(self.value)
+        }
 
 
 class String(Formalizable, Printable,
@@ -67,7 +81,7 @@ class String(Formalizable, Printable,
         # --------------
 
         if value is None:
-            value = String(self.api).Formalize(TokenString(""), noHandle=True)
+            value = String(self.api).Formalize(TokenString(..., ..., ""), noHandle=True)
         assert isinstance(value, String)
         self.value = value.value
 
@@ -83,7 +97,7 @@ class String(Formalizable, Printable,
     def Add(self, other: Abstract) -> Optional[Abstract]:
         if isinstance(other, String):
             temp = FString(self.api).Formalize(
-                TokenString(self.value), noHandle=True
+                TokenString(..., ..., self.value), noHandle=True
             )
             temp.Add(other)
             return temp
@@ -95,8 +109,10 @@ class String(Formalizable, Printable,
             return self
         assert False
 
-    def PrintSource(self) -> str:
-        return f'{{"text":"{self.value}"}}'
+    def PrintSource(self) -> NBTLiteral:
+        return {
+            "text": self.value
+        }
 
 
 class StringClass(Class):
@@ -127,7 +143,7 @@ class FString(String):
         # --------------
 
         if value is None:
-            value = FString(self.api).Formalize(TokenString(""), noHandle=True)
+            value = FString(self.api).Formalize(TokenString(..., ..., ""), noHandle=True)
         if isinstance(value, String):
             value.__class__ = FString
         assert isinstance(value, FString)
@@ -147,17 +163,17 @@ class FString(String):
             return self
         assert False
 
-    def PrintSource(self) -> str:
+    def PrintSource(self) -> List[NBTLiteral]:
         information = self._formatter.parse(self.value)
         result = list()
         for string, expression, _, _ in information:
             if string is not None:
                 result.append(String(self.api).Formalize(
-                    TokenString(string), noHandle=True
+                    TokenString(..., ..., string), noHandle=True
                 ))
             if expression is not None:
                 result.append(self.api.eval(expression))
-        return ','.join(map(lambda x: x.PrintSource(), result))
+        return list(map(lambda x: x.PrintSource(), result))
 
 
 class FStringClass(Class):

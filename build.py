@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import TypedDict, Any, List
 from pathlib import Path
 
+import LangCode
 from LangApi import API
 # Custom libraries
 # ----------------
@@ -257,6 +258,9 @@ class ModuleWirer:
             # Compiling process
             # -----------------
 
+            if self.configGeneral['debug']:
+                print(dumpAST(ast.module))
+
             analyzer = Analyzer(ast, dict(), self.constructor)
             return Module(tokenizer, analyzer.ast, analyzer, analyzer.api)
 
@@ -314,10 +318,18 @@ class Builder:
             print(dumpTokenizer(self.tokenizer))
             print(dumpAST(self.ast.module))
             print(dumpScopeSystem(self.analyzer.scope))
+            pass
 
         self.api.visit(
             self.ast.module.body)
-        self.api.finish()
+        self.build()
+
+    def build(self):
+        LangCode.built_codeFinish(self.api)
+        for codeScope in self.api.code:
+            (self.constructor.directories.
+             functions / LangCode.convert_var_name(codeScope.name)).with_suffix('.mcfunction').open('a') \
+                .write('\n'.join(map(lambda x: x.toCode(), codeScope.code)))
 
 
 if __name__ == '__main__':

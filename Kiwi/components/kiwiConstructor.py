@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from pathlib import Path
 from shutil import rmtree
+import LangCode
 import json
 
 # Custom libraries
@@ -52,7 +53,8 @@ class Constructor:
         self.directories.data = Path(self.directories.bin / 'data')
         self.directories.data.mkdir(exist_ok=True)
 
-        self.directories.project = Path(self.directories.data / self.configGeneral['project_name'])
+        self.directories.project = Path(self.directories.data /
+                                        LangCode.convert_var_name(self.configGeneral['project_name']))
         self.directories.project.mkdir(exist_ok=True)
 
         self.directories.functions = Path(self.directories.project / 'functions')

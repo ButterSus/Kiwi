@@ -4,7 +4,7 @@
 [project]
 
 # Name of project
-project_name = "untitled"
+project_name = "KiwiSample"
 
 # Description of <pack.mcmeta>
 description = "#Made by using Kiwi Compiler"
@@ -13,7 +13,7 @@ description = "#Made by using Kiwi Compiler"
 entry_file = "main"
 
 # Version to compile for
-mc_version = "1.16.5"
+mc_version = "1.19.2"
 
 
 # ADDITIONAL OPTIONS
@@ -28,7 +28,7 @@ include_directories = ["lib"]
 entry_function = "main"
 
 # Directory to generate output datapack
-output_directory = "bin"
+output_directory = "/home/buttersss/.local/share/multimc/instances/1.18.2/.minecraft/saves/Kiwi_Enthusiasts/datapacks/KiwiSample"
 
 # Choose between "public" / "private" to configure default scope of namespace
 default_scope = "public"

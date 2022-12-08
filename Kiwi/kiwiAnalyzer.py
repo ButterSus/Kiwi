@@ -3,7 +3,6 @@ from __future__ import annotations
 # Default libraries
 # -----------------
 
-from typing import TYPE_CHECKING
 from LangApi import *
 
 # Custom libraries
@@ -34,7 +33,9 @@ class Analyzer(AST_Visitor):
         self.ast = ast
         self.scope = ScopeSystem(libScope)
         self.constructor = constructor
-        self.api = API(LangCode, self)
+        LangCode.built_annotationsInit(API)
+        self.api = API(self)
+        LangCode.built_codeInit(self.api)
         self.visit(ast.module)
 
     # EXPRESSIONS
@@ -139,10 +140,10 @@ class Analyzer(AST_Visitor):
     def AnnAssignment(self, node: kiwi.AnnAssignment):
         self.visit(
             kiwi.Annotation(
-                node.targets, node.data_type, node.args))
+                ..., ..., node.targets, node.data_type, node.args))
         return self.visit(
                     kiwi.Assignment(
-                        node.targets, node.values)
+                        ..., ..., node.targets, node.values)
                )
 
     # SPACE DECLARATIONS

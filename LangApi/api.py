@@ -7,14 +7,13 @@ from inspect import isclass
 from typing import Dict, TYPE_CHECKING, Any,\
     List, Type
 from dataclasses import dataclass
-from pathlib import Path
 from itertools import chain
 
 # Custom libraries
 # ----------------
 
 if TYPE_CHECKING:
-    import LangApi.abstract as LangApi
+    import LangApi as LangApi
     import LangCode.built_in as LangCode
     from Kiwi.kiwiAnalyzer import Analyzer
     from build import ConfigGeneral
@@ -28,7 +27,7 @@ from Kiwi.kiwiTokenizer import Tokenizer
 class Construct:
     method: str
     parent: Any
-    arguments: List[Construct | LangApi.Assignable | str | Attr]
+    arguments: List[Construct | LangApi.Assignable | str | Attr | LangCode.TokenString]
 
 
 class API:
@@ -37,17 +36,13 @@ class API:
     }
     analyzer: Analyzer
     config: ConfigGeneral
-    _path: Path
     _files: List[str] = list()
 
     class General:
         scoreboard: LangCode.Scoreboard
     general = General()
-    code: LangCode
 
-    def __init__(self, code: LangCode, analyzer: Analyzer):
-        API.code = code
-        self.code.built_annotationsInit(self.__class__)
+    def __init__(self, analyzer: Analyzer):
         self.analyzer = analyzer
         self.config = analyzer.constructor.configGeneral
         self._init()
@@ -61,13 +56,9 @@ class API:
                 self.analyzer.scope.write(
                     name, value)
             self.analyzer.scope.leaveSpace()
-        self.code.built_codeInit(self)
 
     def _init(self):
         self.general = self.General()
-
-    def finish(self):
-        self.code.built_codeFinish(self)
 
     def resetExpression(self):
         self._counter = 0
@@ -101,25 +92,30 @@ class API:
             return expr(self)
         return expr
 
+    code: List[CodeScope] = list()
     _counter = 0
     _scopes: List[ScopeType | CodeScope] = list()
 
     def getTemp(self) -> Attr:
-        pass
+        result = self._counter
+        self._counter += 1
+        return Attr(str(result))
 
     def useLocalPrefix(self, attr: list | Attr) -> Attr:
-        return Attr(attr)
+        return self.useGlobalPrefix(attr)
 
     def useGlobalPrefix(self, attr: list | Attr) -> Attr:
-        return Attr(['sus'] + attr)
+        return Attr([self.config['project_name']] + attr)
 
-    def enterScope(self, scope: ScopeType):
+    def enterScope(self, scope: ScopeType | CodeScope):
+        if isinstance(scope, CodeScope):
+            self.code.append(scope)
         self._scopes.append(scope)
 
     def leaveScope(self):
         self._scopes.pop(-1)
 
-    def system(self, text: str):
+    def system(self, text: LangApi.CodeType):
         self._scopes[-1].code.append(text)
 
     def eval(self, text: str) -> list | LangApi.Abstract | ScopeType:

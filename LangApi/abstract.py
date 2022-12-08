@@ -3,13 +3,15 @@ from __future__ import annotations
 # Default libraries
 # -----------------
 
-from typing import Optional, Any
+from typing import Optional, Any, TYPE_CHECKING
 from abc import ABC, abstractmethod
 
 # Custom libraries
 # ----------------
 
 from LangApi.api import API, Attr
+if TYPE_CHECKING:
+    from LangApi.bytecode import NBTLiteral
 
 
 # BASIC CLASS
@@ -75,7 +77,7 @@ class Printable(Abstract, ABC):
     """
 
     @abstractmethod
-    def PrintSource(self) -> str:
+    def PrintSource(self) -> NBTLiteral:
         ...
 
 

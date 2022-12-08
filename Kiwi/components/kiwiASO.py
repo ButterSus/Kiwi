@@ -44,8 +44,10 @@ class Theme_Tokens:
 # ==============
 
 
+@dataclass
 class AST(Theme_Undefined):
-    pass
+    start: tuple[int, int]
+    end: tuple[int, int]
 
 
 @dataclass
@@ -257,9 +259,15 @@ class MatchKey(Theme_Expressions, AST):
 
 
 class Token(Theme_Tokens):
+    start: tuple[int, int]
+    end: tuple[int, int]
     value: str
 
-    def __init__(self, value: str):
+    def __init__(self, start: tuple[int, int],
+                 end: tuple[int, int],
+                 value: str):
+        self.start = start
+        self.end = end
         self.value = value
 
     def __repr__(self) -> str:
@@ -270,27 +278,27 @@ class Token(Theme_Tokens):
 # ============
 
 
-class Selector(str, Token):
+class Selector(Token):
     pass
 
 
-class Name(str, Token):
+class Name(Token):
     def toAttr(self) -> Attr:
-        return Attr([self])
+        return Attr([self.value])
 
 
-class Word(str, Token):
+class Word(Token):
     pass
 
 
-class String(str, Token):
+class String(Token):
     def getString(self) -> str:
         value = str()
         match self.value[-1]:
             case "\"":
-                value = self.value[self.index("\""):]
+                value = self.value[self.value.index("\""):]
             case "\'":
-                value = self.value[self.index("\'"):]
+                value = self.value[self.value.index("\'"):]
 
         match value[-1]:
             case "\"":
@@ -301,12 +309,12 @@ class String(str, Token):
     def getPrefix(self) -> str:
         match self.value[-1]:
             case "\"":
-                return self.value[:self.index("\"")]
+                return self.value[:self.value.index("\"")]
             case "\'":
-                return self.value[:self.index("\'")]
+                return self.value[:self.value.index("\'")]
 
 
-class Number(str, Token):
+class Number(Token):
     pass
 
 
