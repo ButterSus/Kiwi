@@ -40,6 +40,7 @@ class API:
 
     class General:
         scoreboard: LangCode.Scoreboard
+        constants: Dict[int, LangCode.Score]
     general = General()
 
     def __init__(self, analyzer: Analyzer):
@@ -96,15 +97,29 @@ class API:
     _counter = 0
     _scopes: List[ScopeType | CodeScope] = list()
 
-    def getTemp(self) -> Attr:
+    # Prefix methods
+    # --------------
+
+    def getTempEx(self) -> Attr:
         result = self._counter
         self._counter += 1
-        return Attr(str(result))
+        return Attr([f'%{result}'])
 
-    def useLocalPrefix(self, attr: list | Attr) -> Attr:
+    def useConstPrefix(self, attr: list | Attr) -> Attr:
+        result = Attr(attr[:-1] + [f'#{attr[-1]}'])
+        return result
+
+    def useLocalPrefix(self, attr: list | Attr, withFuse: bool = False) -> Attr:
+        if withFuse:
+            return self._useFusePrefix(self.useGlobalPrefix(attr))
         return self.useGlobalPrefix(attr)
 
-    def useGlobalPrefix(self, attr: list | Attr) -> Attr:
+    def useGlobalPrefix(self, attr: list | Attr, withFuse: bool = False) -> Attr:
+        if withFuse:
+            return self._useFusePrefix(attr)
+        return Attr(attr)
+
+    def _useFusePrefix(self, attr: list | Attr) -> Attr:
         return Attr([self.config['project_name']] + attr)
 
     def enterScope(self, scope: ScopeType | CodeScope):

@@ -4,6 +4,7 @@ from __future__ import annotations
 # -----------------
 
 from typing import Type
+from functools import reduce
 
 # Custom libraries
 # ----------------
@@ -38,7 +39,7 @@ class Scoreboard(Variable):
         self.criteria = criteria
 
         self.api.system(ScoreboardObjectiveCreate(
-            name=self.attr.toName(),
+            name=self.attr.toString(),
             criteria=self.criteria.value
         ))
         return self
@@ -56,18 +57,34 @@ class Number(Number):
     def Add(self, other: Abstract) -> Optional[Abstract]:
         if isinstance(other, Score):
             temp = Score(self.api).InitsType(
-                self.api.getTemp()
-            ).Assign(other).IAdd(self)
+                self.api.getTempEx()
+            ).Assign(self).IAdd(other)
             return temp
         return super().Add(other)
 
     def Sub(self, other: Abstract) -> Optional[Abstract]:
         if isinstance(other, Score):
             temp = Score(self.api).InitsType(
-                self.api.getTemp()
-            ).Assign(other).ISub(self)
+                self.api.getTempEx()
+            ).Assign(self).ISub(other)
             return temp
-        return super().Add(other)
+        return super().Sub(other)
+
+    def Mul(self, other: Abstract) -> Optional[Abstract]:
+        if isinstance(other, Score):
+            temp = Score(self.api).InitsType(
+                self.api.getTempEx()
+            ).Assign(self).IMul(other)
+            return temp
+        return super().Mul(other)
+
+    def Div(self, other: Abstract) -> Optional[Abstract]:
+        if isinstance(other, Score):
+            temp = Score(self.api).InitsType(
+                self.api.getTempEx()
+            ).Assign(self).IDiv(other)
+            return temp
+        return super().Div(other)
 
 
 class Score(Variable, Assignable,
@@ -109,27 +126,22 @@ class Score(Variable, Assignable,
     def Assign(self, other: Abstract) -> Score:
         if isinstance(other, Number):
             self.api.system(ScoreboardPlayersSet(
-                self.attr.toName(), self.scoreboard.attr.toName(),
+                self.attr.toString(), self.scoreboard.attr.toString(),
                 str(other.value)
             ))
             return self
         if isinstance(other, Score):
-            self.api.system(ScoreboardPlayersOpEq(
-                self.attr.toName(), self.scoreboard.attr.toName(),
-                other.attr.toName(), other.scoreboard.attr.toName()
+            self.api.system(ScoreboardPlayersOpAss(
+                self.attr.toString(), self.scoreboard.attr.toString(),
+                other.attr.toString(), other.scoreboard.attr.toString()
             ))
             return self
         assert False
 
     def Add(self, other: Abstract) -> Score:
-        if isinstance(other, Number):
+        if isinstance(other, Number | Score):
             temp = Score(self.api).InitsType(
-                self.api.getTemp()
-            ).Assign(self).IAdd(other)
-            return temp
-        if isinstance(other, Score):
-            temp = Score(self.api).InitsType(
-                self.api.getTemp()
+                self.api.getTempEx()
             ).Assign(self).IAdd(other)
             return temp
         assert False
@@ -137,53 +149,133 @@ class Score(Variable, Assignable,
     def IAdd(self, other: Abstract) -> Score:
         if isinstance(other, Number):
             self.api.system(ScoreboardPlayersAdd(
-                self.attr.toName(), self.scoreboard.attr.toName(),
+                self.attr.toString(), self.scoreboard.attr.toString(),
                 str(other.value)
             ))
             return self
         if isinstance(other, Score):
             self.api.system(ScoreboardPlayersOpIAdd(
-                self.attr.toName(), self.scoreboard.attr.toName(),
-                other.attr.toName(), other.scoreboard.attr.toName()
+                self.attr.toString(), self.scoreboard.attr.toString(),
+                other.attr.toString(), other.scoreboard.attr.toString()
             ))
             return self
         assert False
 
     def Sub(self, other: Abstract) -> Score:
-        if isinstance(other, Number):
+        if isinstance(other, Number | Score):
             temp = Score(self.api).InitsType(
-                self.api.getTemp()
-            ).Assign(self).ISub(other)
-            return temp
-        if isinstance(other, Score):
-            temp = Score(self.api).InitsType(
-                self.api.getTemp()
+                self.api.getTempEx()
             ).Assign(self).ISub(other)
             return temp
         assert False
 
     def ISub(self, other: Abstract) -> Score:
-        if isinstance(other, Number):
+        if isinstance(other, Number | Score):
             self.api.system(ScoreboardPlayersRemove(
-                self.attr.toName(), self.scoreboard.attr.toName(),
+                self.attr.toString(), self.scoreboard.attr.toString(),
                 str(other.value)
             ))
             return self
         if isinstance(other, Score):
             self.api.system(ScoreboardPlayersOpISub(
-                self.attr.toName(), self.scoreboard.attr.toName(),
-                other.attr.toName(), other.scoreboard.attr.toName()
+                self.attr.toString(), self.scoreboard.attr.toString(),
+                other.attr.toString(), other.scoreboard.attr.toString()
             ))
             return self
         assert False
+
+    def Mul(self, other: Abstract) -> Score:
+        if isinstance(other, Number | Score):
+            temp = Score(self.api).InitsType(
+                self.api.getTempEx()
+            ).Assign(self).IMul(other)
+            return temp
+        assert False
+
+    def IMul(self, other: Abstract) -> Score:
+        if isinstance(other, Number):
+            self.api.system(ScoreboardPlayersOpIMul(
+                self.attr.toString(), self.scoreboard.attr.toString(),
+                self._getConstVar(other.value).attr.toString(),
+                self._getConstVar(other.value).scoreboard.attr.toString()
+            ))
+            return self
+        if isinstance(other, Score):
+            self.api.system(ScoreboardPlayersOpIMul(
+                self.attr.toString(), self.scoreboard.attr.toString(),
+                other.attr.toString(), other.scoreboard.attr.toString()
+            ))
+            return self
+        assert False
+
+    def Div(self, other: Abstract) -> Score:
+        if isinstance(other, Number | Score):
+            temp = Score(self.api).InitsType(
+                self.api.getTempEx()
+            ).Assign(self).IDiv(other)
+            return temp
+        assert False
+
+    def IDiv(self, other: Abstract) -> Score:
+        if isinstance(other, Number):
+            self.api.system(ScoreboardPlayersOpIDiv(
+                self.attr.toString(), self.scoreboard.attr.toString(),
+                self._getConstVar(other.value).attr.toString(),
+                self._getConstVar(other.value).scoreboard.attr.toString()
+            ))
+            return self
+        if isinstance(other, Score):
+            self.api.system(ScoreboardPlayersOpIDiv(
+                self.attr.toString(), self.scoreboard.attr.toString(),
+                other.attr.toString(), other.scoreboard.attr.toString()
+            ))
+            return self
+        assert False
+
+    def Mod(self, other: Abstract) -> Score:
+        if isinstance(other, Number | Score):
+            temp = Score(self.api).InitsType(
+                self.api.getTempEx()
+            ).Assign(self).IDiv(other)
+            return temp
+        assert False
+
+    def IMod(self, other: Abstract) -> Score:
+        if isinstance(other, Number):
+            self.api.system(ScoreboardPlayersOpIMod(
+                self.attr.toString(), self.scoreboard.attr.toString(),
+                self._getConstVar(other.value).attr.toString(),
+                self._getConstVar(other.value).scoreboard.attr.toString()
+            ))
+            return self
+        if isinstance(other, Score):
+            self.api.system(ScoreboardPlayersOpIMod(
+                self.attr.toString(), self.scoreboard.attr.toString(),
+                other.attr.toString(), other.scoreboard.attr.toString()
+            ))
+            return self
+        assert False
+
+    # Private methods
+    # ---------------
+
+    def _getConstVar(self, value: int) -> Score:
+        if value in self.api.general.constants.keys():
+            return self.api.general.constants[value]
+        name = self.api.useConstPrefix([str(value)])
+        result = Score(self.api).InitsType(
+            name, name
+        ).Assign(Number(self.api).Formalize(str(value)))
+        self.api.general.constants[value] = result
+        return result
 
     # Another methods
     # ---------------
 
     def PrintSource(self) -> NBTLiteral:
         return {"score": {
-            "name": convert_var_name(self.attr.toName()),
-            "objective": convert_var_name(self.scoreboard.attr.toName())
+            "name": convert_var_name(self.attr.toString()),
+            "objective": convert_var_name(self.scoreboard.attr.toString())
         }}
 
 
@@ -203,7 +295,7 @@ class Print(Callable):
             result.append(arg.PrintSource())
         self.api.system(Tellraw(
             '@a',
-            result
+            reduce(lambda r, v: r + [' ', v], result[1:], result[:1])
         ))
 
 
@@ -222,14 +314,28 @@ def built_codeInit(apiObject: API):
     # ------------------
 
     apiObject.enterScope(Module(apiObject))
+    scoreboard_name = apiObject.useGlobalPrefix(['globals'], withFuse=True)
     scoreboard = Scoreboard(apiObject).InitsType(
-        apiObject.useGlobalPrefix(['globals']),
-        apiObject.useGlobalPrefix(['globals']))
+        scoreboard_name, scoreboard_name)
     apiObject.analyzer.scope.write(
-        'globals',
-        scoreboard
+        'globals', scoreboard
     )
     apiObject.general.scoreboard = scoreboard
+
+    # Main constants
+    # --------------
+
+    apiObject.general.constants = dict()
+
+    constant_name_false = apiObject.useConstPrefix(['0'])
+    apiObject.general.constants[False] = Score(apiObject).InitsType(
+        constant_name_false, constant_name_false
+    ).Assign(Number(apiObject).Formalize(str(0)))
+
+    constant_name_true = apiObject.useConstPrefix(['1'])
+    apiObject.general.constants[True] = Score(apiObject).InitsType(
+        constant_name_true, constant_name_true
+    ).Assign(Number(apiObject).Formalize(str(1)))
 
 
 def built_codeFinish(apiObject: API):

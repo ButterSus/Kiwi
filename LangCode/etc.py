@@ -52,7 +52,7 @@ class Function(CodeScope, Declareable):
         self.attr = Attr(self.api.useLocalPrefix(attr))
 
         self.api.analyzer.scope.useCustomSpace(
-            self.attr.toString(), self, hideMode=True
+            self.attr.toName(), self, hideMode=True
         )
         body = self.api.analyzer.visit(body)
         self.api.analyzer.scope.leaveSpace()
@@ -79,7 +79,7 @@ class Namespace(Declareable, ScopeType):
         self.attr = Attr(self.api.useLocalPrefix(attr))
 
         self.api.analyzer.scope.useCustomSpace(
-            self.attr.toString(), self
+            self.attr.toName(), self
         )
         default_body = self.api.analyzer.visit(default_body)
         self.api.analyzer.scope.leaveSpace()

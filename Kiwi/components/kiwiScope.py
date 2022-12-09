@@ -14,10 +14,10 @@ if TYPE_CHECKING:
 
 
 class Attr(list):
-    def toString(self) -> str:
+    def toName(self) -> str:
         return str(self[-1])
 
-    def toName(self) -> str:
+    def toString(self) -> str:
         return '.'.join(self)
 
     def toPath(self) -> Path:

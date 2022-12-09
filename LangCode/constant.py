@@ -27,25 +27,25 @@ class Number(Formalizable, SupportAdd, SupportSub,
             return self
         assert False
 
-    def Sub(self, other: Number) -> Optional[Abstract]:
+    def Sub(self, other: Abstract) -> Optional[Abstract]:
         if isinstance(other, Number):
             self.value -= other.value
             return self
         assert False
 
-    def Mul(self, other: Number) -> Optional[Abstract]:
+    def Mul(self, other: Abstract) -> Optional[Abstract]:
         if isinstance(other, Number):
             self.value *= other.value
             return self
         assert False
 
-    def Div(self, other: Number) -> Optional[Abstract]:
+    def Div(self, other: Abstract) -> Optional[Abstract]:
         if isinstance(other, Number):
             self.value /= other.value
             return self
         assert False
 
-    def Mod(self, other: Number) -> Optional[Abstract]:
+    def Mod(self, other: Abstract) -> Optional[Abstract]:
         if isinstance(other, Number):
             self.value %= other.value
             return self

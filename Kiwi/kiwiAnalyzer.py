@@ -126,15 +126,21 @@ class Analyzer(AST_Visitor):
     def Assignment(self, node: kiwi.Assignment):
         result = list()
 
+        passed_targets = list()
         assert len(node.targets) == len(node.values)
-        for target, value in zip(node.targets, node.values):
+        for a, b in zip(node.targets, node.values):
+            target = self.visit(a)
+            value = self.visit(b)
+            if value in passed_targets:
+                temp = value.__class__(self.api).InitsType(value)
             result.append(
                 Construct(
                     'Assign',
-                    self.visit(target),
-                    [self.visit(value)]
+                    target,
+                    [value]
                 )
             )
+            passed_targets.append(target)
         return tuple(result)
 
     def AnnAssignment(self, node: kiwi.AnnAssignment):

@@ -85,7 +85,7 @@ class ScoreboardPlayersRemove(CodeType):
 
 
 @dataclass
-class ScoreboardPlayersOpEq(CodeType):
+class ScoreboardPlayersOpAss(CodeType):
     name: str
     scoreboard: str
     other_name: str
@@ -129,6 +129,54 @@ class ScoreboardPlayersOpISub(CodeType):
         other_name = convert_var_name(self.other_name)
         other_scoreboard = convert_var_name(self.other_scoreboard)
         return f'scoreboard players operation {name} {scoreboard} -= ' \
+               f'{other_name} {other_scoreboard}'
+
+
+@dataclass
+class ScoreboardPlayersOpIMul(CodeType):
+    name: str
+    scoreboard: str
+    other_name: str
+    other_scoreboard: str
+
+    def toCode(self) -> str:
+        name = convert_var_name(self.name)
+        scoreboard = convert_var_name(self.scoreboard)
+        other_name = convert_var_name(self.other_name)
+        other_scoreboard = convert_var_name(self.other_scoreboard)
+        return f'scoreboard players operation {name} {scoreboard} *= ' \
+               f'{other_name} {other_scoreboard}'
+
+
+@dataclass
+class ScoreboardPlayersOpIDiv(CodeType):
+    name: str
+    scoreboard: str
+    other_name: str
+    other_scoreboard: str
+
+    def toCode(self) -> str:
+        name = convert_var_name(self.name)
+        scoreboard = convert_var_name(self.scoreboard)
+        other_name = convert_var_name(self.other_name)
+        other_scoreboard = convert_var_name(self.other_scoreboard)
+        return f'scoreboard players operation {name} {scoreboard} /= ' \
+               f'{other_name} {other_scoreboard}'
+
+
+@dataclass
+class ScoreboardPlayersOpIMod(CodeType):
+    name: str
+    scoreboard: str
+    other_name: str
+    other_scoreboard: str
+
+    def toCode(self) -> str:
+        name = convert_var_name(self.name)
+        scoreboard = convert_var_name(self.scoreboard)
+        other_name = convert_var_name(self.other_name)
+        other_scoreboard = convert_var_name(self.other_scoreboard)
+        return f'scoreboard players operation {name} {scoreboard} %= ' \
                f'{other_name} {other_scoreboard}'
 
 
