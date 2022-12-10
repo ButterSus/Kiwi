@@ -87,7 +87,7 @@ class Function(CodeScope, Formalizable, Callable):
                     [arg]
                 ))
         self.api.system(FunctionDirectCall(
-            self.api.useDirPrefix(self.attr).toString()
+            self.api.useDirPrefix(self.address).toString()
         ))
         return self.returns
 
