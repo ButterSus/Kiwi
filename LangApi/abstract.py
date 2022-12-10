@@ -63,11 +63,11 @@ class Assignable(Abstract, ABC):
 
 class Formalizable(Abstract, ABC):
     """
-    <TOKEN>
+    <TOKEN> or any scope
     """
 
     @abstractmethod
-    def Formalize(self, token: str) -> Optional[Abstract]:
+    def Formalize(self, *args) -> Optional[Abstract]:
         ...
 
 
@@ -78,18 +78,6 @@ class Printable(Abstract, ABC):
 
     @abstractmethod
     def PrintSource(self) -> NBTLiteral:
-        ...
-
-
-class Declareable(Abstract, ABC):
-    """
-    function <NAME>
-    """
-
-    attr: Attr
-
-    @abstractmethod
-    def Declare(self, *args: Any):
         ...
 
 

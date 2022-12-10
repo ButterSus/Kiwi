@@ -161,7 +161,7 @@ assignment:
         i, o, v
         )}
     | a=annotations {kiwi.Annotation(
-        a[0][0].start, a[-1][-1].end
+        a[0][0].start, a[2][-1].end if a[2] else a[1].end,
         *a
         )}
 
@@ -211,31 +211,33 @@ hiding_block:
     | NEWLINE INDENT v=blocks DEDENT NEWLINE {v}
 
 blocks:
-    | pr=private_block pu=public_block {pr[0], pu[0], [*pr[1], *pu[1]]}
-    | pu=public_block pr=private_block {pr[0], pu[0], [*pr[1], *pu[1]]}
-    | pr=private_block {pr[0], [], pr[1]}
-    | pu=public_block {[], pu[0], pu[1]}
-    | d=statements {[], [], d}
+    | (private_block | public_block | default_block)+
 
 private_block:
-    | d1=statements 'private' ':' p=block d2=statements {p, [*d1, *d2]}
-    | d=statements 'private' ':' p=block {p, d}
-    | 'private' ':' p=block d=statements {p, d}
-    | 'private' ':' p=block {p, []}
+    | s='private' ':' v=block {kiwi.PrivateBlock(
+        s.start, v[-1].end,
+        v
+    )}
 
 public_block:
-    | d1=statements 'public' ':' p=block d2=statements {p, [*d1, *d2]}
-    | d=statements 'public' ':' p=block {p, d}
-    | 'public' ':' p=block d=statements {p, d}
-    | 'public' ':' p=block {p, []}
+    | s='public' ':' v=block {kiwi.PublicBlock(
+        s.start, v[-1].end,
+        v
+    )}
+
+default_block:
+    | v=statements {kiwi.DefaultBlock(
+        v[0].start, v[-1].end,
+        v
+    )}
 
 # Namespace definitions
 # ---------------------
 
 namespace_def:
     | s='namespace' i=NAME_ ':' b=hiding_block {kiwi.NamespaceDef(
-        s.start, b[-1][-1][-1].end,
-        i, *b
+        s.start, b[-1].end,
+        i, b
         )}
 
 # Function definitions
@@ -264,12 +266,12 @@ parameters:
 
 param_no_default:
     | v=annotations ',' {kiwi.Parameter(
-        v[0][0].start, v[-1][-1].end,
-        v[0], v[1]
+        v[0][0].start, v[2][-1].end if v[-1] else v[1].end,
+        v[0], v[1], v[2]
         )}
     | v=annotations &')'{kiwi.Parameter(
-        v[0][0].start, v[-1][-1].end,
-        v[0], v[1]
+        v[0][0].start, v[2][-1].end if v[-1] else v[1].end,
+        v[0], v[1], v[2]
         )}
     | s='=' i=NAME_ ',' {kiwi.RefParameter(
         s.start, i.end,
@@ -283,11 +285,12 @@ param_no_default:
 param_with_default:
     | a=annotations '=' v=expression e=',' {kiwi.Parameter(
         a[0][0].start, v.end,
-        a[0], a[1]), v
+        a[0], a[1], a[2]
+        ), v
         }
     | a=annotations '=' v=expression &')' {kiwi.Parameter(
         a[0][0].start, v.end,
-        a[0], a[1]
+        a[0], a[1], a[2]
         ), v
         }
     | s='=' i=NAME_ '=' v=expression ',' {kiwi.RefParameter(
@@ -302,8 +305,11 @@ param_with_default:
         }
 
 return_param:
-    | expression
-    | s='=' i=NAME_ {kiwi.RefParameter(
+    | s=expression a=expression* {kiwi.ReturnParameter(
+        s.start, a[-1].end if a else s.end,
+        s, a
+    )}
+    | s='=' i=NAME_ {kiwi.ReturnRefParameter(
         s.start, i.end,
         i
         )}
@@ -366,7 +372,7 @@ notfull_expression:
         c, t, e)}
     | v=inversion {kiwi.NotFullExpression(
         v.start, v.end,
-        v)}
+        v)} 
 
 lambda_def:
     | s="lambda" p=lambda_parameters ':' r=expression {kiwi.LambdaDef(

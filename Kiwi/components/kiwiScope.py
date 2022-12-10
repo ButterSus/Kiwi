@@ -7,6 +7,8 @@ from typing import Optional, Set, Any, List, TYPE_CHECKING
 from pathlib import Path
 from functools import reduce
 
+import LangApi
+
 # Custom libraries
 
 if TYPE_CHECKING:
@@ -14,6 +16,14 @@ if TYPE_CHECKING:
 
 
 class Attr(list):
+    def __add__(self, other) -> Attr:
+        return self.__class__(super().__add__(other))
+
+    def __getitem__(self, item):
+        if isinstance(item, slice):
+            return self.__class__(super().__getitem__(item))
+        return super().__getitem__(item)
+
     def toName(self) -> str:
         return str(self[-1])
 
@@ -23,6 +33,28 @@ class Attr(list):
     def toPath(self) -> Path:
         return reduce(lambda x, y: x / y,
                       [Path(), *self])
+
+
+class DirAttr(Attr):
+    directory: Attr
+
+    def __init__(self, directory: Attr, *args):
+        self.directory = directory
+        super().__init__(*args)
+
+    def __add__(self, other) -> Attr:
+        return self.__class__(self.directory, super().__add__(other))
+
+    def __getitem__(self, item):
+        if isinstance(item, slice):
+            return self.__class__(self.directory, super().__getitem__(item))
+        return super().__getitem__(item)
+
+    def toName(self) -> str:
+        return str(self[-1])
+
+    def toString(self) -> str:
+        return f"{self.directory.toString()}:{'.'.join(self)}"
 
 
 Key = str | Attr
@@ -90,10 +122,30 @@ class ScopeType:
 
 class CodeScope(ScopeType):
     code: List[CodeType]
+    api: LangApi.API
 
     def __init__(self, *args, **kwargs):
-        self.code = list()
         super().__init__(*args, **kwargs)
+        self.code = list()
+
+
+class NoCodeScope(ScopeType):
+    code: List[CodeType]
+    api: LangApi.API
+
+    def __init__(self, *args, **kwargs):  # noqa
+        super().__init__(*args, **kwargs)
+
+    def _setter(self, value: CodeType):
+        self.api._scopes[0].code = value  # noqa
+
+    def _getter(self):
+        return self.api._scopes[0].code  # noqa
+
+    code = property(
+        fset=_setter,
+        fget=_getter
+    )
 
 
 class ScopeSystem:

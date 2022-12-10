@@ -3,8 +3,8 @@ from __future__ import annotations
 # Default libraries
 # -----------------
 
-from typing import Type
-from functools import reduce
+from typing import Type  # noqa: F401
+from functools import reduce  # noqa: F401
 
 # Custom libraries
 # ----------------
@@ -262,11 +262,13 @@ class Score(Variable, Assignable,
     def _getConstVar(self, value: int) -> Score:
         if value in self.api.general.constants.keys():
             return self.api.general.constants[value]
-        name = self.api.useConstPrefix([str(value)])
+        self.api.globalScope()
+        name = self.api.getConstEx(Attr([str(value)]))
         result = Score(self.api).InitsType(
             name, name
         ).Assign(Number(self.api).Formalize(str(value)))
         self.api.general.constants[value] = result
+        self.api.localScope()
         return result
 
     # Another methods
@@ -314,7 +316,7 @@ def built_codeInit(apiObject: API):
     # ------------------
 
     apiObject.enterScope(Module(apiObject))
-    scoreboard_name = apiObject.useGlobalPrefix(['globals'], withFuse=True)
+    scoreboard_name = apiObject.useGlobalPrefix(Attr(['globals']), withFuse=True)
     scoreboard = Scoreboard(apiObject).InitsType(
         scoreboard_name, scoreboard_name)
     apiObject.analyzer.scope.write(
@@ -327,12 +329,12 @@ def built_codeInit(apiObject: API):
 
     apiObject.general.constants = dict()
 
-    constant_name_false = apiObject.useConstPrefix(['0'])
+    constant_name_false = apiObject.getConstEx(Attr(['globals']))
     apiObject.general.constants[False] = Score(apiObject).InitsType(
         constant_name_false, constant_name_false
     ).Assign(Number(apiObject).Formalize(str(0)))
 
-    constant_name_true = apiObject.useConstPrefix(['1'])
+    constant_name_true = apiObject.getConstEx(Attr(['globals']))
     apiObject.general.constants[True] = Score(apiObject).InitsType(
         constant_name_true, constant_name_true
     ).Assign(Number(apiObject).Formalize(str(1)))

@@ -10,18 +10,18 @@ from __future__ import annotations
 
 from LangApi import *
 from Kiwi.components.kiwiASO import Attr
-from Kiwi.components.kiwiScope import ScopeType, CodeScope
+from Kiwi.components.kiwiScope import CodeScope, NoCodeScope
 import Kiwi.components.kiwiASO as kiwi
 
 
-class Undefined(Declareable, InitableType):
+class Undefined(Formalizable, InitableType):
     attr: Attr
     address: Attr
 
-    def Declare(self, attr: Attr) -> Undefined:
+    def Formalize(self, attr: Attr) -> Undefined:
         assert isinstance(attr, Attr)
-        self.address = Attr(attr)
-        self.attr = Attr(self.api.useLocalPrefix(attr))
+        self.address = attr
+        self.attr = self.api.useLocalPrefix(attr)
         return self
 
     def InitsType(self, parent: Variable, *args: Abstract):
@@ -35,10 +35,73 @@ class Module(CodeScope, Abstract):
 
     def __init__(self, apiObject: API):
         self.api = apiObject
-        super().__init__(dict(), name=self.api.config['project_name'])
+        super().__init__(dict(), name=self.api.config['entry_file'])
 
 
-class Function(CodeScope, Declareable):
+class Function(CodeScope, Formalizable, Callable):
+    attr: Attr
+    address: Attr
+    params: List[Abstract]
+    returns: Abstract
+
+    def __init__(self, apiObject: API):
+        self.api = apiObject
+        super().__init__(dict())
+
+    def Formalize(self, attr: Attr, body: kiwi.AST, params: List[kiwi.Parameter], returns: kiwi.ReturnParameter):
+        assert isinstance(attr, Attr)
+        self.address = attr
+        self.attr = self.api.useLocalPrefix(attr)
+
+        self.api.analyzer.scope.useCustomSpace(
+            self.attr.toName(), self, hideMode=True
+        )
+        self.api.enterScope(self)
+        params = self.api.analyzer.visit(params)
+        returns = self.api.analyzer.visit(returns)
+        body = self.api.analyzer.visit(body)
+        self.api.leaveScope()
+        self.api.analyzer.scope.leaveSpace()
+
+        return Construct(
+            'Reference',
+            self,
+            [body, params, returns],
+            raw_args=True
+        )
+
+    def Reference(self, body: Construct, params: Any, returns: Any):
+        self.api.enterScope(self)
+        self.params = self.api.visit(params)
+        self.returns = self.api.visit(returns)
+        self.api.visit(body)
+        self.api.leaveScope()
+        return self
+
+    def Call(self, *args: Abstract):
+        for param, arg in zip(self.params, args):
+            self.api.visit(
+                Construct(
+                    'Assign',
+                    param,
+                    [arg]
+                ))
+        self.api.system(FunctionDirectCall(
+            self.api.useDirPrefix(self.attr).toString()
+        ))
+        return self.returns
+
+    def Return(self, value: Abstract):
+        self.api.visit(
+            Construct(
+                'Assign',
+                self.returns,
+                [value]
+            )
+        )
+
+
+class Namespace(NoCodeScope, Formalizable):
     attr: Attr
     address: Attr
 
@@ -46,51 +109,38 @@ class Function(CodeScope, Declareable):
         self.api = apiObject
         super().__init__(dict())
 
-    def Declare(self, attr: Attr, body: kiwi.AST):
+    def Formalize(self, attr: Attr, blocks: List[kiwi.PrivateBlock | kiwi.PublicBlock | kiwi.DefaultBlock]):
         assert isinstance(attr, Attr)
-        self.address = Attr(attr)
-        self.attr = Attr(self.api.useLocalPrefix(attr))
+        self.address = attr
+        self.attr = self.api.useLocalPrefix(attr)
 
-        self.api.analyzer.scope.useCustomSpace(
-            self.attr.toName(), self, hideMode=True
-        )
-        body = self.api.analyzer.visit(body)
-        self.api.analyzer.scope.leaveSpace()
-
-        return Construct(
-            'Start', self, []
-        ), *body, Construct(
-            'Finish', self, []
-        )
-
-    def Start(self):
-        self.api.enterScope(self)
-
-    def Finish(self):
-        self.api.leaveScope()
-
-
-class Namespace(Declareable, ScopeType):
-    attr: Attr
-
-    def Declare(self, attr: Attr, private_body: kiwi.AST,
-                public_body: kiwi.AST, default_body: kiwi.AST):
-        assert isinstance(attr, Attr)
-        self.attr = Attr(self.api.useLocalPrefix(attr))
+        result = list()
 
         self.api.analyzer.scope.useCustomSpace(
             self.attr.toName(), self
         )
-        default_body = self.api.analyzer.visit(default_body)
+        self.api.enterScope(self)
+        for block in blocks:
+            if isinstance(block, kiwi.PrivateBlock):
+                self.private_mode = True
+            elif isinstance(block, kiwi.PublicBlock):
+                self.private_mode = False
+            else:
+                self.private_mode = self.api.config['default_scope'] == 'public'
+            result.append(self.api.analyzer.visit(block))
+        self.api.leaveScope()
         self.api.analyzer.scope.leaveSpace()
+
         return Construct(
-            'Start', self, []
-        ), *default_body, Construct(
-            'Finish', self, []
+            'Reference',
+            self,
+            [*result],
+            raw_args=True
         )
 
-    def Start(self):
+    def Reference(self, *blocks: kiwi.PrivateBlock | kiwi.PublicBlock | kiwi.DefaultBlock):
         self.api.enterScope(self)
-
-    def Finish(self):
+        for block in blocks:
+            self.api.visit(block.body)
         self.api.leaveScope()
+        return self

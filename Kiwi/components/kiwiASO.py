@@ -10,7 +10,7 @@ from dataclasses import dataclass
 # ----------------
 
 import Kiwi.components.kiwiColors as colors
-from Kiwi.components.kiwiScope import Attr
+from Kiwi.components.kiwiScope import Attr, DirAttr
 
 
 # Colors for dumping
@@ -103,7 +103,7 @@ class Assignment(Theme_Statements, AST):
 class AugAssignment(Theme_Statements, AST):
     targets: List[variable]
     op: Token
-    value: List[expression]
+    values: List[expression]
 
 
 @dataclass
@@ -125,9 +125,22 @@ class Return(Theme_Statements, AST):
 @dataclass
 class NamespaceDef(Theme_CStatements, AST):
     name: variable
-    body_private: List[statement]
-    body_public: List[statement]
-    body_default: List[statement]
+    blocks: List[PrivateBlock | PublicBlock | DefaultBlock]
+
+
+@dataclass
+class PrivateBlock(Theme_CStatements, AST):
+    body: List[statement]
+
+
+@dataclass
+class PublicBlock(Theme_CStatements, AST):
+    body: List[statement]
+
+
+@dataclass
+class DefaultBlock(Theme_CStatements, AST):
+    body: List[statement]
 
 
 @dataclass
@@ -135,15 +148,32 @@ class FuncDef(Theme_CStatements, AST):
     name: variable
     params: List[Parameter | RefParameter]
     default: List[expression]
-    returns: Parameter | RefParameter
+    returns: ReturnParameter | ReturnRefParameter
     promiser: expression
     body: List[statement]
 
 
 @dataclass
-class Parameter(Theme_Statements, AST):
-    target: List[variable]
+class ReturnParameter(Theme_Statements, AST):
     data_type: data_type
+    args: List[expression]
+
+
+@dataclass
+class ReturnRefParameter(Theme_Statements, AST):
+    target: variable
+
+
+@dataclass
+class Parameter(Theme_Statements, AST):
+    targets: List[variable]
+    data_type: data_type
+    args: List[expression]
+
+
+@dataclass
+class RefParameter(Theme_Statements, AST):
+    target: variable
 
 
 @dataclass
@@ -154,11 +184,6 @@ class LambdaDef(Theme_Statements, AST):
 
 @dataclass
 class LambdaParameter(Theme_Statements, AST):
-    target: variable
-
-
-@dataclass
-class RefParameter(Theme_Statements, AST):
     target: variable
 
 

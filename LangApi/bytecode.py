@@ -181,6 +181,14 @@ class ScoreboardPlayersOpIMod(CodeType):
 
 
 @dataclass
+class FunctionDirectCall(CodeType):
+    name: str
+
+    def toCode(self) -> str:
+        return f'function {convert_var_name(self.name)}'
+
+
+@dataclass
 class Tellraw(CodeType):
     selector: str
     text: str | List[NBTLiteral]

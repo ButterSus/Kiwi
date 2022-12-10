@@ -110,7 +110,9 @@ configTOML: ConfigTOML = {
 class ConfigTerminal(TypedDict):
     path: str
     debug: bool
+    minimalistic: bool
     create_project: bool
+    update_grammar: bool
 
 
 # General config
@@ -145,6 +147,10 @@ class Terminal:
                                     help='Compiles grammar and print details (for devs)')
         self.argparser.add_argument('--create-project', default=False, action='store_true',
                                     help='Creates new project')
+        self.argparser.add_argument('--update-grammar', default=False, action='store_true',
+                                    help='Updates grammar')
+        self.argparser.add_argument('--minimalistic', default=False, action='store_true',
+                                    help='Less debug code (for devs)')
         self.arguments = vars(self.argparser.parse_args())
         self.pathGeneral = Path(self.arguments['path'])
 
@@ -192,16 +198,15 @@ class ModuleWirer:
 
     directory: str
     configGeneral: ConfigGeneral
-    constructor: Constructor
     include_directories: List[Path]
     module: Module
 
-    def __init__(self, directory: str, configGeneral: ConfigGeneral, constructor: Constructor):
+    def __init__(self, directory: str, configGeneral: ConfigGeneral):
         self.directory = directory
         self.configGeneral = configGeneral
-        self.constructor = constructor
         self.include_directories = list(map(Path, self.configGeneral['include_directories']))
         self.module = self.openModule(self.getPath(directory))
+        self.module.api.visit(self.module.ast.module.body)
 
     def getPath(self, file_name: str) -> Path:
         """
@@ -259,9 +264,9 @@ class ModuleWirer:
             # -----------------
 
             if self.configGeneral['debug']:
-                print(dumpAST(ast.module))
+                print(dumpAST(ast.module, minimalistic=self.configGeneral['minimalistic']))
 
-            analyzer = Analyzer(ast, dict(), self.constructor)
+            analyzer = Analyzer(ast, dict(), self.configGeneral)
             return Module(tokenizer, analyzer.ast, analyzer, analyzer.api)
 
 
@@ -290,9 +295,8 @@ class Builder:
     def __init__(self):
         self.terminal = Terminal()
         self.configGeneral = self.terminal.configGeneral
-        self.constructor = Constructor(self.configGeneral)
 
-        if self.configGeneral['debug']:
+        if self.configGeneral['update_grammar']:
             from subprocess import run, DEVNULL
             run(
                 f'python -m pegen {Path(__file__).parent / "Kiwi/components/kiwi.gram"} -o'
@@ -303,29 +307,31 @@ class Builder:
         # Entry file initialization
         # -------------------------
 
-        self.moduleWirer = ModuleWirer(self.configGeneral['entry_file'],
-                                       self.configGeneral, self.constructor)
+        self.moduleWirer = ModuleWirer(self.configGeneral['entry_file'], self.configGeneral)
+
+        # Only for debugging (POST)
+        # -------------------------
 
         self.tokenizer = self.moduleWirer.module.tokenizer
         self.ast = self.moduleWirer.module.ast
         self.analyzer = self.moduleWirer.module.analyzer
         self.api = self.moduleWirer.module.api
 
-        # Only for debugging (POST)
-        # -------------------------
-
         if self.configGeneral['debug']:
             print(dumpTokenizer(self.tokenizer))
-            print(dumpAST(self.ast.module))
+            print(dumpAST(self.ast.module, minimalistic=self.configGeneral['minimalistic']))
             print(dumpScopeSystem(self.analyzer.scope))
-            pass
 
-        self.api.visit(
-            self.ast.module.body)
+        self.constructor = Constructor(self.configGeneral)
+        LangCode.built_codeFinish(self.api)
         self.build()
 
+        if self.configGeneral['debug']:
+            self.configGeneral['output_directory'] = 'bin'
+            self.constructor = Constructor(self.configGeneral)
+            self.build()
+
     def build(self):
-        LangCode.built_codeFinish(self.api)
         for codeScope in self.api.code:
             (self.constructor.directories.
              functions / LangCode.convert_var_name(codeScope.name)).with_suffix('.mcfunction').open('a') \

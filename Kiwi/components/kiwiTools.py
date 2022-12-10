@@ -35,7 +35,7 @@ def dumpTokenizer(node: _Tokenizer) -> str:
     return '\n'.join(items)
 
 
-def dumpAST(module: _kiwi.Module) -> str:
+def dumpAST(module: _kiwi.Module, minimalistic=False) -> str:
     tab = ' ' * 3
     new = '\n'
 
@@ -44,9 +44,11 @@ def dumpAST(module: _kiwi.Module) -> str:
             node = _kiwi.Token(..., ..., '.'.join(map(str, node)))
         if isinstance(node, list):
             if len(node) == 0:
-                return f'{color}[]'
+                return f'{color}{"" if minimalistic else "[]"}'
             prefix = f"\n{tab * lvl}" if len(node) > 1 else ""
-            return f'{color}[{prefix}{(", " + new + tab * lvl).join(map(lambda x:f(x, lvl + 1, color), node))}{color}]'
+            return f'{color}{"" if minimalistic else "["}{"" if minimalistic else prefix}' \
+                   f'{(", " + new + tab * lvl).join(map(lambda x:f(x, lvl + 1, color), node))}' \
+                   f'{color}{"" if minimalistic else "]"}'
         if isinstance(node, _kiwi.Token):
             ast_color = color if node.color is None else node.color
             return f'{ast_color} {node} {color}'

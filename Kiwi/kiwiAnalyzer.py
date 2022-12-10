@@ -15,24 +15,19 @@ import LangCode
 import Kiwi.components.kiwiASO as kiwi
 
 if TYPE_CHECKING:
-    from build import Constructor
+    from build import ConfigGeneral
 
 
 class Analyzer(AST_Visitor):
-    """
-    The main task of this class is
-    - connect variables to their memory locations
-    """
-
     scope: ScopeSystem
     ast: AST
     api: API
-    constructor: Constructor
+    config: ConfigGeneral
 
-    def __init__(self, ast: AST, libScope: dict, constructor: Constructor):
+    def __init__(self, ast: AST, libScope: dict, config: ConfigGeneral):
         self.ast = ast
         self.scope = ScopeSystem(libScope)
-        self.constructor = constructor
+        self.config = config
         LangCode.built_annotationsInit(API)
         self.api = API(self)
         LangCode.built_codeInit(self.api)
@@ -55,11 +50,21 @@ class Analyzer(AST_Visitor):
             [self.visit(node.value)]
         )
 
+    # Function calls
+    # --------------
+
     def Call(self, node: kiwi.Call):
         return Construct(
             'Call',
             self.visit(node.target),
             self.visit(node.args)
+        )
+
+    def Return(self, node: kiwi.Return):
+        return Construct(
+            'Return',
+            self.api.getThisScope(),
+            [self.visit(node.value)]
         )
 
     # CONSTANT / TOKENS
@@ -99,7 +104,7 @@ class Analyzer(AST_Visitor):
             return self.scope.get(node.toAttr())
         except AssertionError:
             return Construct(
-                'Declare',
+                'Formalize',
                 LangCode.Undefined,
                 [node.toAttr()]
             )
@@ -123,6 +128,30 @@ class Analyzer(AST_Visitor):
                 )
             )
 
+    _augAssignOps = {
+        '+=': 'IAdd',
+        '-=': 'ISub',
+        '*=': 'IMul',
+        '/=': 'IDiv',
+        '%=': 'IMod'
+    }
+
+    def AugAssignment(self, node: kiwi.AugAssignment):
+        result = list()
+
+        assert len(node.targets) == len(node.values)
+        for a, b in zip(node.targets, node.values):
+            target = self.visit(a)
+            value = self.visit(b)
+            result.append(
+                Construct(
+                    self._augAssignOps[node.op.value],
+                    target,
+                    [value]
+                )
+            )
+        return tuple(result)
+
     def Assignment(self, node: kiwi.Assignment):
         result = list()
 
@@ -132,7 +161,7 @@ class Analyzer(AST_Visitor):
             target = self.visit(a)
             value = self.visit(b)
             if value in passed_targets:
-                temp = value.__class__(self.api).InitsType(value)
+                print('boom!')
             result.append(
                 Construct(
                     'Assign',
@@ -148,9 +177,8 @@ class Analyzer(AST_Visitor):
             kiwi.Annotation(
                 ..., ..., node.targets, node.data_type, node.args))
         return self.visit(
-                    kiwi.Assignment(
-                        ..., ..., node.targets, node.values)
-               )
+            kiwi.Assignment(
+                ..., ..., node.targets, node.values))
 
     # SPACE DECLARATIONS
     # ==================
@@ -158,22 +186,73 @@ class Analyzer(AST_Visitor):
     def FuncDef(self, node: kiwi.FuncDef):
         return self.api.visit(
             Construct(
-                'Declare',
+                'Formalize',
                 LangCode.Function(self.api),
-                [node.name.toAttr(),
-                 node.body]
+                [
+                    node.name.toAttr(),
+                    node.body,
+                    node.params,
+                    node.returns
+                ]
             )
         )
 
     def NamespaceDef(self, node: kiwi.NamespaceDef):
         return self.api.visit(
             Construct(
-                'Declare',
-                LangCode.Namespace,
-                [node.name.toAttr(),
-                 node.body_private, node.body_public, node.body_default]
+                'Formalize',
+                LangCode.Namespace(self.api),
+                [
+                    node.name.toAttr(),
+                    node.blocks
+                ]
             )
         )
+
+    # PARAMS AND LAMBDAS
+    # ==================
+
+    def Parameter(self, node: kiwi.Parameter):
+        result = list()
+        for target in node.targets:
+            self.api.visit(
+                Construct(
+                    'InitsType',
+                    self.visit(target),
+                    [
+                        Construct(
+                            'GetChild',
+                            self.visit(node.data_type),
+                            []
+                        ),
+                        *self.api.visit(
+                            self.visit(node.args)
+                        )
+                    ]
+                )
+            )
+            result.append(self.visit(target))
+        return tuple(result)
+
+    def ReturnParameter(self, node: kiwi.ReturnParameter):
+        target = kiwi.Name(..., ..., self.api.getReturnEx().toName())
+        self.api.visit(
+            Construct(
+                'InitsType',
+                self.visit(target),
+                [
+                    Construct(
+                        'GetChild',
+                        self.visit(node.data_type),
+                        []
+                    ),
+                    *self.api.visit(
+                        self.visit(node.args)
+                    )
+                ]
+            )
+        )
+        return self.visit(target)
 
     # OPERATORS
     # =========
