@@ -29,7 +29,7 @@ class Analyzer(AST_Visitor):
         self.scope = ScopeSystem(libScope)
         self.config = config
         LangCode.built_annotationsInit(API)
-        self.api = API(self)
+        self.api = API(self, LangCode)
         LangCode.built_codeInit(self.api)
         self.visit(ast.module)
 
@@ -100,14 +100,16 @@ class Analyzer(AST_Visitor):
     # ==================
 
     def Name(self, node: kiwi.Name | kiwi.Attribute):
-        try:
-            return self.scope.get(node.toAttr())
-        except AssertionError:
-            return Construct(
-                'Formalize',
-                LangCode.Undefined,
-                [node.toAttr()]
-            )
+        if not self._no_references:
+            try:
+                return self.scope.get(node.toAttr())
+            except AssertionError:
+                pass
+        return Construct(
+            'Formalize',
+            LangCode.Undefined,
+            [node.toAttr()]
+        )
 
     Attribute = Name
 
@@ -116,6 +118,7 @@ class Analyzer(AST_Visitor):
 
     def Annotation(self, node: kiwi.Annotation):
         for target in node.targets:
+            assert not target.isGroup()
             self.api.visit(
                 Construct(
                     'InitsType',
@@ -183,6 +186,19 @@ class Analyzer(AST_Visitor):
     # SPACE DECLARATIONS
     # ==================
 
+    def IfElse(self, node: kiwi.IfElse):
+        return self.api.visit(
+            Construct(
+                'Formalize',
+                LangCode.IfElse(self.api),
+                [
+                    node.condition,
+                    node.then,
+                    node.or_else
+                ]
+            )
+        )
+
     def FuncDef(self, node: kiwi.FuncDef):
         return self.api.visit(
             Construct(
@@ -215,10 +231,11 @@ class Analyzer(AST_Visitor):
     def Parameter(self, node: kiwi.Parameter):
         result = list()
         for target in node.targets:
+            assert not target.isGroup()
             self.api.visit(
                 Construct(
                     'InitsType',
-                    self.visit(target),
+                    self.visit(target, no_references=True),
                     [
                         Construct(
                             'GetChild',
@@ -233,6 +250,10 @@ class Analyzer(AST_Visitor):
             )
             result.append(self.visit(target))
         return tuple(result)
+
+    def RefParameter(self, node: kiwi.RefParameter):
+        assert not node.target.isGroup()
+        return self.api.analyzer.scope.get(node.target.toAttr())
 
     def ReturnParameter(self, node: kiwi.ReturnParameter):
         target = kiwi.Name(..., ..., self.api.getReturnEx().toName())
@@ -254,8 +275,59 @@ class Analyzer(AST_Visitor):
         )
         return self.visit(target)
 
+    def ReturnRefParameter(self, node: kiwi.ReturnRefParameter):
+        return self.api.analyzer.scope.get(node.target.toAttr())
+
+    # COMPARISONS
+    # ===========
+
+    def Disjunctions(self, node: kiwi.Disjunctions):
+        return self.api.visit(
+            Construct(
+                'Formalize',
+                LangCode.Disjunctions(self.api),
+                [self.visit(node.values)]
+            )
+        )
+
+    def Conjunctions(self, node: kiwi.Conjunctions):
+        return self.api.visit(
+            Construct(
+                'Formalize',
+                LangCode.Conjunctions(self.api),
+                [self.visit(node.values)]
+            )
+        )
+
+    def Comparisons(self, node: kiwi.Comparisons):
+        return self.api.visit(
+            Construct(
+                'Formalize',
+                LangCode.Comparisons(self.api),
+                [self.visit(node.values), self.visit(node.ops)]
+            )
+        )
+
     # OPERATORS
     # =========
+
+    def UnaryOp(self, node: kiwi.UnaryOp):
+        x = self.visit(node.x)
+        match str(node.op):
+            case "+":
+                x: SupportPlus
+                return Construct(
+                    'Plus',
+                    x,
+                    []
+                )
+            case "-":
+                x: SupportMinus
+                return Construct(
+                    'Minus',
+                    x,
+                    []
+                )
 
     def BinaryOp(self, node: kiwi.BinaryOp):
         x, y = self.visit(node.x), self.visit(node.y)

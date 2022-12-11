@@ -1,9 +1,17 @@
-namespace Math:
-    private:
-        function sum(a, b -> score) -> score:
-            return a + b
+i: score = 0
+a, b, c -> score = 0, 1, 0
 
-    public:
-        c: score = 5
+function f():
+    c = a + b
+    a = b
+    b = c
 
-    print(sum(4, 9))
+    print(f"{i} iteration equals to {c}")
+
+    i += 1
+    if i < 32:
+        f()
+
+sidebar(globals)
+
+f()

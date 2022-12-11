@@ -10,8 +10,10 @@ from abc import ABC, abstractmethod
 # ----------------
 
 from LangApi.api import API, Attr
+
 if TYPE_CHECKING:
     from LangApi.bytecode import NBTLiteral
+    import LangCode
 
 
 # BASIC CLASS
@@ -81,6 +83,16 @@ class Printable(Abstract, ABC):
         ...
 
 
+class TransPredicate(Abstract, ABC):
+    """
+    <self> to JSON-PREDICATE
+    """
+
+    @abstractmethod
+    def transPredicate(self) -> NBTLiteral:
+        ...
+
+
 # BASIC OBJECT TYPES
 # ==================
 
@@ -123,6 +135,86 @@ class Variable(InitableType, ABC):
 # --------------------
 
 
+class SupportEquals(Abstract, ABC):
+    """
+    <self> == <other>
+    """
+
+    @abstractmethod
+    def Equals(self, other: Abstract) -> NBTLiteral:
+        ...
+
+
+class SupportNotEquals(Abstract, ABC):
+    """
+    <self> != <other>
+    """
+
+    @abstractmethod
+    def NotEquals(self, other: Abstract) -> NBTLiteral:
+        ...
+
+
+class SupportLessThanEquals(Abstract, ABC):
+    """
+    <self> <= <other>
+    """
+
+    @abstractmethod
+    def LessThanEquals(self, other: Abstract) -> NBTLiteral:
+        ...
+
+
+class SupportGreaterThanEquals(Abstract, ABC):
+    """
+    <self> >= <other>
+    """
+
+    @abstractmethod
+    def GreaterThanEquals(self, other: Abstract) -> NBTLiteral:
+        ...
+
+
+class SupportLessThan(Abstract, ABC):
+    """
+    <self> < <other>
+    """
+
+    @abstractmethod
+    def LessThan(self, other: Abstract) -> NBTLiteral:
+        ...
+
+
+class SupportGreaterThan(Abstract, ABC):
+    """
+    <self> > <other>
+    """
+
+    @abstractmethod
+    def GreaterThan(self, other: Abstract) -> NBTLiteral:
+        ...
+
+
+class SupportPlus(Abstract, ABC):
+    """
+    + <self>
+    """
+
+    @abstractmethod
+    def Plus(self) -> Optional[Abstract]:
+        ...
+
+
+class SupportMinus(Abstract, ABC):
+    """
+    - <self>
+    """
+
+    @abstractmethod
+    def Minus(self) -> Optional[Abstract]:
+        ...
+
+
 class SupportAdd(Abstract, ABC):
     """
     <self> + <OTHER>
@@ -147,6 +239,7 @@ class SupportMul(Abstract, ABC):
     """
     <self> * <OTHER>
     """
+
     @abstractmethod
     def Mul(self, other: Abstract) -> Optional[Abstract]:
         pass

@@ -4,13 +4,13 @@ from __future__ import annotations
 # -----------------
 
 from typing import List
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 # Custom libraries
 # ----------------
 
 import Kiwi.components.kiwiColors as colors
-from Kiwi.components.kiwiScope import Attr, DirAttr
+from Kiwi.components.kiwiScope import Attr, DirAttr  # noqa
 
 
 # Colors for dumping
@@ -101,7 +101,7 @@ class Assignment(Theme_Statements, AST):
 
 @dataclass
 class AugAssignment(Theme_Statements, AST):
-    targets: List[variable]
+    targets: List[expression]
     op: Token
     values: List[expression]
 
@@ -124,7 +124,7 @@ class Return(Theme_Statements, AST):
 
 @dataclass
 class NamespaceDef(Theme_CStatements, AST):
-    name: variable
+    name: Name
     blocks: List[PrivateBlock | PublicBlock | DefaultBlock]
 
 
@@ -145,7 +145,7 @@ class DefaultBlock(Theme_CStatements, AST):
 
 @dataclass
 class FuncDef(Theme_CStatements, AST):
-    name: variable
+    name: Name
     params: List[Parameter | RefParameter]
     default: List[expression]
     returns: ReturnParameter | ReturnRefParameter
@@ -161,30 +161,30 @@ class ReturnParameter(Theme_Statements, AST):
 
 @dataclass
 class ReturnRefParameter(Theme_Statements, AST):
-    target: variable
+    target: expression
 
 
 @dataclass
 class Parameter(Theme_Statements, AST):
-    targets: List[variable]
+    targets: List[expression]
     data_type: data_type
     args: List[expression]
 
 
 @dataclass
 class RefParameter(Theme_Statements, AST):
-    target: variable
+    target: expression
 
 
 @dataclass
 class LambdaDef(Theme_Statements, AST):
-    targets: List[variable]
+    targets: List[expression]
     returns: expression
 
 
 @dataclass
 class LambdaParameter(Theme_Statements, AST):
-    target: variable
+    target: expression
 
 
 @dataclass
@@ -211,6 +211,7 @@ class Case(Theme_Statements, AST):
     key: expression
     body: List[statement]
 
+
 # EXPRESSIONS
 # ===========
 
@@ -219,10 +220,20 @@ class Case(Theme_Statements, AST):
 class Expression(Theme_Expressions, AST):
     value: expression
 
+    def isGroup(self) -> bool:
+        if isinstance(self.value, NotFullExpression):
+            return self.value.isGroup
+        return False
+
 
 @dataclass
 class NotFullExpression(Theme_Expressions, AST):
     value: expression
+    isGroup: bool = field(default=False)
+
+    def setGroup(self, value: bool):
+        self.isGroup = value
+        return self
 
 
 @dataclass
@@ -233,7 +244,17 @@ class IfExpression(Theme_Expressions, AST):
 
 
 @dataclass
-class Compare(Theme_Expressions, AST):
+class Disjunctions(Theme_Expressions, AST):
+    values: List[expression]
+
+
+@dataclass
+class Conjunctions(Theme_Expressions, AST):
+    values: List[expression]
+
+
+@dataclass
+class Comparisons(Theme_Expressions, AST):
     values: List[expression]
     ops: List[Token]
 
@@ -343,19 +364,19 @@ class Number(Token):
     pass
 
 
-variable = Name | Attribute
-
 expression = \
     Expression | \
     IfExpression | \
     LambdaDef | \
-    Compare | \
+    Disjunctions | \
+    Conjunctions | \
+    Comparisons | \
     UnaryOp | \
     BinaryOp | \
     Selector | \
     Call | \
     MatchExpr | \
-    variable | \
+    Name | Attribute | \
     String | \
     Number
 

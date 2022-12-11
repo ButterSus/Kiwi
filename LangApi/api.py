@@ -4,8 +4,8 @@ from inspect import isclass
 # Default libraries
 # -----------------
 
-from typing import Dict, TYPE_CHECKING, Any,\
-    List, Type
+from typing import Dict, TYPE_CHECKING, Any, \
+    List, Type, Set
 from dataclasses import dataclass, field
 from itertools import chain
 
@@ -32,6 +32,14 @@ class Construct:
 
 
 class API:
+    # Modules
+    # =======
+
+    LangCode: LangCode
+
+    # Content
+    # =======
+
     defaultLibScope: Dict[str, Dict[str, Type[LangApi.Abstract]]] = {
         'builtins': dict()
     }
@@ -42,9 +50,11 @@ class API:
     class General:
         scoreboard: LangCode.Scoreboard
         constants: Dict[int, LangCode.Score]
+
     general = General()
 
-    def __init__(self, analyzer: Analyzer):
+    def __init__(self, analyzer: Analyzer, langCode: LangCode):
+        self.LangCode = langCode
         self.analyzer = analyzer
         self.config = analyzer.config
         self._init()
@@ -71,7 +81,7 @@ class API:
         except TypeError:
             return value
 
-    def visit(self, expr: list | Construct | ScopeType | LangApi.Abstract)\
+    def visit(self, expr: list | Construct | ScopeType | LangApi.Abstract) \
             -> list | LangApi.Abstract | ScopeType:
         if isinstance(expr, Attr):
             return expr
@@ -90,14 +100,15 @@ class API:
                 args = expr.arguments
             else:
                 args = self.visit(expr.arguments)
+            assert expr.method in dir(parent)
             return parent.__getattribute__(expr.method)(*args)
         if isclass(expr) and not isinstance(expr, ScopeType):
             expr: Any
             return expr(self)
         return expr
 
-    code: List[CodeScope] = list()
-    _scopes: List[ScopeType | CodeScope] = list()
+    code: Set[CodeScope | tuple[CodeScope, int]] = set()
+    _scopes: List[ScopeType | CodeScope | list[CodeScope, int]] = list()
     _is_not_local = False
 
     # Generated prefix
@@ -108,14 +119,42 @@ class API:
     def getReturnEx(self) -> Attr:
         result = self._return_counter
         self._return_counter += 1
-        return self.useLocalPrefix(Attr([f'${result}']))
+        return self.useLocalPrefix(Attr([f'$return--{result}']))
 
     _temp_counter = 0
 
     def getTempEx(self) -> Attr:
         result = self._temp_counter
         self._temp_counter += 1
-        return Attr([f'%{result}'])
+        return self.useLocalPrefix(Attr([f'$temp--{result}']))
+
+    _if_counter = 0
+
+    def getIfEx(self) -> Attr:
+        result = self._if_counter
+        self._if_counter += 1
+        return self.useLocalPrefix(Attr([f'--if--{result}']))
+
+    _check_counter = 0
+
+    def getCheckEx(self) -> Attr:
+        result = self._check_counter
+        self._check_counter += 1
+        return self.useLocalPrefix(Attr([f'$check--{result}']))
+
+    _else_counter = 0
+
+    def getElseEx(self) -> Attr:
+        result = self._else_counter
+        self._else_counter += 1
+        return self.useLocalPrefix(Attr([f'--else--{result}']))
+
+    _predicate_counter = 0
+
+    def getPredicateEx(self) -> Attr:
+        result = self._predicate_counter
+        self._predicate_counter += 1
+        return self.useLocalPrefix(Attr([f'{result}']))
 
     def getConstEx(self, attr: Attr) -> Attr:  # noqa
         result = attr[:-1] + Attr([f'#{attr[-1]}'])
@@ -124,11 +163,10 @@ class API:
     # Prefix methods
     # --------------
 
-    def useDirPrefix(self, attr: Attr) -> Attr:
-        result = Attr()
-        for scope in self._scopes[1:]:
-            result.append(scope.name)
-        return DirAttr(Attr([self.config['project_name']]), attr)
+    def useDirPrefix(self, attr: Attr, withFuse: bool = False) -> Attr:
+        if withFuse:
+            return DirAttr(Attr([self.config['project_name']]), attr)
+        return attr
 
     def useLocalPrefix(self, attr: Attr, withFuse: bool = False) -> Attr:
         if self._is_not_local:
@@ -155,9 +193,14 @@ class API:
     def getThisScope(self) -> ScopeType | CodeScope | LangCode.Function:
         return self._scopes[-1]
 
-    def enterScope(self, scope: ScopeType):
+    def enterScope(self, scope: ScopeType, attribute: int = None):
         if isinstance(scope, CodeScope) and scope not in self.code:
-            self.code.append(scope)
+            if attribute is not None:
+                self.code.add((scope, attribute))
+                self._scopes.append([scope, attribute])
+                return
+            else:
+                self.code.add(scope)
         self._scopes.append(scope)
 
     def leaveScope(self):
@@ -170,10 +213,14 @@ class API:
         self._is_not_local = False
 
     def system(self, command: LangApi.CodeType):
+        index = -1
         if self._is_not_local:
-            self._scopes[0].code.append(command)
+            index = 0
+        scope = self._scopes[index]
+        if isinstance(scope, list):
+            scope[0].code[scope[1]].append(command)
         else:
-            self._scopes[-1].code.append(command)
+            scope.code.append(command)
 
     def eval(self, text: str) -> list | LangApi.Abstract | ScopeType:
         result = self.analyzer.ast.eval(Tokenizer(text).lexer)

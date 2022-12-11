@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Optional, Set, Any, List, TYPE_CHECKING
 from pathlib import Path
 from functools import reduce
+from abc import ABC, abstractmethod
 
 import LangApi
 
@@ -34,6 +35,11 @@ class Attr(list):
         return reduce(lambda x, y: x / y,
                       [Path(), *self])
 
+    def withPrefix(self, prefix: str):
+        newAttr = self.__class__(self)
+        newAttr[-1] += prefix
+        return newAttr
+
 
 class DirAttr(Attr):
     directory: Attr
@@ -54,7 +60,7 @@ class DirAttr(Attr):
         return str(self[-1])
 
     def toString(self) -> str:
-        return f"{self.directory.toString()}:{'.'.join(self)}"
+        return f"{self.directory.toString()}:{'/'.join(self)}"
 
 
 Key = str | Attr
@@ -120,13 +126,20 @@ class ScopeType:
         return key[0] in self.hide
 
 
-class CodeScope(ScopeType):
-    code: List[CodeType]
+class CodeScope(ScopeType, ABC):
+    code: List[CodeType | List[CodeType]]
     api: LangApi.API
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.code = list()
+
+    def _set_codes(self, number: int):
+        self.code = [list() for _ in range(number)]
+
+    @abstractmethod
+    def toPath(self, attribute: int = None) -> List[str]:
+        ...
 
 
 class NoCodeScope(ScopeType):

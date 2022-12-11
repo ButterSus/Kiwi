@@ -357,20 +357,20 @@ case:
 
 expression:
     | lambda_def
-    | c=inversion '?' t=inversion ':' e=inversion {kiwi.IfExpression(
+    | c=disjunctions '?' t=disjunctions ':' e=disjunctions {kiwi.IfExpression(
         c.start, e.end,
         c, t, e)}
-    | v=inversion {kiwi.Expression(
+    | v=disjunctions {kiwi.Expression(
         v.start, v.end,
         v
         )}
 
 notfull_expression:
     | lambda_def
-    | c=inversion '?' t=inversion ':' e=inversion {kiwi.IfExpression(
+    | c=disjunctions '?' t=disjunctions ':' e=disjunctions {kiwi.IfExpression(
         c.start, e.end,
         c, t, e)}
-    | v=inversion {kiwi.NotFullExpression(
+    | v=disjunctions {kiwi.NotFullExpression(
         v.start, v.end,
         v)} 
 
@@ -389,19 +389,39 @@ lambda_param:
         v.start, v.end,
         v)}
 
+disjunctions:
+    | s=conjunctions a=disjunction+ {kiwi.Disjunctions(
+        s.start, a[-1].end,
+        [s, *a]
+    )}
+    | conjunctions
+
+disjunction:
+    | 'or' v=conjunctions {v}
+
+conjunctions:
+    | s=inversion a=conjunction+ {kiwi.Conjunctions(
+        s.start, a[-1].end,
+        [s, *a]
+    )}
+    | inversion
+
+conjunction:
+    | 'and' v=inversion {v}
+
 inversion:
-    | s='!' x=inversion {kiwi.UnaryOp(
+    | s='not' x=inversion {kiwi.UnaryOp(
         s.start, x.end,
-        x, '!'
+        x, 'not'
         )}
-    | comparison
+    | comparisons
 
 # Comparison operators
 # --------------------
 
-comparison:
-    | f=sum v=compare_op_sum_pair+ {kiwi.Compare(
-        f.start, v[-1].end,
+comparisons:
+    | f=sum v=compare_op_sum_pair+ {kiwi.Comparisons(
+        f.start, v[-1][1].end,
         [f, *list(map(lambda x: x[1], v))], list(map(lambda x: x[0], v))
         )}
     | sum
@@ -564,7 +584,7 @@ atom:
     | group
 
 group:
-    | '(' v=notfull_expression ')' {v}
+    | '(' v=notfull_expression ')' {v.setGroup(True)}
 
 # FUNCTION CALL ARGUMENTS
 # =======================

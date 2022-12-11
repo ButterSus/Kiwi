@@ -88,8 +88,10 @@ class Number(Number):
 
 
 class Score(Variable, Assignable,
-            SupportAdd, SupportSub,
-            SupportIAdd, SupportISub,
+            SupportAdd, SupportSub, SupportPlus,
+            SupportIAdd, SupportISub, SupportMinus,
+            SupportEquals, SupportNotEquals, SupportLessThanEquals, SupportLessThan,
+            SupportGreaterThanEquals, SupportGreaterThan,
             Printable):
     attr: Attr
     address: Attr
@@ -137,6 +139,16 @@ class Score(Variable, Assignable,
             ))
             return self
         assert False
+
+    def Plus(self) -> Optional[Abstract]:
+        return self
+
+    def Minus(self) -> Optional[Abstract]:
+        self.api.system(ScoreboardPlayersOpIMul(
+            self.attr.toString(), self.scoreboard.attr.toString(),
+            self._getConstVar(-1).attr.toString(), self._getConstVar(-1).scoreboard.attr.toString()
+        ))
+        return self
 
     def Add(self, other: Abstract) -> Score:
         if isinstance(other, Number | Score):
@@ -256,6 +268,102 @@ class Score(Variable, Assignable,
             return self
         assert False
 
+    def _getComparePredicate(self, value: NBTLiteral):
+        return {
+            "condition": "minecraft:value_check",
+            "value": {
+                "type": "minecraft:score",
+                "target": {
+                    "type": "minecraft:fixed",
+                    "name": convert_var_name(
+                        self.attr.toString()
+                    )
+                },
+                "score": convert_var_name(
+                    self.scoreboard.attr.toString()
+                )
+            },
+            "range": value
+        }
+
+    def Equals(self, other: Abstract) -> NBTLiteral:
+        if isinstance(other, Number):
+            return self._getComparePredicate(other.value)
+        if isinstance(other, Score):
+            return self._getComparePredicate({
+                "min": {
+                    "type": "minecraft:score",
+                    "target": {
+                        "type": "minecraft:fixed",
+                        "name": other.attr.toString()
+                    },
+                    "score": other.scoreboard.attr.toString()
+                },
+                "max": {
+                    "type": "minecraft:score",
+                    "target": {
+                        "type": "minecraft:fixed",
+                        "name": other.attr.toString()
+                    },
+                    "score": other.scoreboard.attr.toString()
+                }
+            })
+        assert False
+
+    def NotEquals(self, other: Abstract) -> NBTLiteral:
+        return {
+            "condition": "minecraft:inverted",
+            "term": self.Equals(other)
+        }
+
+    def GreaterThanEquals(self, other: Abstract) -> NBTLiteral:
+        if isinstance(other, Number):
+            return self._getComparePredicate({
+                "min": other.value
+            })
+        if isinstance(other, Score):
+            return self._getComparePredicate({
+                "min": {
+                    "type": "minecraft:score",
+                    "target": {
+                        "type": "minecraft:fixed",
+                        "name": other.attr.toString()
+                    },
+                    "score": other.scoreboard.attr.toString()
+                }
+            })
+        assert False
+
+    def LessThanEquals(self, other: Abstract) -> NBTLiteral:
+        if isinstance(other, Number):
+            return self._getComparePredicate({
+                "max": other.value
+            })
+        if isinstance(other, Score):
+            return self._getComparePredicate({
+                "max": {
+                    "type": "minecraft:score",
+                    "target": {
+                        "type": "minecraft:fixed",
+                        "name": other.attr.toString()
+                    },
+                    "score": other.scoreboard.attr.toString()
+                }
+            })
+        assert False
+
+    def GreaterThan(self, other: Abstract) -> NBTLiteral:
+        return {
+            "condition": "minecraft:inverted",
+            "term": self.LessThanEquals(other)
+        }
+
+    def LessThan(self, other: Abstract) -> NBTLiteral:
+        return {
+            "condition": "minecraft:inverted",
+            "term": self.GreaterThanEquals(other)
+        }
+
     # Private methods
     # ---------------
 
@@ -301,13 +409,23 @@ class Print(Callable):
         ))
 
 
+class Sidebar(Callable):
+    def Call(self, scoreboard: Scoreboard):
+        assert isinstance(scoreboard, Scoreboard)
+        self.api.system(ScoreboardObjectiveSetDisplay(
+            'sidebar',
+            scoreboard.attr.toString(),
+        ))
+
+
 def built_annotationsInit(apiObject: Type[API]):
     apiObject.build('builtins', {
         'score': ScoreClass,
         'scoreboard': ScoreboardClass,
         'print': Print,
         'str': StringClass,
-        'fstr': FStringClass
+        'fstr': FStringClass,
+        'sidebar': Sidebar
     })
 
 
@@ -329,15 +447,15 @@ def built_codeInit(apiObject: API):
 
     apiObject.general.constants = dict()
 
-    constant_name_false = apiObject.getConstEx(Attr(['globals']))
-    apiObject.general.constants[False] = Score(apiObject).InitsType(
-        constant_name_false, constant_name_false
-    ).Assign(Number(apiObject).Formalize(str(0)))
-
-    constant_name_true = apiObject.getConstEx(Attr(['globals']))
-    apiObject.general.constants[True] = Score(apiObject).InitsType(
-        constant_name_true, constant_name_true
-    ).Assign(Number(apiObject).Formalize(str(1)))
+    # constant_name_false = apiObject.getConstEx(Attr(['false']))
+    # apiObject.general.constants[False] = Score(apiObject).InitsType(
+    #     constant_name_false, constant_name_false
+    # ).Assign(Number(apiObject).Formalize(str(0)))
+    #
+    # constant_name_true = apiObject.getConstEx(Attr(['true']))
+    # apiObject.general.constants[True] = Score(apiObject).InitsType(
+    #     constant_name_true, constant_name_true
+    # ).Assign(Number(apiObject).Formalize(str(1)))
 
 
 def built_codeFinish(apiObject: API):

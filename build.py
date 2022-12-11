@@ -12,6 +12,7 @@ from pathlib import Path
 
 import LangCode
 from LangApi import API
+
 # Custom libraries
 # ----------------
 
@@ -322,20 +323,18 @@ class Builder:
             print(dumpAST(self.ast.module, minimalistic=self.configGeneral['minimalistic']))
             print(dumpScopeSystem(self.analyzer.scope))
 
-        self.constructor = Constructor(self.configGeneral)
+        # Building project
+        # ----------------
+
         LangCode.built_codeFinish(self.api)
-        self.build()
+
+        self.constructor = Constructor(self)
+        self.constructor.build()
 
         if self.configGeneral['debug']:
             self.configGeneral['output_directory'] = 'bin'
-            self.constructor = Constructor(self.configGeneral)
-            self.build()
-
-    def build(self):
-        for codeScope in self.api.code:
-            (self.constructor.directories.
-             functions / LangCode.convert_var_name(codeScope.name)).with_suffix('.mcfunction').open('a') \
-                .write('\n'.join(map(lambda x: x.toCode(), codeScope.code)))
+            self.constructor = Constructor(self)
+            self.constructor.build()
 
 
 if __name__ == '__main__':

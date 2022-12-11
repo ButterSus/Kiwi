@@ -3,17 +3,17 @@ from __future__ import annotations
 # Default libraries
 # -----------------
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TextIO, List
 from pathlib import Path
 from shutil import rmtree
-import LangCode
 import json
 
 # Custom libraries
 # ----------------
 
+import LangCode
 if TYPE_CHECKING:
-    from build import ConfigGeneral
+    from build import Builder, ConfigGeneral
 
 
 # General directories
@@ -34,9 +34,11 @@ class Constructor:
 
     configGeneral: ConfigGeneral
     directories: Directories
+    builder: Builder
 
-    def __init__(self, configGeneral: ConfigGeneral):
-        self.configGeneral = configGeneral
+    def __init__(self, builder: Builder):
+        self.builder = builder
+        self.configGeneral = builder.configGeneral
         self.directories = Directories()
         self.folders()
         self.files()
@@ -96,3 +98,21 @@ class Constructor:
                     "description": (self.configGeneral['description'])
                 }
             }, indent=4))
+
+    def create_file(self, path: Path, to_go: List[str]) -> TextIO:
+        if len(to_go) == 1:
+            return (path / to_go[0]).open('a')
+        result = path / to_go[0]
+        result.mkdir(parents=True, exist_ok=True)
+        return self.create_file(result, to_go[1:])
+
+    def build(self):
+        for codeScope in self.builder.api.code:
+            if isinstance(codeScope, tuple):
+                self.create_file(self.directories.data, codeScope[0].toPath(codeScope[1])).write(
+                    '\n'.join(map(lambda x: x.toCode(), codeScope[0].code[codeScope[1]]))
+                )
+                continue
+            self.create_file(self.directories.data, codeScope.toPath()).write(
+                '\n'.join(map(lambda x: x.toCode(), codeScope.code))
+            )

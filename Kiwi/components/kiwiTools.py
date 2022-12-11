@@ -129,7 +129,10 @@ class AST_Visitor:
         except TypeError:
             return value
 
-    def visit(self, node: Any) -> Any:
+    _no_references = 0
+
+    def visit(self, node: Any, no_references=False) -> Any:
+        self._no_references += no_references
         if isinstance(node, list):
             result = list()
             for item in node:
@@ -140,17 +143,24 @@ class AST_Visitor:
                 if visited is None:
                     continue
                 result.append(visited)
+            self._no_references -= no_references
             return result
         if isinstance(node, _kiwi.Token):
             if function := self.knockCall(node):
-                return function(node)
+                result = function(node)
+                self._no_references -= no_references
+                return result
+            self._no_references -= no_references
             return node
         if isinstance(node, _kiwi.AST):
             if function := self.knockCall(node):
-                return function(node)
+                result = function(node)
+                self._no_references -= no_references
+                return result
             for annotation, attribute in self.getAttributes(node):
                 visited = self.visit(attribute)
                 node.__setattr__(annotation, visited)
+            self._no_references -= no_references
             return node
 
     def visitAST(self, node: _kiwi.AST) -> List[Any]:

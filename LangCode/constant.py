@@ -12,10 +12,19 @@ from Kiwi.components.kiwiASO import String as TokenString
 from LangApi import *
 
 
-class Number(Formalizable, SupportAdd, SupportSub,
-             SupportMul, SupportDiv, SupportMod,
+class Number(Formalizable, SupportAdd, SupportSub, SupportPlus,
+             SupportMul, SupportDiv, SupportMod, SupportMinus,
+             SupportEquals, SupportNotEquals, SupportLessThan, SupportGreaterThan,
+             SupportLessThanEquals, SupportGreaterThanEquals,
              Printable):
     value: int
+
+    def Plus(self) -> Optional[Abstract]:
+        return self
+
+    def Minus(self) -> Optional[Abstract]:
+        self.value = -self.value
+        return self
 
     def Formalize(self, token: str) -> Number:
         self.value = int(token)
@@ -53,9 +62,56 @@ class Number(Formalizable, SupportAdd, SupportSub,
             ...
         assert False
 
+    def _boolToPredicate(self, value: bool) -> NBTLiteral:
+        if value:
+            return const_predicate_true
+        return const_predicate_false
+
+    def Equals(self, other: Abstract) -> NBTLiteral:
+        if isinstance(other, Number):
+            return self._boolToPredicate(
+                self.value == other.value
+            )
+        assert False
+
+    def NotEquals(self, other: Abstract) -> NBTLiteral:
+        if isinstance(other, Number):
+            return self._boolToPredicate(
+                self.value != other.value
+            )
+        assert False
+
+    def LessThanEquals(self, other: Abstract) -> NBTLiteral:
+        if isinstance(other, Number):
+            return self._boolToPredicate(
+                self.value <= other.value
+            )
+        assert False
+
+    def GreaterThanEquals(self, other: Abstract) -> NBTLiteral:
+        if isinstance(other, Number):
+            return self._boolToPredicate(
+                self.value >= other.value
+            )
+        assert False
+
+    def LessThan(self, other: Abstract) -> NBTLiteral:
+        if isinstance(other, Number):
+            return self._boolToPredicate(
+                self.value < other.value
+            )
+        assert False
+
+    def GreaterThan(self, other: Abstract) -> NBTLiteral:
+        if isinstance(other, Number):
+            return self._boolToPredicate(
+                self.value > other.value
+            )
+        assert False
+
     def PrintSource(self) -> NBTLiteral:
         return {
-            "text": int(self.value)
+            "text": str(int(self.value))
         }
 
 

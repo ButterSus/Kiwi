@@ -49,6 +49,16 @@ class ScoreboardObjectiveCreate(CodeType):
 
 
 @dataclass
+class ScoreboardObjectiveSetDisplay(CodeType):
+    type: str
+    scoreboard: str
+
+    def toCode(self) -> str:
+        scoreboard = convert_var_name(self.scoreboard)
+        return f'scoreboard objectives setdisplay {self.type} {scoreboard}'
+
+
+@dataclass
 class ScoreboardPlayersSet(CodeType):
     name: str
     scoreboard: str
@@ -189,9 +199,61 @@ class FunctionDirectCall(CodeType):
 
 
 @dataclass
+class Execute(CodeType):
+    steps: List[CodeType]
+
+    def toCode(self) -> str:
+        return f'execute {" ".join(map(lambda x: x.toCode(), self.steps))}'
+
+
+@dataclass
+class StepIfPredicate(CodeType):
+    predicate: str
+
+    def toCode(self) -> str:
+        return f'if predicate {convert_var_name(self.predicate)}'
+
+
+@dataclass
+class StepIfScoreMatch(CodeType):
+    name: str
+    scoreboard: str
+    value: str
+
+    def toCode(self) -> str:
+        name = convert_var_name(self.name)
+        scoreboard = convert_var_name(self.scoreboard)
+        return f'if score {name} {scoreboard} matches {self.value}'
+
+
+@dataclass
+class StepRun(CodeType):
+    step: CodeType
+
+    def toCode(self) -> str:
+        return f'run {self.step.toCode()}'
+
+
+@dataclass
 class Tellraw(CodeType):
     selector: str
     text: str | List[NBTLiteral]
 
     def toCode(self) -> str:
         return f'tellraw {self.selector} {dumps(self.text)}'
+
+
+@dataclass
+class RawCommand(CodeType):
+    text: str
+
+    def toCode(self) -> str:
+        return self.text
+
+
+@dataclass
+class RawJSON(CodeType):
+    json: NBTLiteral
+
+    def toCode(self) -> str:
+        return dumps(self.json, indent=4)
