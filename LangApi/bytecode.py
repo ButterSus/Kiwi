@@ -59,6 +59,15 @@ class ScoreboardObjectiveSetDisplay(CodeType):
 
 
 @dataclass
+class ScoreboardObjectiveRemove(CodeType):
+    scoreboard: str
+
+    def toCode(self) -> str:
+        scoreboard = convert_var_name(self.scoreboard)
+        return f'scoreboard objectives remove {scoreboard}'
+
+
+@dataclass
 class ScoreboardPlayersSet(CodeType):
     name: str
     scoreboard: str
@@ -188,6 +197,17 @@ class ScoreboardPlayersOpIMod(CodeType):
         other_scoreboard = convert_var_name(self.other_scoreboard)
         return f'scoreboard players operation {name} {scoreboard} %= ' \
                f'{other_name} {other_scoreboard}'
+
+
+@dataclass
+class ScoreboardPlayersReset(CodeType):
+    name: str
+    scoreboard: str
+
+    def toCode(self) -> str:
+        name = convert_var_name(self.name)
+        scoreboard = convert_var_name(self.scoreboard)
+        return f'scoreboard players reset {name} {scoreboard}'
 
 
 @dataclass

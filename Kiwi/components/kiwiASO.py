@@ -4,6 +4,7 @@ from __future__ import annotations
 # -----------------
 
 from typing import List
+from tokenize import TokenInfo as _TokenInfo
 from dataclasses import dataclass, field
 
 # Custom libraries
@@ -358,6 +359,29 @@ class String(Token):
                 return self.value[:self.value.index("\"")]
             case "\'":
                 return self.value[:self.value.index("\'")]
+
+
+def catString(tokens: List[_TokenInfo]):
+    result = list()
+    prefixes = set()
+    for token in tokens:
+        prefix: str = ...
+        match token.string[-1]:
+            case "\"":
+                prefix = token.string[:token.string.index("\"")]
+            case "\'":
+                prefix = token.string[:token.string.index("\'")]
+        string: str = token.string[len(prefix):]
+        match token.string[-1]:
+            case "\"":
+                string = string.strip("\"")
+            case "\'":
+                string = string.strip("\'")
+        prefixes.add(prefix)
+        result.append(string)
+    assert len(prefixes) <= 1
+    prefix = prefixes.pop() if prefixes else ""
+    return f'{prefix}"{"".join(result)}"'
 
 
 class Number(Token):

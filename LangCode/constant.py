@@ -12,10 +12,16 @@ from Kiwi.components.kiwiASO import String as TokenString
 from LangApi import *
 
 
+class AbsoluteNone(Formalizable):
+    def Formalize(self) -> Optional[Abstract]:
+        return self
+
+
 class Number(Formalizable, SupportAdd, SupportSub, SupportPlus,
              SupportMul, SupportDiv, SupportMod, SupportMinus,
              SupportEquals, SupportNotEquals, SupportLessThan, SupportGreaterThan,
              SupportLessThanEquals, SupportGreaterThanEquals,
+             TransPredicate,
              Printable):
     value: int
 
@@ -113,6 +119,9 @@ class Number(Formalizable, SupportAdd, SupportSub, SupportPlus,
         return {
             "text": str(int(self.value))
         }
+
+    def transPredicate(self) -> NBTLiteral:
+        return self.NotEquals(Number(self.api).Formalize("0"))
 
 
 class String(Formalizable, Printable,

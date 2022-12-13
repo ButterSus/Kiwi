@@ -3,7 +3,7 @@ from __future__ import annotations
 # Default libraries
 # -----------------
 
-from tokenize import TokenInfo, NEWLINE, NL, DEDENT, generate_tokens
+from tokenize import TokenInfo, NEWLINE, NL, DEDENT, COMMENT, generate_tokens
 from io import StringIO
 from typing import Iterator
 
@@ -19,7 +19,20 @@ class Tokenizer:
 
     def __init__(self, text: str):
         self.text = text
-        self.lexer = PegenTokenizer(Tokenize(generate_tokens(StringIO(text).readline)))
+        self.lexer = PegenTokenizer(
+            Tokenize(
+                Ignores(
+                    generate_tokens(StringIO(text).readline)
+                )
+            )
+        )
+
+
+def Ignores(stream: Iterator[TokenInfo]) -> Iterator[TokenInfo]:
+    for token in stream:
+        if token.type == COMMENT:
+            continue
+        yield token
 
 
 def Tokenize(stream: Iterator[TokenInfo]):

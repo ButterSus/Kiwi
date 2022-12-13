@@ -106,6 +106,10 @@ def dumpScopeSystem(scope: ScopeSystem):
     return _colors.Red + 'globals' + f(scope.globalScope) + _colors.ResetAll
 
 
+class AST_skip(Exception):
+    ...
+
+
 class AST_Visitor:
     def getAttributes(self, node: _kiwi.AST):
         try:
@@ -131,39 +135,42 @@ class AST_Visitor:
 
     _no_references = 0
 
-    def visit(self, node: Any, no_references=False) -> Any:
-        self._no_references += no_references
-        if isinstance(node, list):
-            result = list()
-            for item in node:
-                visited = self.visit(item)
-                if isinstance(visited, tuple):
-                    result.extend(self.unpackTuple(visited))
-                    continue
-                if visited is None:
-                    continue
-                result.append(visited)
-            self._no_references -= no_references
-            return result
-        if isinstance(node, _kiwi.Token):
-            if function := self.knockCall(node):
-                result = function(node)
+    def visit(self, node: Any, no_references=False, canSkip=False) -> Any:
+        try:
+            self._no_references += no_references
+            if isinstance(node, list):
+                result = list()
+                for item in node:
+                    visited = self.visit(item)
+                    if isinstance(visited, tuple):
+                        result.extend(self.unpackTuple(visited))
+                        continue
+                    if visited is None:
+                        continue
+                    result.append(visited)
                 self._no_references -= no_references
                 return result
-            self._no_references -= no_references
-            return node
-        if isinstance(node, _kiwi.AST):
-            if function := self.knockCall(node):
-                result = function(node)
+            if isinstance(node, _kiwi.Token):
+                if function := self.knockCall(node):
+                    result = function(node)
+                    self._no_references -= no_references
+                    return result
                 self._no_references -= no_references
-                return result
-            for annotation, attribute in self.getAttributes(node):
-                visited = self.visit(attribute)
-                node.__setattr__(annotation, visited)
-            self._no_references -= no_references
-            return node
+                return node
+            if isinstance(node, _kiwi.AST):
+                if function := self.knockCall(node):
+                    result = function(node)
+                    self._no_references -= no_references
+                    return result
+                for annotation, attribute in self.getAttributes(node):
+                    visited = self.visit(attribute)
+                    node.__setattr__(annotation, visited)
+                self._no_references -= no_references
+                return node
+        except AST_skip:
+            assert canSkip
 
-    def visitAST(self, node: _kiwi.AST) -> List[Any]:
+    def visitAST(self, node: _kiwi.AST | _kiwi.Token) -> List[Any]:
         result = list()
         for annotation, attribute in self.getAttributes(node):
             result.append(self.visit(attribute))

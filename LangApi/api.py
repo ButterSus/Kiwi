@@ -135,6 +135,13 @@ class API:
         self._if_counter += 1
         return self.useLocalPrefix(Attr([f'--if--{result}']))
 
+    _while_counter = 0
+
+    def getWhileEx(self) -> Attr:
+        result = self._while_counter
+        self._while_counter += 1
+        return self.useLocalPrefix(Attr([f'--while--{result}']))
+
     _check_counter = 0
 
     def getCheckEx(self) -> Attr:
@@ -173,6 +180,10 @@ class API:
             return self.useGlobalPrefix(attr)
         result = Attr()
         for scope in self._scopes[1:]:
+            if isinstance(scope, list):
+                scope = scope[0]
+            if scope is None:
+                continue
             result.append(scope.name)
         result = self.useGlobalPrefix(result + attr)
         if withFuse:
@@ -190,8 +201,8 @@ class API:
     # Another methods
     # ---------------
 
-    def getThisScope(self) -> ScopeType | CodeScope | LangCode.Function:
-        return self._scopes[-1]
+    def getThisScope(self, offset=-1) -> ScopeType | CodeScope | LangCode.Function:
+        return self._scopes[offset]
 
     def enterScope(self, scope: ScopeType, attribute: int = None):
         if isinstance(scope, CodeScope) and scope not in self.code:

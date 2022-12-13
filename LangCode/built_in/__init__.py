@@ -86,12 +86,43 @@ class Number(Number):
             return temp
         return super().Div(other)
 
+    def Equals(self, other: Abstract) -> NBTLiteral:
+        if isinstance(other, Score):
+            return other.Equals(self)
+        return super().Equals(other)
+
+    def NotEquals(self, other: Abstract) -> NBTLiteral:
+        if isinstance(other, Score):
+            return other.NotEquals(self)
+        return super().NotEquals(other)
+
+    def GreaterThanEquals(self, other: Abstract) -> NBTLiteral:
+        if isinstance(other, Score):
+            return other.LessThanEquals(self)
+        return super().GreaterThanEquals(other)
+
+    def LessThanEquals(self, other: Abstract) -> NBTLiteral:
+        if isinstance(other, Score):
+            return other.GreaterThanEquals(self)
+        return super().LessThanEquals(other)
+
+    def GreaterThan(self, other: Abstract) -> NBTLiteral:
+        if isinstance(other, Score):
+            return other.LessThan(self)
+        return super().GreaterThan(other)
+
+    def LessThan(self, other: Abstract) -> NBTLiteral:
+        if isinstance(other, Score):
+            return other.GreaterThan(self)
+        return super().LessThan(other)
+
 
 class Score(Variable, Assignable,
             SupportAdd, SupportSub, SupportPlus,
             SupportIAdd, SupportISub, SupportMinus,
             SupportEquals, SupportNotEquals, SupportLessThanEquals, SupportLessThan,
             SupportGreaterThanEquals, SupportGreaterThan,
+            TransPredicate,
             Printable):
     attr: Attr
     address: Attr
@@ -295,17 +326,25 @@ class Score(Variable, Assignable,
                     "type": "minecraft:score",
                     "target": {
                         "type": "minecraft:fixed",
-                        "name": other.attr.toString()
+                        "name": convert_var_name(
+                            other.attr.toString()
+                        )
                     },
-                    "score": other.scoreboard.attr.toString()
+                    "score": convert_var_name(
+                        other.scoreboard.attr.toString()
+                    )
                 },
                 "max": {
                     "type": "minecraft:score",
                     "target": {
                         "type": "minecraft:fixed",
-                        "name": other.attr.toString()
+                        "name": convert_var_name(
+                            other.attr.toString()
+                        )
                     },
-                    "score": other.scoreboard.attr.toString()
+                    "score": convert_var_name(
+                        other.scoreboard.attr.toString()
+                    )
                 }
             })
         assert False
@@ -327,9 +366,13 @@ class Score(Variable, Assignable,
                     "type": "minecraft:score",
                     "target": {
                         "type": "minecraft:fixed",
-                        "name": other.attr.toString()
+                        "name": convert_var_name(
+                            other.attr.toString()
+                        )
                     },
-                    "score": other.scoreboard.attr.toString()
+                    "score": convert_var_name(
+                        other.scoreboard.attr.toString()
+                    )
                 }
             })
         assert False
@@ -345,9 +388,13 @@ class Score(Variable, Assignable,
                     "type": "minecraft:score",
                     "target": {
                         "type": "minecraft:fixed",
-                        "name": other.attr.toString()
+                        "name": convert_var_name(
+                            other.attr.toString()
+                        )
                     },
-                    "score": other.scoreboard.attr.toString()
+                    "score": convert_var_name(
+                        other.scoreboard.attr.toString()
+                    )
                 }
             })
         assert False
@@ -388,6 +435,9 @@ class Score(Variable, Assignable,
             "objective": convert_var_name(self.scoreboard.attr.toString())
         }}
 
+    def transPredicate(self) -> NBTLiteral:
+        return self.NotEquals(Number(self.api).Formalize("0"))
+
 
 class ScoreClass(Class):
     def Call(self, *args: Abstract) -> Optional[Abstract]:
@@ -418,6 +468,22 @@ class Sidebar(Callable):
         ))
 
 
+class Remove(Callable):
+    def Call(self, variable: Abstract):
+        if isinstance(variable, Score):
+            self.api.system(ScoreboardPlayersReset(
+                variable.attr.toString(),
+                variable.scoreboard.attr.toString()
+            ))
+            return
+        if isinstance(variable, Scoreboard):
+            self.api.system(ScoreboardObjectiveRemove(
+                variable.attr.toString()
+            ))
+            return
+        assert False
+
+
 def built_annotationsInit(apiObject: Type[API]):
     apiObject.build('builtins', {
         'score': ScoreClass,
@@ -425,7 +491,8 @@ def built_annotationsInit(apiObject: Type[API]):
         'print': Print,
         'str': StringClass,
         'fstr': FStringClass,
-        'sidebar': Sidebar
+        'sidebar': Sidebar,
+        'remove': Remove
     })
 
 
@@ -441,21 +508,7 @@ def built_codeInit(apiObject: API):
         'globals', scoreboard
     )
     apiObject.general.scoreboard = scoreboard
-
-    # Main constants
-    # --------------
-
     apiObject.general.constants = dict()
-
-    # constant_name_false = apiObject.getConstEx(Attr(['false']))
-    # apiObject.general.constants[False] = Score(apiObject).InitsType(
-    #     constant_name_false, constant_name_false
-    # ).Assign(Number(apiObject).Formalize(str(0)))
-    #
-    # constant_name_true = apiObject.getConstEx(Attr(['true']))
-    # apiObject.general.constants[True] = Score(apiObject).InitsType(
-    #     constant_name_true, constant_name_true
-    # ).Assign(Number(apiObject).Formalize(str(1)))
 
 
 def built_codeFinish(apiObject: API):

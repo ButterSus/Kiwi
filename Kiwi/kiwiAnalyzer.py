@@ -8,7 +8,7 @@ from LangApi import *
 # Custom libraries
 # ----------------
 
-from Kiwi.components.kiwiTools import AST_Visitor
+from Kiwi.components.kiwiTools import AST_Visitor, AST_skip
 from Kiwi.components.kiwiScope import ScopeSystem
 from Kiwi.kiwiAST import AST
 import LangCode
@@ -32,6 +32,12 @@ class Analyzer(AST_Visitor):
         self.api = API(self, LangCode)
         LangCode.built_codeInit(self.api)
         self.visit(ast.module)
+
+    # MODULE DECLARATION
+    # ==================
+
+    def Module(self, node: kiwi.Module):
+        self.visit(node.body, canSkip=True)
 
     # EXPRESSIONS
     # ===========
@@ -70,6 +76,17 @@ class Analyzer(AST_Visitor):
     # CONSTANT / TOKENS
     # =================
 
+    def Token(self, node: kiwi.Token):
+        match node.value:
+            case 'none':
+                return Construct(
+                    'Formalize',
+                    LangCode.AbsoluteNone,
+                    []
+                )
+        self.visitAST(node)
+        return node
+
     @staticmethod
     def Number(node: kiwi.Number):
         return Construct(
@@ -99,7 +116,7 @@ class Analyzer(AST_Visitor):
     # VARIABLE NOTATIONS
     # ==================
 
-    def Name(self, node: kiwi.Name | kiwi.Attribute):
+    def VariableReference(self, node: kiwi.Name | kiwi.Attribute):
         if not self._no_references:
             try:
                 return self.scope.get(node.toAttr())
@@ -111,7 +128,7 @@ class Analyzer(AST_Visitor):
             [node.toAttr()]
         )
 
-    Attribute = Name
+    Attribute = Name = VariableReference
 
     # ASSIGNMENTS
     # ===========
@@ -121,7 +138,7 @@ class Analyzer(AST_Visitor):
             assert not target.isGroup()
             self.api.visit(
                 Construct(
-                    'InitsType',
+                    'AnnotationDeclare',
                     self.visit(target),
                     [Construct(
                         'GetChild',
@@ -189,7 +206,7 @@ class Analyzer(AST_Visitor):
     def IfElse(self, node: kiwi.IfElse):
         return self.api.visit(
             Construct(
-                'Formalize',
+                'InitsType',
                 LangCode.IfElse(self.api),
                 [
                     node.condition,
@@ -199,24 +216,36 @@ class Analyzer(AST_Visitor):
             )
         )
 
-    def FuncDef(self, node: kiwi.FuncDef):
+    def While(self, node: kiwi.While):
         return self.api.visit(
             Construct(
-                'Formalize',
-                LangCode.Function(self.api),
+                'InitsType',
+                LangCode.While(self.api),
                 [
-                    node.name.toAttr(),
-                    node.body,
-                    node.params,
-                    node.returns
+                    node.condition,
+                    node.body
                 ]
             )
         )
 
+    def FuncDef(self, node: kiwi.FuncDef):
+        return self.api.visit(
+                Construct(
+                    'AnnotationDeclare',
+                    self.visit(node.name),
+                    [
+                        LangCode.Function(self.api),
+                        node.body,
+                        node.params,
+                        node.returns
+                    ]
+                )
+            )
+
     def NamespaceDef(self, node: kiwi.NamespaceDef):
         return self.api.visit(
             Construct(
-                'Formalize',
+                'InitsType',
                 LangCode.Namespace(self.api),
                 [
                     node.name.toAttr(),
@@ -234,7 +263,7 @@ class Analyzer(AST_Visitor):
             assert not target.isGroup()
             self.api.visit(
                 Construct(
-                    'InitsType',
+                    'AnnotationDeclare',
                     self.visit(target, no_references=True),
                     [
                         Construct(
@@ -259,7 +288,7 @@ class Analyzer(AST_Visitor):
         target = kiwi.Name(..., ..., self.api.getReturnEx().toName())
         self.api.visit(
             Construct(
-                'InitsType',
+                'AnnotationDeclare',
                 self.visit(target),
                 [
                     Construct(

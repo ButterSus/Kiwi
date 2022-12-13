@@ -166,8 +166,8 @@ assignment:
         )}
 
 annotations:
-    | i=expression ':' t=expression a=expression* {[i], t, a}
-    | i=','.expression+ '->' t=expression a=expression* {i, t, a}
+    | i=expression ':' a=','.expression+ {[i], a[0], a[1:]}
+    | i=','.expression+ '->' a=','.expression+ {i, a[0], a[1:]}
 
 augassign:
     | s='+=' {kiwi.Token(
@@ -622,7 +622,7 @@ WORD_:
     | v=(NUMBER | NAME)+ {kiwi.Word(v[0].start, v[-1].end, ''.join(list(map(str, v))))}
 
 STRING_:
-    | v=STRING+ {kiwi.String(v[0].start, v[-1].end, ''.join(map(lambda x: x.string, v)))}
+    | v=STRING+ {kiwi.String(v[0].start, v[-1].end, kiwi.catString(v))}
 
 SELECTOR_:
     | '@' v=NAME {kiwi.Selector(v.start, v.end, v.string)}

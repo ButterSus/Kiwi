@@ -29,25 +29,28 @@ class NotFullExpression(Formalizable):
         return result
 
 
-class AnyBool:
+class AnyCompareObject(TransPredicate, ABC):
     predicate: NBTLiteral
 
 
-class Disjunctions(Formalizable, AnyBool):
+class Disjunctions(Formalizable, AnyCompareObject):
     def Formalize(self, values: List[kiwi.expression]) -> Disjunctions:
         self.predicate = dict()
         self.predicate['condition'] = 'minecraft:alternative'
         self.predicate['terms'] = list()
         for value in values:
-            if isinstance(value, AnyBool):
+            if isinstance(value, AnyCompareObject):
                 self.predicate['terms'].append(value.predicate)
                 continue
             assert isinstance(value, TransPredicate)
             self.predicate['terms'].append(value.transPredicate())
         return self
 
+    def transPredicate(self) -> NBTLiteral:
+        return self.predicate
 
-class Conjunctions(Formalizable, AnyBool):
+
+class Conjunctions(Formalizable, AnyCompareObject):
     def Formalize(self, values: List[kiwi.expression]) -> Conjunctions:
         self.predicate = dict()
         self.predicate['condition'] = 'minecraft:inverted'
@@ -57,7 +60,7 @@ class Conjunctions(Formalizable, AnyBool):
         for value in values:
             predicate = dict()
             predicate['condition'] = 'minecraft:inverted'
-            if isinstance(value, AnyBool):
+            if isinstance(value, AnyCompareObject):
                 predicate['term'] = value.predicate
                 self.predicate['term']['terms'].append(predicate)
                 continue
@@ -66,8 +69,11 @@ class Conjunctions(Formalizable, AnyBool):
             self.predicate['term']['terms'].append(predicate)
         return self
 
+    def transPredicate(self) -> NBTLiteral:
+        return self.predicate
 
-class Comparisons(Formalizable, AnyBool):
+
+class Comparisons(Formalizable, AnyCompareObject):
     def Formalize(self, values: List[kiwi.expression], ops: List[kiwi.Token]) -> Comparisons:
         self.predicate = dict()
         self.predicate['condition'] = 'minecraft:inverted'
@@ -104,3 +110,6 @@ class Comparisons(Formalizable, AnyBool):
                     predicate['term'] = value.LessThan(values[i + 1])
             self.predicate['term']['terms'].append(predicate)
         return self
+
+    def transPredicate(self) -> NBTLiteral:
+        return self.predicate

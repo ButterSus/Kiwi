@@ -16,7 +16,7 @@ from Kiwi.components.kiwiScope import CodeScope, NoCodeScope
 import Kiwi.components.kiwiASO as kiwi
 
 
-class Undefined(Formalizable, InitableType):
+class Undefined(Formalizable):
     attr: Attr
     address: Attr
 
@@ -26,8 +26,8 @@ class Undefined(Formalizable, InitableType):
         self.attr = self.api.useLocalPrefix(attr)
         return self
 
-    def InitsType(self, parent: Variable, *args: Abstract):
-        self.api.analyzer.scope.write(
+    def AnnotationDeclare(self, parent: Variable, *args: Abstract):
+        return self.api.analyzer.scope.write(
             self.address, parent.InitsType(self.attr, self.address, *args))
 
 
@@ -44,7 +44,7 @@ class Module(CodeScope, Abstract):
         return [convert_var_name(self.api.config['project_name']), 'functions', f'{name}.mcfunction']
 
 
-class IfElse(CodeScope, Formalizable):
+class IfElse(CodeScope, InitableType):
     if_attr: Attr
     else_attr: Attr
     predicate: Attr
@@ -55,16 +55,18 @@ class IfElse(CodeScope, Formalizable):
         self.api = apiObject
         super().__init__(dict())
 
-    def Formalize(self, condition: kiwi.expression,
+    def InitsType(self, condition: kiwi.expression,
                   then: List[kiwi.statement], or_else: List[kiwi.statement]):
-        self._set_codes(3)
+        self._set_files(3)
 
         self.if_attr = self.api.getIfEx()
         self.else_attr = self.api.getElseEx()
         self.predicate = self.api.getPredicateEx()
 
-        condition = self.api.analyzer.visit(condition).arguments[0]
-        assert isinstance(condition, LangCode.AnyBool)
+        condition = self.api.visit(
+            self.api.analyzer.visit(condition)
+        )
+        assert isinstance(condition, LangCode.TransPredicate)
 
         self.api.analyzer.scope.newLocalSpace()
         self.api.enterScope(self, 0)
@@ -84,18 +86,20 @@ class IfElse(CodeScope, Formalizable):
         return Construct(
             'Reference',
             self,
-            [condition, then, or_else],
+            [condition.transPredicate(), then, or_else],
             raw_args=True
         )
 
-    def Reference(self, condition: LangCode.AnyBool, then: List[Construct], or_else: List[Construct]):
-        check: LangCode.Score = self.api.LangCode.Score(self.api).InitsType(
-            self.api.getCheckEx()
-        ).Assign(self.api.LangCode.Number(self.api).Formalize("1"))
+    def Reference(self, condition: NBTLiteral, then: List[Construct], or_else: List[Construct]):
+        check = ...
+        if or_else:
+            check: LangCode.Score = self.api.LangCode.Score(self.api).InitsType(
+                self.api.getCheckEx()
+            ).Assign(self.api.LangCode.Number(self.api).Formalize("1"))
 
         self.api.enterScope(self, 2)
         self.api.system(RawJSON(
-            condition.predicate
+            condition
         ))
         self.api.leaveScope()
 
@@ -132,7 +136,6 @@ class IfElse(CodeScope, Formalizable):
         else:
             self.api.enterScope(self, 0)
             self.then = self.api.visit(then)
-            check.Assign(self.api.LangCode.Number(self.api).Formalize("0"))
             self.api.leaveScope()
         return self
 
@@ -152,7 +155,96 @@ class IfElse(CodeScope, Formalizable):
                         *Attr(map(convert_var_name, self.api.useDirPrefix(self.predicate))).withPrefix('.json')]
 
 
-class Function(CodeScope, Formalizable, Callable):
+class While(CodeScope, InitableType):
+    body_attr: Attr
+    predicate: Attr
+    body: List[Abstract]
+
+    def __init__(self, apiObject: API):
+        self.api = apiObject
+        super().__init__(dict())
+
+    def InitsType(self, condition: kiwi.expression,
+                  body: List[kiwi.statement]):
+        self._set_files(2)
+
+        self.body_attr = self.api.getWhileEx()
+        self.predicate = self.api.getPredicateEx()
+
+        condition = self.api.visit(
+            self.api.analyzer.visit(condition)
+        )
+        assert isinstance(condition, LangCode.TransPredicate)
+
+        self.api.analyzer.scope.newLocalSpace()
+        self.api.enterScope(self, 0)
+        body = self.api.analyzer.visit(body)
+        self.api.leaveScope()
+        self.api.analyzer.scope.leaveSpace()
+
+        return Construct(
+            'Reference',
+            self,
+            [condition, body],
+            raw_args=True
+        )
+
+    def Reference(self, condition: LangCode.AnyCompareObject, body: List[Construct]):
+        # Predicate space
+        # ---------------
+
+        self.api.enterScope(self, 1)
+        self.api.system(RawJSON(
+            condition.predicate
+        ))
+        self.api.leaveScope()
+
+        # Global space
+        # ------------
+
+        self.api.system(Execute([
+            StepIfPredicate(
+                self.api.useDirPrefix(self.predicate, withFuse=True).toString()
+            ),
+            StepRun(
+                FunctionDirectCall(
+                    self.api.useDirPrefix(self.body_attr, withFuse=True).toString()
+                )
+            )
+        ]))
+
+        # Body space
+        # ----------
+
+        self.api.enterScope(self, 0)
+        self.body = self.api.visit(body)
+        self.api.system(Execute([
+            StepIfPredicate(
+                self.api.useDirPrefix(self.predicate, withFuse=True).toString()
+            ),
+            StepRun(
+                FunctionDirectCall(
+                    self.api.useDirPrefix(self.body_attr, withFuse=True).toString()
+                )
+            )
+        ]))
+        self.api.leaveScope()
+
+        return self
+
+    def toPath(self, attribute: int = None) -> List[str]:
+        match attribute:
+            case 0:
+                return [convert_var_name(self.api.config['project_name']),
+                        'functions',
+                        *Attr(map(convert_var_name, self.api.useDirPrefix(self.body_attr))).withPrefix('.mcfunction')]
+            case 1:
+                return [convert_var_name(self.api.config['project_name']),
+                        'predicates',
+                        *Attr(map(convert_var_name, self.api.useDirPrefix(self.predicate))).withPrefix('.json')]
+
+
+class Function(CodeScope, InitableType, Callable):
     attr: Attr
     address: Attr
     params: List[Abstract]
@@ -162,11 +254,11 @@ class Function(CodeScope, Formalizable, Callable):
         self.api = apiObject
         super().__init__(dict())
 
-    def Formalize(self, attr: Attr, body: List[kiwi.statement],
+    def InitsType(self, attr: Attr, address: Attr, body: List[kiwi.statement],
                   params: List[kiwi.Parameter], returns: kiwi.ReturnParameter):
-        assert isinstance(attr, Attr)
-        self.address = attr
-        self.attr = self.api.useLocalPrefix(attr)
+        assert isinstance(address, Attr)
+        self.address = address
+        self.attr = attr
 
         self.api.analyzer.scope.useCustomSpace(
             self.attr.toName(), self, hideMode=True
@@ -220,7 +312,7 @@ class Function(CodeScope, Formalizable, Callable):
                 'functions', *Attr(map(convert_var_name, self.api.useDirPrefix(self.attr))).withPrefix('.mcfunction')]
 
 
-class Namespace(NoCodeScope, Formalizable):
+class Namespace(NoCodeScope, InitableType):
     attr: Attr
     address: Attr
 
@@ -228,7 +320,7 @@ class Namespace(NoCodeScope, Formalizable):
         self.api = apiObject
         super().__init__(dict())
 
-    def Formalize(self, attr: Attr, blocks: List[kiwi.PrivateBlock | kiwi.PublicBlock | kiwi.DefaultBlock]):
+    def InitsType(self, attr: Attr, blocks: List[kiwi.PrivateBlock | kiwi.PublicBlock | kiwi.DefaultBlock]):
         assert isinstance(attr, Attr)
         self.address = attr
         self.attr = self.api.useLocalPrefix(attr)

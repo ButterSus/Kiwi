@@ -3,7 +3,7 @@ from __future__ import annotations
 # Default libraries
 # -----------------
 
-from typing import Optional, Any, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING  # noqa: F401
 from abc import ABC, abstractmethod
 
 # Custom libraries
@@ -13,7 +13,7 @@ from LangApi.api import API, Attr
 
 if TYPE_CHECKING:
     from LangApi.bytecode import NBTLiteral
-    import LangCode
+    import LangCode  # noqa: F401
 
 
 # BASIC CLASS
@@ -95,6 +95,19 @@ class TransPredicate(Abstract, ABC):
 
 # BASIC OBJECT TYPES
 # ==================
+
+
+class Scope(Abstract, ABC):
+    """
+    Used properties:
+    - Abstract
+
+    Also:
+    - Added return to 'return' keyword
+    """
+
+    def Return(self):
+        return self.api.getThisScope()
 
 
 class Class(Callable, ABC):

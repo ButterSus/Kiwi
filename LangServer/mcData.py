@@ -53,6 +53,7 @@ class MCData:
     _MCData: ...
     _Criteria: dict
     _Criterias: List[str]
+    _Associations: Dict[str, int]
 
     def __init__(self, version: str):
         import minecraft_data
@@ -61,6 +62,7 @@ class MCData:
         self._MCData = minecraft_data(version)
         self._Criteria = load(open('assets/criteria.json'))
         self._Criterias = load(open('assets/criterias.json'))['criterias']
+        # for block in self.blocks_keys()
 
     def blocks(self) -> List[MCBlock]:
         return self._MCData.blocks.values()
@@ -78,13 +80,32 @@ class MCData:
         return self._Criterias
 
     def getByID(self, value: MCID | MCName) -> MCNoun:
+        if isinstance(value, MCName):
+            return self._MCData.blocks_name[value]
         return self._MCData.find_item_or_block(value)
 
 
-def values(x):
-    if isinstance(x, str):
-        return [x]
-    result = list()
-    for value in x.values():
-        result.extend(values(value))
-    return result
+# from json import dumps
+# from os import mkdir
+#
+#
+# def function(version):
+#     mcData = MCData(version)
+#     result = dict()
+#     for block in mcData.blocks():
+#         if block['hardness'] not in result.keys():
+#             result[block['hardness']] = list()
+#         result[block['hardness']].append(block['name'])
+#     for key, value in result.items():
+#         try:
+#             mkdir(f'result/{version}')
+#         except FileExistsError:
+#             pass
+#         with open(f'result/{version}/{key}.json', 'w') as file:
+#             file.write(dumps({
+#                 "values": value
+#             }, indent=4))
+#
+#
+# for i in ['1.19.2', '1.18.2', '1.17.2', '1.16.5']:
+#     function(i)

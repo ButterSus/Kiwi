@@ -17,6 +17,11 @@ if TYPE_CHECKING:
 
 
 class Attr(list):
+    def append(self, __object: Any):
+        if __object is None:
+            return
+        super().append(__object)
+
     def __add__(self, other) -> Attr:
         return self.__class__(super().__add__(other))
 
@@ -106,7 +111,9 @@ class ScopeType:
             if len(keys) == 1:
                 result = self.content[keys[0]]
                 return result
-            result: ScopeType = self.content[keys[0]]
+            result = self.content[keys[0]]
+            if isinstance(result, ScopeType):
+                return result.get(Attr(keys[1:]), ignoreScope=ignoreScope)
             return result.get(Attr(keys[1:]), isAttribute=True)
         keys = Attr([keys]) if not isinstance(keys, Attr) else keys
         if not self.exists(keys):
@@ -134,7 +141,7 @@ class CodeScope(ScopeType, ABC):
         super().__init__(*args, **kwargs)
         self.code = list()
 
-    def _set_codes(self, number: int):
+    def _set_files(self, number: int):
         self.code = [list() for _ in range(number)]
 
     @abstractmethod
