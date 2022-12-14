@@ -1,6 +1,17 @@
-f: str, "Hello, Kiwi!"\
- "sus"
+a, b, c = c, a, b
 
 
-print(f)
-function
+tmp0=a
+tmp1=b
+
+a=c
+# [a] -> 1
+# [] -> 2
+
+b=tmp0
+# [a, b] -> 1
+# [(tmp0, a)] -> 2
+
+c=tmp1
+# [a, b, c] -> 1
+# [(tmp0, a), (tmp1, b)] -> 2

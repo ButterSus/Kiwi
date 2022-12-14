@@ -39,6 +39,7 @@ class InitableType(Abstract, ABC):
     <self>: <PARENT> <ARGS>
     """
 
+    @abstractmethod
     def InitsType(self, *args: Abstract | Attr) -> Optional[Abstract]:
         ...
 
@@ -136,6 +137,7 @@ class Variable(InitableType, ABC):
     attr: Attr
     address: Attr
 
+    @abstractmethod
     def InitsType(self, attr: Attr, address: Attr, *args: Abstract) -> Optional[Abstract]:
         ...
 

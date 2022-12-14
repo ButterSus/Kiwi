@@ -625,4 +625,4 @@ STRING_:
     | v=STRING+ {kiwi.String(v[0].start, v[-1].end, kiwi.catString(v))}
 
 SELECTOR_:
-    | '@' v=NAME {kiwi.Selector(v.start, v.end, v.string)}
+    | '@' v=NAME {kiwi.Selector(v.start, v.end, '@' + v.string)}

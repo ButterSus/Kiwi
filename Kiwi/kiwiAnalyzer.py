@@ -176,12 +176,13 @@ class Analyzer(AST_Visitor):
         result = list()
 
         passed_targets = list()
+        associations = list()
         assert len(node.targets) == len(node.values)
         for a, b in zip(node.targets, node.values):
             target = self.visit(a)
             value = self.visit(b)
             if value in passed_targets:
-                print('boom!')
+                associations.append(b)
             result.append(
                 Construct(
                     'Assign',

@@ -1532,7 +1532,7 @@ class KiwiParser(Parser):
             and
             (v := self.name())
         ):
-            return kiwi . Selector ( v . start , v . end , v . string )
+            return kiwi . Selector ( v . start , v . end , '@' + v . string )
         self._reset(mark)
         return None
 
@@ -2245,8 +2245,8 @@ class KiwiParser(Parser):
         self._reset(mark)
         return children
 
-    KEYWORDS = ('namespace', 'while', 'else', 'true', 'private', 'false', 'break', 'pass', 'and', 'none', 'or', 'promise', 'public', 'continue', 'not', 'if', 'return', 'function')
-    SOFT_KEYWORDS = ('match', 'lambda', 'case', 'from', 'to', 'import', 'default', 'as')
+    KEYWORDS = ('and', 'false', 'continue', 'namespace', 'return', 'break', 'if', 'public', 'else', 'not', 'true', 'none', 'function', 'promise', 'or', 'private', 'while', 'pass')
+    SOFT_KEYWORDS = ('case', 'match', 'to', 'from', 'import', 'lambda', 'default', 'as')
 
 
 if __name__ == '__main__':
