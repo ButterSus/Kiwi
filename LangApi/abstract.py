@@ -6,10 +6,17 @@ from __future__ import annotations
 from typing import Optional, Any, TYPE_CHECKING  # noqa: F401
 from abc import ABC, abstractmethod
 
+import LangApi
+
 # Custom libraries
 # ----------------
 
 from LangApi.api import API, Attr
+from Kiwi.components.kiwiTools import AST_Task
+from Kiwi.components.kiwiScope import (
+    CodeScope as _CodeScope,
+    NoCodeScope as _NoCodeScope
+)
 
 if TYPE_CHECKING:
     from LangApi.bytecode import NBTLiteral
@@ -98,17 +105,20 @@ class TransPredicate(Abstract, ABC):
 # ==================
 
 
-class Scope(Abstract, ABC):
-    """
-    Used properties:
-    - Abstract
+class ScopeWithCode(_CodeScope, ABC):
+    def Return(self, value: LangApi.Construct):
+        i = 0
+        while not isinstance(function:=self.api.getThisScope(i), self.api.LangCode.Function):  # noqa
+            i += 1
+        function: LangCode.Function
+        return self.api.Construct(
+                'Assign',
+                function.returns,
+                [value]
+            )
 
-    Also:
-    - Added return to 'return' keyword
-    """
-
-    def Return(self):
-        return self.api.getThisScope()
+class ScopeWithoutCode(_NoCodeScope):
+    ...
 
 
 class Class(Callable, ABC):

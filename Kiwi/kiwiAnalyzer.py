@@ -8,7 +8,7 @@ from LangApi import *
 # Custom libraries
 # ----------------
 
-from Kiwi.components.kiwiTools import AST_Visitor, AST_skip
+from Kiwi.components.kiwiTools import AST_Visitor
 from Kiwi.components.kiwiScope import ScopeSystem
 from Kiwi.kiwiAST import AST
 import LangCode
@@ -37,7 +37,7 @@ class Analyzer(AST_Visitor):
     # ==================
 
     def Module(self, node: kiwi.Module):
-        self.visit(node.body, canSkip=True)
+        node.body = self.visit(node.body)
 
     # EXPRESSIONS
     # ===========
@@ -67,10 +67,13 @@ class Analyzer(AST_Visitor):
         )
 
     def Return(self, node: kiwi.Return):
-        return Construct(
-            'Return',
-            self.api.getThisScope(),
-            [self.visit(node.value)]
+        return self.api.visit(
+            Construct(
+                'Return',
+                self.api.getThisScope(),
+                [self.visit(node.value)],
+                raw_args=True
+            )
         )
 
     # CONSTANT / TOKENS
@@ -218,7 +221,7 @@ class Analyzer(AST_Visitor):
         )
 
     def While(self, node: kiwi.While):
-        return self.api.visit(
+        result = self.api.visit(
             Construct(
                 'InitsType',
                 LangCode.While(self.api),
@@ -228,9 +231,10 @@ class Analyzer(AST_Visitor):
                 ]
             )
         )
+        return result
 
     def FuncDef(self, node: kiwi.FuncDef):
-        return self.api.visit(
+        result = self.api.visit(
                 Construct(
                     'AnnotationDeclare',
                     self.visit(node.name),
@@ -242,9 +246,10 @@ class Analyzer(AST_Visitor):
                     ]
                 )
             )
+        return result
 
     def NamespaceDef(self, node: kiwi.NamespaceDef):
-        return self.api.visit(
+        result = self.api.visit(
             Construct(
                 'InitsType',
                 LangCode.Namespace(self.api),
@@ -254,6 +259,7 @@ class Analyzer(AST_Visitor):
                 ]
             )
         )
+        return result
 
     # PARAMS AND LAMBDAS
     # ==================

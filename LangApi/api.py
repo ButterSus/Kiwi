@@ -35,6 +35,7 @@ class API:
     # Modules
     # =======
 
+    Construct = Construct
     LangCode: LangCode
 
     # Content
@@ -81,18 +82,34 @@ class API:
         except TypeError:
             return value
 
-    def visit(self, expr: list | Construct | ScopeType | LangApi.Abstract) \
-            -> list | LangApi.Abstract | ScopeType:
+    _tasks: List[list] = list()
+    _currentIndex: List[int] = list()
+
+    def getLastCommands(self, index: int = 0) -> List[list | Construct | Type[ScopeType] | LangApi.Abstract]:
+        return self._tasks[-(1 + index)][self._currentIndex[-(1 + index)] + 1:]
+
+    def replaceLastCommands(self, commands: List[list | Construct | Type[ScopeType] | LangApi.Abstract],
+                            index: int = 0):
+        self._tasks[-(1 + index)] = self._tasks[-(1 + index)][:self._currentIndex[-(1 + index)] + 1]
+        self._tasks[-(1 + index)].extend(commands)
+
+    def visit(self, expr: list | Construct | Type[ScopeType] | LangApi.Abstract) \
+            -> list | LangApi.Abstract | Type[ScopeType] | Any:
         if isinstance(expr, Attr):
             return expr
         if isinstance(expr, list):
             result = list()
-            for item in expr:
-                visited = self.visit(item)
+            self._tasks.append(expr)
+            self._currentIndex.append(0)
+            while self._currentIndex[-1] < len(self._tasks[-1]):
+                visited = self.visit(self._tasks[-1][self._currentIndex[-1]])
+                self._currentIndex[-1] += 1
                 if isinstance(visited, tuple):
                     result.extend(self._unpackTuple(visited))
                     continue
                 result.append(visited)
+            self._currentIndex.pop(-1)
+            self._tasks.pop(-1)
             return result
         if isinstance(expr, Construct):
             parent = self.visit(expr.parent)
@@ -107,8 +124,9 @@ class API:
             return expr(self)
         return expr
 
-    code: Set[CodeScope | tuple[CodeScope, int]] = set()
-    _scopes: List[ScopeType | CodeScope | list[CodeScope, int]] = list()
+    code: Set[Type[LangApi.ScopeWithCode] | tuple[Type[LangApi.ScopeWithCode], int]] = set()
+    _scopes: List[Type[LangApi.ScopeWithoutCode] |
+                  Type[LangApi.ScopeWithCode] | list[Type[LangApi.ScopeWithCode], int]] = list()
     _is_not_local = False
 
     # Generated prefix
@@ -141,6 +159,13 @@ class API:
         result = self._while_counter
         self._while_counter += 1
         return self.useLocalPrefix(Attr([f'--while--{result}']))
+
+    _while_scope_counter = 0
+
+    def getWhileScopeEx(self) -> Attr:
+        result = self._while_scope_counter
+        self._while_scope_counter += 1
+        return self.useLocalPrefix(Attr([f'$while--{result}']))
 
     _check_counter = 0
 
@@ -201,17 +226,21 @@ class API:
     # Another methods
     # ---------------
 
-    def getThisScope(self, offset=-1) -> ScopeType | CodeScope | LangCode.Function:
-        return self._scopes[offset]
+    def getThisScope(self, index=0) -> Type[LangApi.ScopeWithoutCode | LangApi.ScopeWithCode]:
+        if isinstance(self._scopes[-(1 + index)], list):
+            return self._scopes[-(1 + index)][0]
+        return self._scopes[-(1 + index)]
 
-    def enterScope(self, scope: ScopeType, attribute: int = None):
+    def enterScope(self, scope: LangApi.ScopeWithoutCode | LangApi.ScopeWithCode, attribute: int = None):
         if isinstance(scope, CodeScope) and scope not in self.code:
+            scope: Type[LangApi.ScopeWithCode]
             if attribute is not None:
                 self.code.add((scope, attribute))
                 self._scopes.append([scope, attribute])
                 return
             else:
                 self.code.add(scope)
+        scope: Type[LangApi.ScopeWithoutCode]
         self._scopes.append(scope)
 
     def leaveScope(self):

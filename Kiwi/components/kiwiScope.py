@@ -153,19 +153,9 @@ class NoCodeScope(ScopeType):
     code: List[CodeType]
     api: LangApi.API
 
-    def __init__(self, *args, **kwargs):  # noqa
+    def __init__(self, *args, **kwargs):
+        self.code = list()
         super().__init__(*args, **kwargs)
-
-    def _setter(self, value: CodeType):
-        self.api._scopes[0].code = value  # noqa
-
-    def _getter(self):
-        return self.api._scopes[0].code  # noqa
-
-    code = property(
-        fset=_setter,
-        fget=_getter
-    )
 
 
 class ScopeSystem:

@@ -321,12 +321,30 @@ class Token(Theme_Tokens):
         return self.value
 
 
+# STATES AND SELECTORS
+# ====================
+
+
+@dataclass
+class Selector(Theme_Expressions, AST):
+    target: str
+    state: State
+
+
+@dataclass
+class State(Theme_Expressions, AST):
+    key: str
+    value: NBT
+
+
+@dataclass
+class NBT(Theme_Expressions, AST):
+    tag: str
+
+
+
 # TOKEN BASICS
 # ============
-
-
-class Selector(Token):
-    pass
 
 
 class Name(Token):
@@ -359,29 +377,6 @@ class String(Token):
                 return self.value[:self.value.index("\"")]
             case "\'":
                 return self.value[:self.value.index("\'")]
-
-
-def catString(tokens: List[_TokenInfo]):
-    result = list()
-    prefixes = set()
-    for token in tokens:
-        prefix: str = ...
-        match token.string[-1]:
-            case "\"":
-                prefix = token.string[:token.string.index("\"")]
-            case "\'":
-                prefix = token.string[:token.string.index("\'")]
-        string: str = token.string[len(prefix):]
-        match token.string[-1]:
-            case "\"":
-                string = string.strip("\"")
-            case "\'":
-                string = string.strip("\'")
-        prefixes.add(prefix)
-        result.append(string)
-    assert len(prefixes) <= 1
-    prefix = prefixes.pop() if prefixes else ""
-    return f'{prefix}"{"".join(result)}"'
 
 
 class Number(Token):

@@ -4,6 +4,7 @@ from inspect import isclass
 # Default libraries
 # -----------------
 
+from dataclasses import dataclass as _dataclass
 from typing import Any, List, Callable
 from tokenize import tok_name
 from itertools import chain
@@ -13,14 +14,12 @@ from itertools import chain
 
 import Kiwi.components.kiwiColors as _colors
 import Kiwi.components.kiwiASO as _kiwi
-from Kiwi.components.kiwiScope import Attr
-from LangApi import Construct as _Construct
+from Kiwi.components.kiwiScope import Attr, ScopeSystem, ScopeType
 from Kiwi.kiwiTokenizer import\
     Tokenize as _Tokenize,\
     generate_tokens as _generate_tokens,\
     StringIO as _StringIO,\
     Tokenizer as _Tokenizer
-from Kiwi.components.kiwiScope import ScopeSystem, ScopeType
 
 
 def dumpTokenizer(node: _Tokenizer) -> str:
@@ -54,7 +53,7 @@ def dumpAST(module: _kiwi.Module, minimalistic=False) -> str:
             return f'{ast_color} {node} {color}'
         if isclass(node):
             return _colors.Yellow + node.__name__
-        if isinstance(node, _Construct):
+        if node.__class__.__name__ == 'Construct':
             return f'{_colors.Cyan}{node.method}{_colors.White} -> ' \
                    f'{f(node.parent, lvl=lvl, color=color)}\n{tab*lvl}' \
                    f'{color}{f(node.arguments, lvl=lvl, color=color)}{color}'
@@ -106,12 +105,15 @@ def dumpScopeSystem(scope: ScopeSystem):
     return _colors.Red + 'globals' + f(scope.globalScope) + _colors.ResetAll
 
 
-class AST_skip(Exception):
-    ...
+@_dataclass
+class AST_Task:
+    function: Callable
+    args: List[Any]
 
 
 class AST_Visitor:
-    def getAttributes(self, node: _kiwi.AST):
+    @staticmethod
+    def getAttributes(node: _kiwi.AST):
         try:
             targets = node.__annotations__
         except AttributeError:
@@ -134,41 +136,54 @@ class AST_Visitor:
             return value
 
     _no_references = 0
+    _tasks: List[list] = list()
+    _currentIndex: List[int] = list()
 
-    def visit(self, node: Any, no_references=False, canSkip=False) -> Any:
-        try:
-            self._no_references += no_references
-            if isinstance(node, list):
-                result = list()
-                for item in node:
-                    visited = self.visit(item)
-                    if isinstance(visited, tuple):
-                        result.extend(self.unpackTuple(visited))
-                        continue
-                    if visited is None:
-                        continue
-                    result.append(visited)
+    def getLastCommands(self, index: int = 0) -> List[Any]:
+        return self._tasks[-(1 + index)][self._currentIndex[-(1 + index)] + 1:]
+
+    def replaceLastCommands(self, commands: List[Any], index: int = 0):
+        self._tasks[-(1 + index)] = self._tasks[-(1 + index)][:self._currentIndex[-(1 + index)] + 1]
+        self._tasks[-(1 + index)].extend(commands)
+
+    def visit(self, node: Any, no_references=False) -> Any:
+        self._no_references += no_references
+        if isinstance(node, list):
+            result = list()
+            self._tasks.append(node)
+            self._currentIndex.append(0)
+            while self._currentIndex[-1] < len(self._tasks[-1]):
+                visited = self.visit(self._tasks[-1][self._currentIndex[-1]])
+                self._currentIndex[-1] += 1
+                if isinstance(visited, tuple):
+                    result.extend(self.unpackTuple(visited))
+                    continue
+                if visited is None:
+                    continue
+                result.append(visited)
+            self._no_references -= no_references
+            self._currentIndex.pop(-1)
+            self._tasks.pop(-1)
+            return result
+        if isinstance(node, _kiwi.Token):
+            if function := self.knockCall(node):
+                result = function(node)
                 self._no_references -= no_references
                 return result
-            if isinstance(node, _kiwi.Token):
-                if function := self.knockCall(node):
-                    result = function(node)
-                    self._no_references -= no_references
-                    return result
+            self._no_references -= no_references
+            return node
+        if isinstance(node, _kiwi.AST):
+            if function := self.knockCall(node):
+                result = function(node)
                 self._no_references -= no_references
-                return node
-            if isinstance(node, _kiwi.AST):
-                if function := self.knockCall(node):
-                    result = function(node)
-                    self._no_references -= no_references
-                    return result
-                for annotation, attribute in self.getAttributes(node):
-                    visited = self.visit(attribute)
-                    node.__setattr__(annotation, visited)
-                self._no_references -= no_references
-                return node
-        except AST_skip:
-            assert canSkip
+                return result
+            for annotation, attribute in self.getAttributes(node):
+                visited = self.visit(attribute)
+                node.__setattr__(annotation, visited)
+            self._no_references -= no_references
+            return node
+        if isinstance(node, AST_Task):
+            return node.function(*node.args)
 
     def visitAST(self, node: _kiwi.AST | _kiwi.Token) -> List[Any]:
         result = list()

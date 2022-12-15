@@ -166,8 +166,8 @@ assignment:
         )}
 
 annotations:
-    | i=expression ':' a=','.expression+ {[i], a[0], a[1:]}
-    | i=','.expression+ '->' a=','.expression+ {i, a[0], a[1:]}
+    | i=expression ':' a=expression+ {[i], a[0], a[1:]}
+    | i=','.expression+ '->' a=expression+ {i, a[0], a[1:]}
 
 augassign:
     | s='+=' {kiwi.Token(
@@ -196,6 +196,10 @@ return_stmt:
         s.start, v.end,
         v
         )}
+    | s='return' {kiwi.Return(
+        s.start, s.end,
+        None
+    )}
 
 # COMPOUND STATEMENTS
 # ===================
@@ -578,7 +582,7 @@ atom:
         s.start, s.end,
         'promise'
         )}
-    | SELECTOR_
+    | selector
     | STRING_
     | NUMBER_
     | group
@@ -610,7 +614,7 @@ match_key:
     | f=notfull_expression '->' v=notfull_expression {kiwi.MatchKey(f, f, v)}
 
 # TOKENS
-# ------
+# ======
 
 NUMBER_:
     | v=NUMBER {kiwi.Number(v.start, v.end, v.string)}
@@ -622,7 +626,36 @@ WORD_:
     | v=(NUMBER | NAME)+ {kiwi.Word(v[0].start, v[-1].end, ''.join(list(map(str, v))))}
 
 STRING_:
-    | v=STRING+ {kiwi.String(v[0].start, v[-1].end, kiwi.catString(v))}
+    | v=STRING {kiwi.String(v.start, v.end, v.string)}
 
-SELECTOR_:
-    | '@' v=NAME {kiwi.Selector(v.start, v.end, '@' + v.string)}
+# STATES AND SELECTOR
+# ===================
+
+selector:
+    | '@' v=WORD_ {kiwi.Selector(v.start, v.end, v.value)}
+
+states:
+    | '[' state_key '=' state_value ']'
+
+state_key:
+    | NAME_
+
+state_value:
+    | nbt
+
+# NBT-JSON
+# ========
+
+nbt:
+    | nbt_dict
+    | nbt_list
+    | nbt_string
+
+nbt_dict:
+    | '{' '}'
+
+nbt_list:
+    | '[' ']'
+
+nbt_string:
+    | STRING_

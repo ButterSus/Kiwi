@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import LangCode
-
 # Default libraries
 # -----------------
 
@@ -12,8 +10,8 @@ import LangCode
 
 from LangApi import *
 from Kiwi.components.kiwiASO import Attr
-from Kiwi.components.kiwiScope import CodeScope, NoCodeScope
 import Kiwi.components.kiwiASO as kiwi
+import LangCode
 
 
 class Undefined(Formalizable):
@@ -27,11 +25,14 @@ class Undefined(Formalizable):
         return self
 
     def AnnotationDeclare(self, parent: Variable, *args: Abstract):
-        return self.api.analyzer.scope.write(
-            self.address, parent.InitsType(self.attr, self.address, *args))
+        result = parent.InitsType(self.attr, self.address, *args)
+        if isinstance(result, tuple):
+            self.api.analyzer.scope.write(self.address, result[0])
+            return tuple(result[1:])
+        self.api.analyzer.scope.write(self.address, result)
 
 
-class Module(CodeScope, Abstract):
+class Module(ScopeWithCode, Abstract):
     attr: Attr
     address: Attr
 
@@ -39,12 +40,12 @@ class Module(CodeScope, Abstract):
         self.api = apiObject
         super().__init__(dict(), name=self.api.config['entry_file'])
 
-    def toPath(self, attribute: int = None) -> List[str]:
+    def toPath(self, attribute: int = None) -> List[str]:  # noqa
         name = convert_var_name(self.name)
         return [convert_var_name(self.api.config['project_name']), 'functions', f'{name}.mcfunction']
 
 
-class IfElse(CodeScope, InitableType):
+class IfElse(ScopeWithCode, InitableType):
     if_attr: Attr
     else_attr: Attr
     predicate: Attr
@@ -90,6 +91,18 @@ class IfElse(CodeScope, InitableType):
             raw_args=True
         )
 
+    def _formalize_then(self, then: List[Construct], check: LangCode.Score=None):
+        self.api.enterScope(self, 0)
+        self.then = self.api.visit(then)
+        if check is not None:
+            check.Assign(self.api.LangCode.Number(self.api).Formalize("0"))
+        self.api.leaveScope()
+
+    def _formalize_or_else(self, or_else: List[Construct]):
+        self.api.enterScope(self, 1)
+        self.or_else = self.api.visit(or_else)
+        self.api.leaveScope()
+
     def Reference(self, condition: NBTLiteral, then: List[Construct], or_else: List[Construct]):
         check = ...
         if or_else:
@@ -103,6 +116,9 @@ class IfElse(CodeScope, InitableType):
         ))
         self.api.leaveScope()
 
+        # If condition is true, then run body
+        # -----------------------------------
+
         self.api.system(Execute([
             StepIfPredicate(
                 self.api.useDirPrefix(self.predicate, withFuse=True).toString()
@@ -113,6 +129,10 @@ class IfElse(CodeScope, InitableType):
                 )
             )
         ]))
+
+        # If else body is not empty
+        # -------------------------
+
         if or_else:
             self.api.system(Execute([
                 StepIfScoreMatch(
@@ -124,19 +144,10 @@ class IfElse(CodeScope, InitableType):
                     )
                 )
             ]))
-
-            self.api.enterScope(self, 0)
-            self.then = self.api.visit(then)
-            check.Assign(self.api.LangCode.Number(self.api).Formalize("0"))
-            self.api.leaveScope()
-
-            self.api.enterScope(self, 1)
-            self.or_else = self.api.visit(or_else)
-            self.api.leaveScope()
+            self._formalize_then(then, check)
+            self._formalize_or_else(or_else)
         else:
-            self.api.enterScope(self, 0)
-            self.then = self.api.visit(then)
-            self.api.leaveScope()
+            self._formalize_then(then)
         return self
 
     def toPath(self, attribute: int = None) -> List[str]:
@@ -155,7 +166,8 @@ class IfElse(CodeScope, InitableType):
                         *Attr(map(convert_var_name, self.api.useDirPrefix(self.predicate))).withPrefix('.json')]
 
 
-class While(CodeScope, InitableType):
+class While(ScopeWithCode, InitableType):
+    scope_attr: Attr
     body_attr: Attr
     predicate: Attr
     body: List[Abstract]
@@ -164,10 +176,12 @@ class While(CodeScope, InitableType):
         self.api = apiObject
         super().__init__(dict())
 
-    def InitsType(self, condition: kiwi.expression,
+    def InitsType(self,
+                  condition: kiwi.expression,
                   body: List[kiwi.statement]):
         self._set_files(2)
 
+        self.scope_attr = self.api.getWhileScopeEx()
         self.body_attr = self.api.getWhileEx()
         self.predicate = self.api.getPredicateEx()
 
@@ -176,18 +190,20 @@ class While(CodeScope, InitableType):
         )
         assert isinstance(condition, LangCode.TransPredicate)
 
-        self.api.analyzer.scope.newLocalSpace()
+        self.api.analyzer.scope.useCustomSpace(
+            self.scope_attr.toName(), self, hideMode=True
+        )
         self.api.enterScope(self, 0)
         body = self.api.analyzer.visit(body)
         self.api.leaveScope()
         self.api.analyzer.scope.leaveSpace()
 
-        return Construct(
-            'Reference',
-            self,
-            [condition, body],
-            raw_args=True
-        )
+        return self, Construct(
+                'Reference',
+                self,
+                [condition, body],
+                raw_args=True
+            )
 
     def Reference(self, condition: LangCode.AnyCompareObject, body: List[Construct]):
         # Predicate space
@@ -244,7 +260,7 @@ class While(CodeScope, InitableType):
                         *Attr(map(convert_var_name, self.api.useDirPrefix(self.predicate))).withPrefix('.json')]
 
 
-class Function(CodeScope, InitableType, Callable):
+class Function(ScopeWithCode, InitableType, Callable):
     attr: Attr
     address: Attr
     params: List[Abstract]
@@ -254,8 +270,10 @@ class Function(CodeScope, InitableType, Callable):
         self.api = apiObject
         super().__init__(dict())
 
-    def InitsType(self, attr: Attr, address: Attr, body: List[kiwi.statement],
-                  params: List[kiwi.Parameter], returns: kiwi.ReturnParameter):
+    def InitsType(self, attr: Attr, address: Attr,
+                  body: List[kiwi.statement],
+                  params: List[kiwi.Parameter],
+                  returns: kiwi.ReturnParameter):
         assert isinstance(address, Attr)
         self.address = address
         self.attr = attr
@@ -265,7 +283,7 @@ class Function(CodeScope, InitableType, Callable):
         )
         self.api.enterScope(self)
         params = self.api.analyzer.visit(params)
-        returns = self.api.analyzer.visit(returns)
+        self.returns = self.api.analyzer.visit(returns)
         body = self.api.analyzer.visit(body)
         self.api.leaveScope()
         self.api.analyzer.scope.leaveSpace()
@@ -273,14 +291,13 @@ class Function(CodeScope, InitableType, Callable):
         return Construct(
             'Reference',
             self,
-            [body, params, returns],
+            [body, params],
             raw_args=True
         )
 
-    def Reference(self, body: Construct, params: Any, returns: Any):
+    def Reference(self, body: Construct, params: Any):
         self.api.enterScope(self)
         self.params = self.api.visit(params)
-        self.returns = self.api.visit(returns)
         self.api.visit(body)
         self.api.leaveScope()
         return self
@@ -298,21 +315,12 @@ class Function(CodeScope, InitableType, Callable):
         ))
         return self.returns
 
-    def Return(self, value: Abstract):
-        self.api.visit(
-            Construct(
-                'Assign',
-                self.returns,
-                [value]
-            )
-        )
-
     def toPath(self, attribute: int = None) -> List[str]:
         return [convert_var_name(self.api.config['project_name']),
                 'functions', *Attr(map(convert_var_name, self.api.useDirPrefix(self.attr))).withPrefix('.mcfunction')]
 
 
-class Namespace(NoCodeScope, InitableType):
+class Namespace(ScopeWithoutCode, InitableType):
     attr: Attr
     address: Attr
 

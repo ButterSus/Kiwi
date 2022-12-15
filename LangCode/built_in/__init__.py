@@ -470,7 +470,7 @@ class Sidebar(Callable):
 
 class Remove(Callable):
     def Call(self, variable: Abstract):
-        if isinstance(variable, Score):
+        if isinstance(variable, self.api.LangCode):
             self.api.system(ScoreboardPlayersReset(
                 variable.attr.toString(),
                 variable.scoreboard.attr.toString()

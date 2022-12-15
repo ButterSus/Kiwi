@@ -1,17 +1,9 @@
-a, b, c = c, a, b
+function sqrt(x: score) -> score:
+	i, result -> score = 1, 1
+	while result <= x:
+		i += 1
+		result = i * i
+	return i - 1
 
 
-tmp0=a
-tmp1=b
-
-a=c
-# [a] -> 1
-# [] -> 2
-
-b=tmp0
-# [a, b] -> 1
-# [(tmp0, a)] -> 2
-
-c=tmp1
-# [a, b, c] -> 1
-# [(tmp0, a), (tmp1, b)] -> 2
+print(sqrt(44))
