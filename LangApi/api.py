@@ -1,80 +1,138 @@
+"""
+Copyright (c) 2022 Krivoshapkin Edward
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+This module provides you all methods and classes,
+to handle any task.
+You can implement any construction, data type or
+built-in function.
+"""
+
 from __future__ import annotations
 
-from inspect import isclass
 # Default libraries
 # -----------------
 
-from typing import Dict, TYPE_CHECKING, Any, \
-    List, Type, Set
+from typing import (
+    Dict, TYPE_CHECKING, Any,List, Type, Set
+)
 from dataclasses import dataclass, field
 from itertools import chain
+from inspect import isclass
 
 # Custom libraries
 # ----------------
 
 if TYPE_CHECKING:
-    import LangApi as LangApi
-    import LangCode.built_in as LangCode
+    import LangApi  # noqa
+    import LangCode  # noqa
     from Kiwi.kiwiAnalyzer import Analyzer
     from build import ConfigGeneral
 
-from Kiwi.components.kiwiScope import ScopeType, CodeScope
-from Kiwi.components.kiwiASO import Attr, DirAttr
+from Kiwi.components.kiwiScope import BasicScope, CodeScope
 from Kiwi.kiwiTokenizer import Tokenizer
 
 
 @dataclass
 class Construct:
+    """
+    This dataclass stores analyzer request to run any method of built-in object or grammar constructions.
+    API.visit method can launch it.
+    """
     method: str
+    """
+    The name of the method to run
+    e.g:
+    "Add"
+    (Check LangApi.abstract for name of methods)
+    """
     parent: Any
-    arguments: List[Construct | str | Attr | LangApi.Abstract | LangCode.TokenString]
+    """
+    The object or class of the method to run,
+    if it's class, then it should take api parameter to initialize
+    """
+    arguments: List[Any]
+    """
+    The arguments of the method to run,
+    It can be absolutely anything
+    """
     raw_args: bool = field(default=False)
+    """
+    By default, arguments will be passed to visitor, that will launch Construct before to pass
+    it as argument.
+    e.g:
+    Let's assume we have this structure:
+    Construct(  # This construct will be handled last of all
+        method = "Add",
+        parent = SomeClassOrObject
+        arguments = [
+            Construct(  # This construct will be handled first of all
+                method = "Add",
+                parent = SomeClassOrObject
+                arguments = [1, 2]
+            )
+        ]
+    ),
+    But if raw_args equals to True, then arguments will not be handled by visitor
+    """
 
 
 class API:
-    # Modules
-    # =======
-
-    Construct = Construct
-    LangCode: LangCode
-
-    # Content
-    # =======
-
-    defaultLibScope: Dict[str, Dict[str, Type[LangApi.Abstract]]] = {
+    """
+    Kiwi Language API provides you all basic methods and properties
+    to implement any built-in types, functions or even grammar constructions.
+    """
+    builtinLibScope: Dict[
+        str,
+        Dict[str, Type[LangApi.Abstract]
+        ]
+    ] = {
         'builtins': dict()
     }
     analyzer: Analyzer
     config: ConfigGeneral
-    _files: List[str] = list()
+    Construct: Construct.__class__ = Construct
 
-    class General:
-        scoreboard: LangCode.Scoreboard
-        constants: Dict[int, LangCode.Score]
+    def __init__(self, analyzer: Analyzer, langApi: Any, langCode: Any):
+        # Modules reference
+        # -----------------
 
-    general = General()
+        global LangApi  # noqa
+        LangApi = langApi  # noqa
+        global LangCode  # noqa
+        LangCode = langCode  # noqa
 
-    def __init__(self, analyzer: Analyzer, langCode: LangCode):
-        self.LangCode = langCode
+        # Class references
+        # ----------------
+
         self.analyzer = analyzer
         self.config = analyzer.config
-        self._init()
-        for name, value in self.defaultLibScope['builtins'].items():
+
+        # Built-in objects initialization
+        # -------------------------------
+
+        for name, value in self.builtinLibScope['builtins'].items():
             self.analyzer.scope.write(
-                name, value)
-        del (self.defaultLibScope['builtins'])
-        for module_name, module_scope in self.defaultLibScope.items():
-            self.analyzer.scope.newNamedSpace(module_name)
-            for name, value in module_scope.items():
-                self.analyzer.scope.write(
-                    name, value)
-            self.analyzer.scope.leaveSpace()
-
-    def _init(self):
-        self.general = self.General()
-
-    def resetExpression(self):
-        self._temp_counter = 0
+                name, value
+            )
+        del (self.builtinLibScope['builtins'])
 
     def _unpackTuple(self, value: tuple) -> tuple:
         try:
@@ -82,197 +140,99 @@ class API:
         except TypeError:
             return value
 
-    _tasks: List[list] = list()
-    _currentIndex: List[int] = list()
-
-    def getLastCommands(self, index: int = 0) -> List[list | Construct | Type[ScopeType] | LangApi.Abstract]:
-        return self._tasks[-(1 + index)][self._currentIndex[-(1 + index)] + 1:]
-
-    def replaceLastCommands(self, commands: List[list | Construct | Type[ScopeType] | LangApi.Abstract],
-                            index: int = 0):
-        self._tasks[-(1 + index)] = self._tasks[-(1 + index)][:self._currentIndex[-(1 + index)] + 1]
-        self._tasks[-(1 + index)].extend(commands)
-
-    def visit(self, expr: list | Construct | Type[ScopeType] | LangApi.Abstract) \
-            -> list | LangApi.Abstract | Type[ScopeType] | Any:
-        if isinstance(expr, Attr):
-            return expr
-        if isinstance(expr, list):
+    def visit(self, instruction: Any) -> Any:
+        """
+        This method is used to handle analyzer output.
+        Also, if the input value is a list with tuple, tuple will be unpacked.
+        e.g:
+        If the input value is a list of Construct, constructs will be launched.
+        """
+        if isinstance(instruction, list):
             result = list()
-            self._tasks.append(expr)
-            self._currentIndex.append(0)
-            while self._currentIndex[-1] < len(self._tasks[-1]):
-                visited = self.visit(self._tasks[-1][self._currentIndex[-1]])
-                self._currentIndex[-1] += 1
+            for item in instruction:
+                visited = self.visit(item)
                 if isinstance(visited, tuple):
                     result.extend(self._unpackTuple(visited))
                     continue
                 result.append(visited)
-            self._currentIndex.pop(-1)
-            self._tasks.pop(-1)
             return result
-        if isinstance(expr, Construct):
-            parent = self.visit(expr.parent)
-            if expr.raw_args:
-                args = expr.arguments
+        if isinstance(instruction, Construct):
+            parent = self.visit(instruction.parent)
+            if instruction.raw_args:
+                args = instruction.arguments
             else:
-                args = self.visit(expr.arguments)
-            assert expr.method in dir(parent)
-            return parent.__getattribute__(expr.method)(*args)
-        if isclass(expr) and not isinstance(expr, ScopeType):
-            expr: Any
-            return expr(self)
-        return expr
+                args = self.visit(instruction.arguments)
+            assert instruction.method in dir(parent)
+            return parent.__getattribute__(instruction.method)(*args)
+        if isclass(instruction) and not isinstance(instruction, BasicScope):
+            instruction: Any
+            return instruction(self)
+        return instruction
 
-    code: Set[Type[LangApi.ScopeWithCode] | tuple[Type[LangApi.ScopeWithCode], int]] = set()
-    _scopes: List[Type[LangApi.ScopeWithoutCode] |
-                  Type[LangApi.ScopeWithCode] | list[Type[LangApi.ScopeWithCode], int]] = list()
-    _is_not_local = False
+    code: Set[CodeScope] = set()
+    """
+    A set of all code scopes, that will be put into datapack.
+    """
 
-    # Generated prefix
-    # ----------------
-
-    _return_counter = 0
-
-    def getReturnEx(self) -> Attr:
-        result = self._return_counter
-        self._return_counter += 1
-        return self.useLocalPrefix(Attr([f'$return--{result}']))
-
-    _temp_counter = 0
-
-    def getTempEx(self) -> Attr:
-        result = self._temp_counter
-        self._temp_counter += 1
-        return self.useLocalPrefix(Attr([f'$temp--{result}']))
-
-    _if_counter = 0
-
-    def getIfEx(self) -> Attr:
-        result = self._if_counter
-        self._if_counter += 1
-        return self.useLocalPrefix(Attr([f'--if--{result}']))
-
-    _while_counter = 0
-
-    def getWhileEx(self) -> Attr:
-        result = self._while_counter
-        self._while_counter += 1
-        return self.useLocalPrefix(Attr([f'--while--{result}']))
-
-    _while_scope_counter = 0
-
-    def getWhileScopeEx(self) -> Attr:
-        result = self._while_scope_counter
-        self._while_scope_counter += 1
-        return self.useLocalPrefix(Attr([f'$while--{result}']))
-
-    _check_counter = 0
-
-    def getCheckEx(self) -> Attr:
-        result = self._check_counter
-        self._check_counter += 1
-        return self.useLocalPrefix(Attr([f'$check--{result}']))
-
-    _else_counter = 0
-
-    def getElseEx(self) -> Attr:
-        result = self._else_counter
-        self._else_counter += 1
-        return self.useLocalPrefix(Attr([f'--else--{result}']))
-
-    _predicate_counter = 0
-
-    def getPredicateEx(self) -> Attr:
-        result = self._predicate_counter
-        self._predicate_counter += 1
-        return self.useLocalPrefix(Attr([f'{result}']))
-
-    def getConstEx(self, attr: Attr) -> Attr:  # noqa
-        result = attr[:-1] + Attr([f'#{attr[-1]}'])
-        return result
-
-    # Prefix methods
-    # --------------
-
-    def useDirPrefix(self, attr: Attr, withFuse: bool = False) -> Attr:
-        if withFuse:
-            return DirAttr(Attr([self.config['project_name']]), attr)
-        return attr
-
-    def useLocalPrefix(self, attr: Attr, withFuse: bool = False) -> Attr:
-        if self._is_not_local:
-            return self.useGlobalPrefix(attr)
-        result = Attr()
-        for scope in self._scopes[1:]:
-            if isinstance(scope, list):
-                scope = scope[0]
-            if scope is None:
-                continue
-            result.append(scope.name)
-        result = self.useGlobalPrefix(result + attr)
-        if withFuse:
-            return self._useFusePrefix(result)
-        return result
-
-    def useGlobalPrefix(self, attr: Attr, withFuse: bool = False) -> Attr:
-        if withFuse:
-            return self._useFusePrefix(attr)
-        return attr
-
-    def _useFusePrefix(self, attr: Attr) -> Attr:
-        return attr.__class__([self.config['project_name']]) + attr
+    scopeFolder: List[BasicScope | CodeScope] = list()
+    """
+    A list of scopes, it's usually used to build prefixes in variable or file names.
+    """
 
     # Another methods
     # ---------------
 
-    def getThisScope(self, index=0) -> Type[LangApi.ScopeWithoutCode | LangApi.ScopeWithCode]:
-        if isinstance(self._scopes[-(1 + index)], list):
-            return self._scopes[-(1 + index)][0]
-        return self._scopes[-(1 + index)]
+    def getThisScope(self, index=0) -> BasicScope:
+        """
+        This method returns the scope at the given index.
+        e.g:
+        If index is 0, which is used by default, the scope at index 0 will be returned.
 
-    def enterScope(self, scope: LangApi.ScopeWithoutCode | LangApi.ScopeWithCode, attribute: int = None):
-        if isinstance(scope, CodeScope) and scope not in self.code:
-            scope: Type[LangApi.ScopeWithCode]
-            if attribute is not None:
-                self.code.add((scope, attribute))
-                self._scopes.append([scope, attribute])
-                return
-            else:
-                self.code.add(scope)
-        scope: Type[LangApi.ScopeWithoutCode]
-        self._scopes.append(scope)
+        Let's say we have the following code:
+        function foo():
+            print("Hello, Kiwi!")  # if this method is called here, then function scope will be returned.
+        """
+        if isinstance(self.scopeFolder[-(1 + index)], list):
+            return self.scopeFolder[-(1 + index)][0]
+        return self.scopeFolder[-(1 + index)]
+
+    def enterScope(self, scope: BasicScope):
+        """
+        This method is used to enter a new or existing scope.
+        But it doesn't append code of scope to datapack.
+        """
+        self.scopeFolder.append(scope)
 
     def leaveScope(self):
-        self._scopes.pop(-1)
+        self.scopeFolder.pop(-1)
 
-    def globalScope(self):
-        self._is_not_local = True
+    def system(self, command: LangApi.CodeType, codeKey='main'):
+        self.scopeFolder[-1].code[codeKey].append(command)
 
-    def localScope(self):
-        self._is_not_local = False
-
-    def system(self, command: LangApi.CodeType):
-        index = -1
-        if self._is_not_local:
-            index = 0
-        scope = self._scopes[index]
-        if isinstance(scope, list):
-            scope[0].code[scope[1]].append(command)
-        else:
-            scope.code.append(command)
-
-    def eval(self, text: str) -> list | LangApi.Abstract | ScopeType:
+    def eval(self, text: str) -> Any:
+        """
+        This method is used to evaluate a string.
+        :return:
+        It returns Kiwi-Object, Score for example
+        """
         result = self.analyzer.ast.eval(Tokenizer(text).lexer)
         return self.visit(self.analyzer.visit(result))
 
-    def exec(self, text: str) -> list | LangApi.Abstract | ScopeType:
+    def exec(self, text: str) -> Any:
+        """
+        This method is used to execute a string.
+        :return:
+        It returns Kiwi-Object, Score for example
+        """
         result = self.analyzer.ast.exec(Tokenizer(text).lexer)
         return self.visit(self.analyzer.visit(result))
 
     @classmethod
     def build(cls, module_name, scope: Dict[str, Type[LangApi.Abstract]]):
-        if module_name not in cls.defaultLibScope.keys():
-            cls.defaultLibScope[module_name] = scope
+        """
+        It's used to add built-in objects.
+        """
+        if module_name not in cls.builtinLibScope.keys():
+            cls.builtinLibScope[module_name] = scope
         else:
-            cls.defaultLibScope[module_name] |= scope
+            cls.builtinLibScope[module_name] |= scope

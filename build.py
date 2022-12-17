@@ -17,7 +17,7 @@ from LangApi import API
 # ----------------
 
 from Kiwi.kiwiTokenizer import Tokenizer
-from Kiwi.kiwiAST import AST
+from Kiwi.kiwiParser import AST
 from Kiwi.components.kiwiConstructor import Constructor
 from Kiwi.kiwiAnalyzer import Analyzer
 from Kiwi.components.kiwiTools import dumpAST, dumpTokenizer, dumpScopeSystem
@@ -301,7 +301,7 @@ class Builder:
             from subprocess import run, DEVNULL
             run(
                 f'python -m pegen {Path(__file__).parent / "Kiwi/components/kiwi.gram"} -o'
-                f' {Path(__file__).parent / "Kiwi/kiwiAST.py"} -v'.split(),
+                f' {Path(__file__).parent / "Kiwi/kiwiParser.py"} -v'.split(),
                 stdout=DEVNULL
             )
 

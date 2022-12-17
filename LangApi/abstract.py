@@ -1,3 +1,25 @@
+"""
+Copyright (c) 2022 Krivoshapkin Edward
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
 from __future__ import annotations
 
 # Default libraries
@@ -6,17 +28,11 @@ from __future__ import annotations
 from typing import Optional, Any, TYPE_CHECKING  # noqa: F401
 from abc import ABC, abstractmethod
 
-import LangApi
-
 # Custom libraries
 # ----------------
 
-from LangApi.api import API, Attr
-from Kiwi.components.kiwiTools import AST_Task
-from Kiwi.components.kiwiScope import (
-    CodeScope as _CodeScope,
-    NoCodeScope as _NoCodeScope
-)
+from LangApi.api import API
+from Kiwi.components.kiwiScope import Attr
 
 if TYPE_CHECKING:
     from LangApi.bytecode import NBTLiteral
@@ -103,22 +119,6 @@ class TransPredicate(Abstract, ABC):
 
 # BASIC OBJECT TYPES
 # ==================
-
-
-class ScopeWithCode(_CodeScope, ABC):
-    def Return(self, value: LangApi.Construct):
-        i = 0
-        while not isinstance(function:=self.api.getThisScope(i), self.api.LangCode.Function):  # noqa
-            i += 1
-        function: LangCode.Function
-        return self.api.Construct(
-                'Assign',
-                function.returns,
-                [value]
-            )
-
-class ScopeWithoutCode(_NoCodeScope):
-    ...
 
 
 class Class(Callable, ABC):

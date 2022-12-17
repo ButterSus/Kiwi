@@ -1,3 +1,25 @@
+"""
+Copyright (c) 2022 Krivoshapkin Edward
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
 from __future__ import annotations
 
 from inspect import isclass
@@ -14,12 +36,17 @@ from itertools import chain
 
 import Kiwi.components.kiwiColors as _colors
 import Kiwi.components.kiwiASO as _kiwi
-from Kiwi.components.kiwiScope import Attr, ScopeSystem, ScopeType
+from Kiwi.components.kiwiScope import Attr, ScopeSystem, BasicScope
 from Kiwi.kiwiTokenizer import\
     Tokenize as _Tokenize,\
     generate_tokens as _generate_tokens,\
     StringIO as _StringIO,\
     Tokenizer as _Tokenizer
+
+
+def getSelfModule(name: str) -> Any:
+    from sys import modules
+    return modules[name]
 
 
 def dumpTokenizer(node: _Tokenizer) -> str:
@@ -74,13 +101,13 @@ def dumpAST(module: _kiwi.Module, minimalistic=False) -> str:
 def dumpScopeSystem(scope: ScopeSystem):
     def f(node: Any, col=_colors.Cyan + _colors.BackgroundDefault, level=1):
         tab = ' ' * 4
-        if isinstance(node, ScopeType):
+        if isinstance(node, BasicScope):
             items = list()
             for key in node.content.keys():
                 prefix = str()
                 if key in node.hide:
                     prefix = _colors.Black + _colors.BackgroundWhite + " private " + _colors.BackgroundDefault + " "
-                if isinstance(node.content[key], ScopeType):
+                if isinstance(node.content[key], BasicScope):
                     items.append(f"\n{tab * level}{prefix}{_colors.Red}{key}" + f(node.content[key],
                                                                                   level=level + 1,
                                                                                   col=col))
