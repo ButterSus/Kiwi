@@ -1,23 +1,6 @@
 """
-Copyright (c) 2022 Krivoshapkin Edward
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+This module contains all the AST nodes.
+It's used by the second step of frontend (parser).
 """
 
 from __future__ import annotations
@@ -31,8 +14,8 @@ from dataclasses import dataclass, field
 # Custom libraries
 # ----------------
 
-import Kiwi.components.kiwiColors as colors
-from Kiwi.components.kiwiScope import Attr, DirAttr  # noqa
+import components.kiwiColors as colors
+from components.kiwiScope import Attr, DirAttr  # noqa
 
 
 # Colors for dumping
@@ -240,16 +223,6 @@ class Case(Theme_Statements, AST):
 
 @dataclass
 class Expression(Theme_Expressions, AST):
-    value: expression
-
-    def isGroup(self) -> bool:
-        if isinstance(self.value, NotFullExpression):
-            return self.value.isGroup
-        return False
-
-
-@dataclass
-class NotFullExpression(Theme_Expressions, AST):
     value: expression
     isGroup: bool = field(default=False)
 

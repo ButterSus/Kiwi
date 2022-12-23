@@ -1,24 +1,4 @@
 """
-Copyright (c) 2022 Krivoshapkin Edward
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
 This module contains all the objects to handle scopes,
 access to variables and functions and attribute classes.
 
@@ -40,41 +20,77 @@ from abc import ABC, abstractmethod
 # Custom libraries
 
 if TYPE_CHECKING:
-    from LangApi import CodeType, API, Construct
-    from LangCode import Function
+    from LangApi.api import API, Construct
+    from LangApi.bytecode import CodeType
 
 
 class Attr(list):
+    """
+    Some basic representation of an attribute.
+    It's just a list of strings, except it has
+    additional methods, and we can check type using
+    if isinstance.
+    """
     def append(self, __object: Any):
+        """
+        Append an object to the attribute if it's not None.
+        """
         if __object is None:
             return
         super().append(__object)
 
     def __add__(self, other) -> Attr:
+        """
+        I have overloaded the __add__ method,
+        because natively it does change the class of Attr.
+        """
         return self.__class__(super().__add__(other))
 
     def __getitem__(self, item):
+        """
+        I have overloaded the __getitem__ method,
+        because natively it does change the class of Attr.
+        """
         if isinstance(item, slice):
             return self.__class__(super().__getitem__(item))
         return super().__getitem__(item)
 
     def toName(self) -> str:
+        """
+        Just return you the last string of list
+        """
         return str(self[-1])
 
     def toString(self) -> str:
+        """
+        Return the all strings joined together using dot as separator.
+        """
         return '.'.join(self)
 
     def toPath(self) -> Path:
+        """
+        Used to convert the attribute to a Path object.
+        """
         return reduce(lambda x, y: x / y,
                       [Path(), *self])
 
-    def withPrefix(self, prefix: str):
+    def withSuffix(self, prefix: str):
+        """
+        It's used to add a suffix to the last string.
+        But, you can't add a prefix twice (it can charge and explode!).
+        """
         newAttr = self.__class__(self)
         newAttr[-1] += prefix
         return newAttr
 
 
 class DirAttr(Attr):
+    """
+    Some alternative way to represent an attributes.
+    Sometimes, you want to represent an attribute as a directory.
+    For example, when you call function in minecraft:
+    function some_project:dir1/dir2/file.mcfunction
+    """
     directory: Attr
 
     def __init__(self, directory: Attr, *args):
@@ -93,6 +109,9 @@ class DirAttr(Attr):
         return str(self[-1])
 
     def toString(self) -> str:
+        """
+        Unlike the Attr.toString, this method also adds directory prefix.
+        """
         return f"{self.directory.toString()}:{'/'.join(self)}"
 
 
@@ -180,9 +199,7 @@ class CodeScope(BasicScope, ABC):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.code = {
-            'main': list()
-        }
+        self.code = dict()
 
     def Return(self, value: Construct) -> Construct:
         """
@@ -190,15 +207,6 @@ class CodeScope(BasicScope, ABC):
         return statement.
         It calls assign method of function return parameter.
         """
-        i = 0
-        while not isinstance(function:=self.api.getThisScope(i), self.api.LangCode.Function):  # noqa
-            i += 1
-        function: Function
-        return self.api.Construct(
-                'Assign',
-                function.returns,
-                [value]
-            )
 
     @abstractmethod
     def toPath(self, key: str) -> List[str]:
@@ -243,20 +251,18 @@ class ScopeSystem:
         )
         self.localScope = self.localScope.get(name, ignoreScope=False)
 
-    def useCustomSpace(self, name: str, space: BasicScope, hideMode=False):
+    def useCustomSpace(self, space: BasicScope, hideMode=False):
         """
         This method is used to enter some scope.
         Also, you can set hideMode to True, if you want to make scope local.
         """
         if self.localScope.private_mode:
-            name = name[0] if isinstance(name, Attr) else name
-            self.localScope.hide.add(name)
+            self.localScope.hide.add(space.name)
         space.parent = self.localScope
         self.localScope.write(
-            name, space
+            space.name, space
         )
-        self.localScope = self.localScope.get(name, ignoreScope=False)
-        self.localScope.name = name
+        self.localScope = self.localScope.get(space.name, ignoreScope=False)
         self.localScope.private_mode = hideMode
 
     def newLocalSpace(self):

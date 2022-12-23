@@ -1,23 +1,6 @@
 """
-Copyright (c) 2022 Krivoshapkin Edward
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+This module provides all objects to work with files.
+It's used to generate datapack folders and files.
 """
 
 from __future__ import annotations
@@ -25,7 +8,7 @@ from __future__ import annotations
 # Default libraries
 # -----------------
 
-from typing import TYPE_CHECKING, TextIO, List
+from typing import TYPE_CHECKING, TextIO, List, Any
 from pathlib import Path
 from shutil import rmtree
 import json
@@ -33,44 +16,65 @@ import json
 # Custom libraries
 # ----------------
 
-import LangCode
 if TYPE_CHECKING:
-    from build import Builder, ConfigGeneral
+    import compiler
+    import LangApi
+    import Kiwi
+
+
+def init(_compiler: Any, _LangApi: Any, _Kiwi: Any):
+    globals()['compiler'] = _compiler  # noqa
+    globals()['LangApi'] = _LangApi  # noqa
+    globals()['Kiwi'] = _Kiwi  # noqa
+    _Kiwi.init(_compiler, _LangApi, _Kiwi)
 
 
 # General directories
 # -------------------
 
 class Directories:
+    """
+    This class is used to store main directories.
+    """
     bin: Path
     data: Path
     project: Path
     functions: Path
 
 
+class Attributes:
+    """
+    This class is used to store main attributes for API.
+    """
+    project: List[str]
+    functions: List[str]
+
+
 class Constructor:
     """
-    The main task of this class is
-    - construct base for compiler
+    This class is used to create a datapack file structure.
+    It's final step of compiling a datapack.
     """
 
-    configGeneral: ConfigGeneral
+    config: compiler.ConfigGeneral
+    attributes: Attributes
     directories: Directories
-    builder: Builder
+    builder: compiler.Builder
 
-    def __init__(self, builder: Builder):
+    def __init__(self, builder: compiler.Builder):
         self.builder = builder
-        self.configGeneral = builder.configGeneral
+        self.config = builder.configGeneral
+        self.attributes = Attributes()
         self.directories = Directories()
         self.folders()
         self.files()
 
     def folders(self):
         """
-        Folders initialization
+        Folders initialization.
         """
 
-        self.directories.bin = Path(self.configGeneral['output_directory'])
+        self.directories.bin = Path(self.config['output_directory'])
         rmtree(self.directories.bin, ignore_errors=True)
         self.directories.bin.mkdir(exist_ok=True)
 
@@ -78,15 +82,23 @@ class Constructor:
         self.directories.data.mkdir(exist_ok=True)
 
         self.directories.project = Path(self.directories.data /
-                                        LangCode.convert_var_name(self.configGeneral['project_name']))
+                                        LangApi.bytecode.convert_var_name(self.config['project_name']))
         self.directories.project.mkdir(exist_ok=True)
 
         self.directories.functions = Path(self.directories.project / 'functions')
         self.directories.functions.mkdir(exist_ok=True)
 
+        self.attributes.project = list(map(str, self.directories.project.relative_to(
+            self.directories.data
+        ).parts))
+        self.attributes.functions = list(map(str, self.directories.functions.relative_to(
+            self.directories.data
+        ).parts))
+
     def files(self):
         """
-        File initialization: pack.mcmeta
+        Files initialization.
+        But at the moment, there is only one file.
         """
 
         def get_pack(version: str) -> int:
@@ -116,12 +128,17 @@ class Constructor:
         with (self.directories.bin / 'pack.mcmeta').open('w+') as file:
             file.write(json.dumps({
                 "pack": {
-                    "pack_format": get_pack(self.configGeneral['mc_version']),
-                    "description": (self.configGeneral['description'])
+                    "pack_format": get_pack(self.config['mc_version']),
+                    "description": (self.config['description'])
                 }
             }, indent=4))
 
     def create_file(self, path: Path, to_go: List[str]) -> TextIO:
+        """
+        This method takes <path> and <to_go>,
+        concatenates <path> and <to_go> into a single directory,
+        then returns you opened TextIO object.
+        """
         if len(to_go) == 1:
             return (path / to_go[0]).open('a')
         result = path / to_go[0]
@@ -129,15 +146,13 @@ class Constructor:
         return self.create_file(result, to_go[1:])
 
     def build(self):
+        """
+        Finally, this method is called.
+        And the whole datapack is built into one
+        powerful structure.
+        """
         for codeScope in self.builder.api.code:
-            if isinstance(codeScope, tuple):
-                self.create_file(
-                    self.directories.data,
-                    codeScope[0].toPath(codeScope[1])
-                ).write(
-                    '\n'.join(map(lambda x: x.toCode(), codeScope[0].code[codeScope[1]]))
+            for key, code in codeScope.code.items():
+                self.create_file(self.directories.data, codeScope.toPath(key)).write(
+                    '\n'.join(map(lambda x: x.toCode(), code))
                 )
-                continue
-            self.create_file(self.directories.data, codeScope.toPath()).write(
-                '\n'.join(map(lambda x: x.toCode(), codeScope.code))
-            )

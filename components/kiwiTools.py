@@ -1,28 +1,10 @@
 """
-Copyright (c) 2022 Krivoshapkin Edward
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+This module contains some random utility functions.
+It's used by all other modules.
 """
 
 from __future__ import annotations
 
-from inspect import isclass
 # Default libraries
 # -----------------
 
@@ -30,26 +12,33 @@ from dataclasses import dataclass as _dataclass
 from typing import Any, List, Callable
 from tokenize import tok_name
 from itertools import chain
+from inspect import isclass
 
 # Custom libraries
 # ----------------
 
-import Kiwi.components.kiwiColors as _colors
-import Kiwi.components.kiwiASO as _kiwi
-from Kiwi.components.kiwiScope import Attr, ScopeSystem, BasicScope
-from Kiwi.kiwiTokenizer import\
+import components.kiwiColors as _colors
+import components.kiwiASO as _kiwi
+from components.kiwiScope import Attr, ScopeSystem, BasicScope
+from frontend.kiwiTokenizer import\
     Tokenize as _Tokenize,\
     generate_tokens as _generate_tokens,\
     StringIO as _StringIO,\
     Tokenizer as _Tokenizer
 
 
-def getSelfModule(name: str) -> Any:
+def getSomeModule(name: str) -> Any:
+    """
+    It's my crutch to avoid import loops in Python.
+    """
     from sys import modules
     return modules[name]
 
 
 def dumpTokenizer(node: _Tokenizer) -> str:
+    """
+    Use it if you want to dump the tokenizer output to a string.
+    """
     items = list()
     iterator = 0
     new = '\n'
@@ -62,6 +51,9 @@ def dumpTokenizer(node: _Tokenizer) -> str:
 
 
 def dumpAST(module: _kiwi.Module, minimalistic=False) -> str:
+    """
+    Use it if you want to dump the parser output to a string.
+    """
     tab = ' ' * 3
     new = '\n'
 
@@ -80,7 +72,7 @@ def dumpAST(module: _kiwi.Module, minimalistic=False) -> str:
             return f'{ast_color} {node} {color}'
         if isclass(node):
             return _colors.Yellow + node.__name__
-        if node.__class__.__name__ == 'Construct':
+        if node.__class__.__name__ == 'Construct':  # some crutches
             return f'{_colors.Cyan}{node.method}{_colors.White} -> ' \
                    f'{f(node.parent, lvl=lvl, color=color)}\n{tab*lvl}' \
                    f'{color}{f(node.arguments, lvl=lvl, color=color)}{color}'
@@ -99,6 +91,9 @@ def dumpAST(module: _kiwi.Module, minimalistic=False) -> str:
 
 
 def dumpScopeSystem(scope: ScopeSystem):
+    """
+    Use it if you want to dump scopes to a string.
+    """
     def f(node: Any, col=_colors.Cyan + _colors.BackgroundDefault, level=1):
         tab = ' ' * 4
         if isinstance(node, BasicScope):
@@ -134,11 +129,19 @@ def dumpScopeSystem(scope: ScopeSystem):
 
 @_dataclass
 class AST_Task:
+    """
+    This class is similar to Construct (see it on LangApi.api),
+    except it will be launched by AST_Visitor.
+    """
     function: Callable
     args: List[Any]
 
 
 class AST_Visitor:
+    """
+    This class is parent of Analyzer.
+    It has some basic methods to visit tree recursively.
+    """
     @staticmethod
     def getAttributes(node: _kiwi.AST):
         try:
@@ -150,6 +153,9 @@ class AST_Visitor:
             yield annotation, attribute
 
     def knockCall(self, node: Any) -> Callable[[Any], None]:
+        """
+        It's used to try to find method among attributes.
+        """
         name = node.__class__.__name__
         if name in dir(self):
             return self.__getattribute__(name)
@@ -170,10 +176,24 @@ class AST_Visitor:
         return self._tasks[-(1 + index)][self._currentIndex[-(1 + index)] + 1:]
 
     def replaceLastCommands(self, commands: List[Any], index: int = 0):
+        """
+        It's my crunch to replace last commands :D
+        I'm using it to handle return statements, because
+        frontend is Datapack Language, that means we can't break
+        next lines of code, and we should handle it by yourself.
+        """
         self._tasks[-(1 + index)] = self._tasks[-(1 + index)][:self._currentIndex[-(1 + index)] + 1]
         self._tasks[-(1 + index)].extend(commands)
 
     def visit(self, node: Any, no_references=False) -> Any:
+        """
+        This method is similar to LangApi.api.API.visit
+        This method is used to handle parser output.
+        It calls handle function depending on AST node type.
+        Also, if the input value is a list with tuple, tuple will be unpacked.
+        e.g:
+        If the input value is a list of some objects, objects will be handled.
+        """
         self._no_references += no_references
         if isinstance(node, list):
             result = list()
@@ -213,6 +233,9 @@ class AST_Visitor:
             return node.function(*node.args)
 
     def visitAST(self, node: _kiwi.AST | _kiwi.Token) -> List[Any]:
+        """
+        I hope no one will use this, it's lazy method. :/
+        """
         result = list()
         for annotation, attribute in self.getAttributes(node):
             result.append(self.visit(attribute))

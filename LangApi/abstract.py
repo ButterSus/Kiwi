@@ -1,23 +1,6 @@
 """
-Copyright (c) 2022 Krivoshapkin Edward
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+This module provides you basic classes to
+create new frontend objects.
 """
 
 from __future__ import annotations
@@ -25,18 +8,20 @@ from __future__ import annotations
 # Default libraries
 # -----------------
 
-from typing import Optional, Any, TYPE_CHECKING  # noqa: F401
+from typing import Optional, Any, TYPE_CHECKING, Callable as _Callable  # noqa: F401
 from abc import ABC, abstractmethod
 
 # Custom libraries
 # ----------------
 
-from LangApi.api import API
-from Kiwi.components.kiwiScope import Attr
+from LangApi.api import API as _API, ConstructMethod as _ConstructMethod
+from components.kiwiScope import Attr as _Attr
+from components.kiwiScope import CodeScope
 
 if TYPE_CHECKING:
-    from LangApi.bytecode import NBTLiteral
-    import LangCode  # noqa: F401
+    from LangApi.bytecode import NBTLiteral as _NBTLiteral
+    from frontend.kiwiAnalyzer import Analyzer as _Analyzer
+    from components.kiwiConstructor import Constructor as _Constructor
 
 
 # BASIC CLASS
@@ -44,10 +29,39 @@ if TYPE_CHECKING:
 
 
 class Abstract(ABC):
-    api: API
+    constructor: _Constructor
+    analyzer: _Analyzer
+    api: _API
 
-    def __init__(self, api: API):
+    def __init__(self, analyzer: _Analyzer, api: _API):
+        self.constructor = analyzer.constructor
+        self.analyzer = analyzer
         self.api = api
+
+    def loader(self, command: _ConstructMethod) -> _Callable:
+        cases = {
+            _ConstructMethod.InitsType: 'InitsType',
+            _ConstructMethod.Formalize: 'Formalize',
+
+            _ConstructMethod.AddOperation: 'Add',
+            _ConstructMethod.SubOperation: 'Sub',
+            _ConstructMethod.MulOperation: 'Mul',
+            _ConstructMethod.DivOperation: 'Div',
+            _ConstructMethod.ModOperation: 'Mod',
+            _ConstructMethod.PlusOperation: 'Plus',
+            _ConstructMethod.MinusOperation: 'Minus',
+
+            _ConstructMethod.AssignOperation: 'Assign',
+
+            _ConstructMethod.Call: 'Call',
+            _ConstructMethod.Reference: 'Reference',
+            _ConstructMethod.Annotation: 'Annotation',
+            _ConstructMethod.GetChild: 'GetChild',
+        }
+        assert command in cases.keys()
+        method = cases.get(command)
+        assert method in dir(self)
+        return self.__getattribute__(method)
 
 
 # BASIC PROPERTIES
@@ -56,20 +70,17 @@ class Abstract(ABC):
 
 class InitableType(Abstract, ABC):
     """
-    <self.name>: <self> <ARGS>
-
-    # except for Undefined:
-    <self>: <PARENT> <ARGS>
+    Object that can be annotated.
     """
 
     @abstractmethod
-    def InitsType(self, *args: Abstract | Attr) -> Optional[Abstract]:
+    def InitsType(self, *args: Abstract | Any) -> Optional[Abstract]:
         ...
 
 
 class Callable(Abstract, ABC):
     """
-    <self> ( <ARGS> )
+    Object that can be called (Can be not function).
     """
 
     @abstractmethod
@@ -79,7 +90,7 @@ class Callable(Abstract, ABC):
 
 class Assignable(Abstract, ABC):
     """
-    <self> = <ARG>
+    Object that supports equals operator.
     """
 
     @abstractmethod
@@ -89,7 +100,7 @@ class Assignable(Abstract, ABC):
 
 class Formalizable(Abstract, ABC):
     """
-    <TOKEN> or any scope
+    Object that can be initialized in compile time.
     """
 
     @abstractmethod
@@ -99,21 +110,21 @@ class Formalizable(Abstract, ABC):
 
 class Printable(Abstract, ABC):
     """
-    print(<self>
+    Object that can be printed.
     """
 
     @abstractmethod
-    def PrintSource(self) -> NBTLiteral:
+    def PrintSource(self) -> _NBTLiteral:
         ...
 
 
 class TransPredicate(Abstract, ABC):
     """
-    <self> to JSON-PREDICATE
+    Object that can be used as a predicate.
     """
 
     @abstractmethod
-    def transPredicate(self) -> NBTLiteral:
+    def transPredicate(self) -> _NBTLiteral:
         ...
 
 
@@ -123,11 +134,7 @@ class TransPredicate(Abstract, ABC):
 
 class Class(Callable, ABC):
     """
-    Used properties:
-    - Callable
-
-    Also:
-    - Added child for <ChangeableType> objects
+    It's used to represent a class
     """
 
     @abstractmethod
@@ -137,27 +144,49 @@ class Class(Callable, ABC):
 
 class Variable(InitableType, ABC):
     """
-    Used properties:
-    - ChangeableType
-
-    Also:
-    - Added name for getting a name
+    It's used to represent a class that support variables
     """
 
-    attr: Attr
-    address: Attr
+    attr: _Attr
+    address: _Attr
+    isNative = False
 
     @abstractmethod
-    def InitsType(self, attr: Attr, address: Attr, *args: Abstract) -> Optional[Abstract]:
+    def InitsType(self, attr: _Attr, address: _Attr, *args: Abstract) -> Optional[Abstract]:
         ...
+
+
+class Const(Assignable, ABC):
+    """
+    It's used to represent a class that support compile time AnnAssign
+    """
+
+
+class Format(Formalizable, ABC):
+    """
+    It's used to represent a constant token,
+    that will be initialized with a token string
+    """
+
+class Block(Formalizable, CodeScope, ABC):
+    """
+    It's used to represent a construction with
+    code block, code block can be also a predicate, JSON,
+    or even something else.
+    """
+    def __init__(self, analyzer: _Analyzer, api: _API):
+        self.content = dict()
+        self.code = dict()
+        super().__init__(analyzer, api)
+
 
 
 # MATH EXPRESSIONS
 # ================
 
 
-# Arithmetic operators
-# --------------------
+# Compare operators
+# -----------------
 
 
 class SupportEquals(Abstract, ABC):
@@ -166,7 +195,7 @@ class SupportEquals(Abstract, ABC):
     """
 
     @abstractmethod
-    def Equals(self, other: Abstract) -> NBTLiteral:
+    def Equals(self, other: Abstract) -> _NBTLiteral:
         ...
 
 
@@ -176,7 +205,7 @@ class SupportNotEquals(Abstract, ABC):
     """
 
     @abstractmethod
-    def NotEquals(self, other: Abstract) -> NBTLiteral:
+    def NotEquals(self, other: Abstract) -> _NBTLiteral:
         ...
 
 
@@ -186,7 +215,7 @@ class SupportLessThanEquals(Abstract, ABC):
     """
 
     @abstractmethod
-    def LessThanEquals(self, other: Abstract) -> NBTLiteral:
+    def LessThanEquals(self, other: Abstract) -> _NBTLiteral:
         ...
 
 
@@ -196,7 +225,7 @@ class SupportGreaterThanEquals(Abstract, ABC):
     """
 
     @abstractmethod
-    def GreaterThanEquals(self, other: Abstract) -> NBTLiteral:
+    def GreaterThanEquals(self, other: Abstract) -> _NBTLiteral:
         ...
 
 
@@ -206,7 +235,7 @@ class SupportLessThan(Abstract, ABC):
     """
 
     @abstractmethod
-    def LessThan(self, other: Abstract) -> NBTLiteral:
+    def LessThan(self, other: Abstract) -> _NBTLiteral:
         ...
 
 
@@ -216,8 +245,19 @@ class SupportGreaterThan(Abstract, ABC):
     """
 
     @abstractmethod
-    def GreaterThan(self, other: Abstract) -> NBTLiteral:
+    def GreaterThan(self, other: Abstract) -> _NBTLiteral:
         ...
+
+
+class SupportComparison(SupportEquals, SupportNotEquals,
+                        SupportLessThan, SupportLessThanEquals,
+                        SupportGreaterThan, SupportGreaterThanEquals,
+                        ABC):
+    ...
+
+
+# Arithmetic operators
+# --------------------
 
 
 class SupportPlus(Abstract, ABC):
@@ -290,6 +330,12 @@ class SupportMod(Abstract, ABC):
         pass
 
 
+class SupportArithmetic(SupportAdd, SupportSub,
+                        SupportMul, SupportDiv, SupportMod,
+                        ABC):
+    ...
+
+
 # AugAssignment operators
 # -----------------------
 
@@ -342,3 +388,9 @@ class SupportIMod(Abstract, ABC):
     @abstractmethod
     def IMod(self, other: Abstract) -> Optional[Abstract]:
         pass
+
+
+class SupportAugArithmetic(SupportIAdd, SupportISub,
+                           SupportIMul, SupportIDiv, SupportIMod,
+                           ABC):
+    ...

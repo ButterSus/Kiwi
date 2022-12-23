@@ -1,9 +1,9 @@
-function sqrt(x: score) -> score:
-	i, result -> score = 1, 1
-	while result <= x:
-		i += 1
-		result = i * i
-	return i - 1
+a: score
+a = 5
+
+b: score
+b = 4 + 5
 
 
-print(sqrt(44))
+
+print(f"Hello, Furlaries! {a}")

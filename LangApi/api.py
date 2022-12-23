@@ -1,24 +1,4 @@
 """
-Copyright (c) 2022 Krivoshapkin Edward
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
 This module provides you all methods and classes,
 to handle any task.
 You can implement any construction, data type or
@@ -36,18 +16,68 @@ from typing import (
 from dataclasses import dataclass, field
 from itertools import chain
 from inspect import isclass
+from enum import Enum, auto
 
 # Custom libraries
 # ----------------
 
-if TYPE_CHECKING:
-    import LangApi  # noqa
-    import LangCode  # noqa
-    from Kiwi.kiwiAnalyzer import Analyzer
-    from build import ConfigGeneral
+from components.kiwiScope import BasicScope, CodeScope, Attr as _Attr
+from components.kiwiASO import AST as _AST
+from components.kiwiTools import AST_Visitor as _AST_Visitor
 
-from Kiwi.components.kiwiScope import BasicScope, CodeScope
-from Kiwi.kiwiTokenizer import Tokenizer
+if TYPE_CHECKING:
+    import compiler
+    import LangApi
+    import Kiwi
+
+
+# Initialization of modules
+# -------------------------
+
+def init(_compiler: Any, _LangApi: Any, _Kiwi: Any):
+    globals()['compiler'] = _compiler  # noqa
+    globals()['LangApi'] = _LangApi  # noqa
+    globals()['Kiwi'] = _Kiwi  # noqa
+
+
+class ConstructMethod(Enum):
+    """
+    This enum defines all methods of Kiwi objects
+    """
+
+    # Basic initializations
+    # ---------------------
+
+    InitsType = auto()
+    Formalize = auto()
+
+    # Binary operators
+    # ----------------
+
+    AddOperation = auto()
+    SubOperation = auto()
+    MulOperation = auto()
+    DivOperation = auto()
+    ModOperation = auto()
+
+    # Unary operators
+    # ----------------
+
+    PlusOperation = auto()
+    MinusOperation = auto()
+
+    # Another operators
+    # -----------------
+
+    AssignOperation = auto()
+
+    # Special methods
+    # ---------------
+
+    Call = auto()
+    Reference = auto()
+    Annotation = auto()
+    GetChild = auto()
 
 
 @dataclass
@@ -56,14 +86,13 @@ class Construct:
     This dataclass stores analyzer request to run any method of built-in object or grammar constructions.
     API.visit method can launch it.
     """
-    method: str
+    method: ConstructMethod
     """
-    The name of the method to run
+    The method identifier to run
     e.g:
-    "Add"
-    (Check LangApi.abstract for name of methods)
+    ConstructMethod.AddOperation
     """
-    parent: Any
+    parent: Type[LangApi.abstract.Abstract] | LangApi.abstract.Abstract
     """
     The object or class of the method to run,
     if it's class, then it should take api parameter to initialize
@@ -76,7 +105,7 @@ class Construct:
     raw_args: bool = field(default=False)
     """
     By default, arguments will be passed to visitor, that will launch Construct before to pass
-    it as argument.
+    it as argument. (it's made to make it more abstract)
     e.g:
     Let's assume we have this structure:
     Construct(  # This construct will be handled last of all
@@ -96,38 +125,57 @@ class Construct:
 
 class API:
     """
-    Kiwi Language API provides you all basic methods and properties
+    frontend Language API provides you all basic methods and properties
     to implement any built-in types, functions or even grammar constructions.
     """
     builtinLibScope: Dict[
-        str,
-        Dict[str, Type[LangApi.Abstract]
-        ]
-    ] = {
+            str,
+            Dict[str, Type[LangApi.abstract.Abstract]
+        ]] = {
         'builtins': dict()
     }
-    analyzer: Analyzer
-    config: ConfigGeneral
-    Construct: Construct.__class__ = Construct
+    prefix: LangApi.prefix.Prefix
+    general: API
 
-    def __init__(self, analyzer: Analyzer, langApi: Any, langCode: Any):
-        # Modules reference
+    # Parts of compiler
+    # -----------------
+
+    constructor: compiler.KiwiConstructor.Constructor
+    builder: compiler.Builder
+    tokenizer: compiler.Tokenizer
+    ast: compiler.AST
+    analyzer: compiler.kiwiAnalyzer.Analyzer
+
+    # General parameters
+    # ------------------
+
+    configGeneral: compiler.ConfigGeneral
+
+    def __init__(
+            self,
+            constructor: compiler.KiwiConstructor.Constructor,
+            builder: compiler.Builder,
+            tokenizer: compiler.Tokenizer,
+            ast: compiler.AST
+    ):
+        # Parts of compiler
         # -----------------
 
-        global LangApi  # noqa
-        LangApi = langApi  # noqa
-        global LangCode  # noqa
-        LangCode = langCode  # noqa
+        self.constructor = constructor
+        self.builder = builder
+        self.tokenizer = tokenizer
+        self.ast = ast
 
-        # Class references
-        # ----------------
+        # General parameters
+        # ------------------
 
-        self.analyzer = analyzer
-        self.config = analyzer.config
+        self.configGeneral = builder.configGeneral
 
-        # Built-in objects initialization
-        # -------------------------------
+        # Initialization
+        # --------------
 
+        API.general = self
+        self.prefix = LangApi.prefix.Prefix(self)
         for name, value in self.builtinLibScope['builtins'].items():
             self.analyzer.scope.write(
                 name, value
@@ -143,10 +191,12 @@ class API:
     def visit(self, instruction: Any) -> Any:
         """
         This method is used to handle analyzer output.
-        Also, if the input value is a list with tuple, tuple will be unpacked.
+        Also, if the input value is a list with tuple, tuples will be unpacked.
         e.g:
         If the input value is a list of Construct, constructs will be launched.
         """
+        if isinstance(instruction, _Attr):
+            return instruction
         if isinstance(instruction, list):
             result = list()
             for item in instruction:
@@ -156,17 +206,22 @@ class API:
                     continue
                 result.append(visited)
             return result
+        if isinstance(instruction, _AST):
+            for annotation, attribute in _AST_Visitor.getAttributes(instruction):
+                visited = self.visit(attribute)
+                instruction.__setattr__(annotation, visited)
+            return instruction
         if isinstance(instruction, Construct):
             parent = self.visit(instruction.parent)
+            assert isinstance(parent, LangApi.abstract.Abstract)
             if instruction.raw_args:
                 args = instruction.arguments
             else:
                 args = self.visit(instruction.arguments)
-            assert instruction.method in dir(parent)
-            return parent.__getattribute__(instruction.method)(*args)
+            return parent.loader(instruction.method)(*args)
         if isclass(instruction) and not isinstance(instruction, BasicScope):
             instruction: Any
-            return instruction(self)
+            return instruction(self.analyzer, self)
         return instruction
 
     code: Set[CodeScope] = set()
@@ -190,10 +245,8 @@ class API:
 
         Let's say we have the following code:
         function foo():
-            print("Hello, Kiwi!")  # if this method is called here, then function scope will be returned.
+            print("Hello, frontend!")  # if this method is called here, then function scope will be returned.
         """
-        if isinstance(self.scopeFolder[-(1 + index)], list):
-            return self.scopeFolder[-(1 + index)][0]
         return self.scopeFolder[-(1 + index)]
 
     def enterScope(self, scope: BasicScope):
@@ -203,36 +256,48 @@ class API:
         """
         self.scopeFolder.append(scope)
 
+    def enterCodeScope(self, scope: CodeScope):
+        self.code.add(scope)
+        self.enterScope(scope)
+
     def leaveScope(self):
+        """
+        This method is used to leave the current scope.
+        """
         self.scopeFolder.pop(-1)
 
-    def system(self, command: LangApi.CodeType, codeKey='main'):
-        self.scopeFolder[-1].code[codeKey].append(command)
+    def system(self, command: LangApi.bytecode.CodeType, codeKey='main', isGlobal=False):
+        """
+        This method is used to add command to code of the current scope.
+        It's one of the most important methods.
+        """
+        index = 0 if isGlobal else -1
+        if codeKey not in self.scopeFolder[index].code.keys():
+            self.scopeFolder[index].code[codeKey] = list()
+        self.scopeFolder[index].code[codeKey].append(command)
 
     def eval(self, text: str) -> Any:
         """
         This method is used to evaluate a string.
         :return:
-        It returns Kiwi-Object, Score for example
+        It returns frontend-Object, Score for example
         """
-        result = self.analyzer.ast.eval(Tokenizer(text).lexer)
+        result = self.analyzer.ast.eval(compiler.Tokenizer(text).lexer)
         return self.visit(self.analyzer.visit(result))
 
     def exec(self, text: str) -> Any:
         """
         This method is used to execute a string.
         :return:
-        It returns Kiwi-Object, Score for example
+        It returns frontend-Object, Score for example
         """
-        result = self.analyzer.ast.exec(Tokenizer(text).lexer)
+        result = self.analyzer.ast.exec(compiler.Tokenizer(text).lexer)
         return self.visit(self.analyzer.visit(result))
 
     @classmethod
-    def build(cls, module_name, scope: Dict[str, Type[LangApi.Abstract]]):
+    def build(cls, scope: Dict[str, Type[LangApi.abstract.Abstract]]):
         """
         It's used to add built-in objects.
+        Usually it's called before API initialization.
         """
-        if module_name not in cls.builtinLibScope.keys():
-            cls.builtinLibScope[module_name] = scope
-        else:
-            cls.builtinLibScope[module_name] |= scope
+        cls.builtinLibScope['builtins'] |= scope
