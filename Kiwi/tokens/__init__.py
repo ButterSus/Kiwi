@@ -18,6 +18,7 @@ import Kiwi.tokens.number
 import Kiwi.tokens.string
 import Kiwi.tokens.expression
 import Kiwi.tokens.undefined
+import Kiwi.tokens.boolean
 
 
 def init(_compiler: Any, _LangApi: Any, _Kiwi: Any):
@@ -25,6 +26,7 @@ def init(_compiler: Any, _LangApi: Any, _Kiwi: Any):
     string.init(_compiler, _LangApi, _Kiwi)
     expression.init(_compiler, _LangApi, _Kiwi)
     undefined.init(_compiler, _LangApi, _Kiwi)
+    boolean.init(_compiler, _LangApi, _Kiwi)
 
 
 associations = reduce(
@@ -34,5 +36,6 @@ associations = reduce(
         string.associations,
         expression.associations,
         undefined.associations,
+        boolean.associations,
     ]
 )

@@ -33,9 +33,9 @@ class Abstract(ABC):
     analyzer: _Analyzer
     api: _API
 
-    def __init__(self, analyzer: _Analyzer, api: _API):
-        self.constructor = analyzer.constructor
-        self.analyzer = analyzer
+    def __init__(self, api: _API):
+        self.constructor = api.analyzer.constructor
+        self.analyzer = api.analyzer
         self.api = api
 
     def loader(self, command: _ConstructMethod) -> _Callable:
@@ -56,6 +56,7 @@ class Abstract(ABC):
             _ConstructMethod.Call: 'Call',
             _ConstructMethod.Reference: 'Reference',
             _ConstructMethod.Annotation: 'Annotation',
+            _ConstructMethod.AnnAssign: 'AnnAssign',
             _ConstructMethod.GetChild: 'GetChild',
         }
         assert command in cases.keys()
@@ -156,10 +157,14 @@ class Variable(InitableType, ABC):
         ...
 
 
-class Const(Assignable, ABC):
+class Const(ABC):
     """
     It's used to represent a class that support compile time AnnAssign
     """
+
+    @abstractmethod
+    def InitsTypeAssign(self, attr: _Attr, address: _Attr, *args: Abstract) -> Optional[Abstract]:
+        ...
 
 
 class Format(Formalizable, ABC):
@@ -174,10 +179,10 @@ class Block(Formalizable, CodeScope, ABC):
     code block, code block can be also a predicate, JSON,
     or even something else.
     """
-    def __init__(self, analyzer: _Analyzer, api: _API):
+    def __init__(self, api: _API):
         self.content = dict()
         self.code = dict()
-        super().__init__(analyzer, api)
+        super().__init__(api)
 
 
 

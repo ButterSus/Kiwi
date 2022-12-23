@@ -46,5 +46,10 @@ class Undefined(LangApi.abstract.Formalizable):
         self.analyzer.scope.write(self.address, result)
         return result
 
+    def AnnAssign(self, parent: LangApi.abstract.Const, value: LangApi.abstract.Abstract):
+        result = parent.InitsTypeAssign(self.attr, self.address, value)
+        self.analyzer.scope.write(self.address, result)
+        return result
+
 
 associations = dict()

@@ -41,22 +41,17 @@ class Score(LangApi.abstract.Variable,
                   scoreboard: Kiwi.scoreboard.scoreboard.Scoreboard = None) -> Score:
         if scoreboard is None:
             scoreboard = Kiwi.scoreboard.scoreboard.Scoreboard.general
+        assert isinstance(scoreboard, Kiwi.scoreboard.scoreboard.Scoreboard)
         self.attr = attr
         self.address = address
         self.scoreboard = scoreboard
         return self
 
-    # temp = Kiwi.tokens.undefined.Undefined(self.analyzer, self.api).Formalize(
-    #     self.api.prefix.SpecTemp()
-    # ).Annotation(
-    #     ScoreClass(self.analyzer, self.api).GetChild()
-    # )
-
     def Assign(self, other: LangApi.abstract.Abstract) -> Score:
         if isinstance(other, Kiwi.tokens.number.IntegerFormat):
             self.api.system(
                 LangApi.bytecode.ScoreboardPlayersSet(
-                    self.attr.toName(), self.scoreboard.attr.toName(),
+                    self.attr.toString(), self.scoreboard.attr.toString(),
                     str(other.value)
                 )
             )
@@ -69,7 +64,7 @@ class ScoreClass(LangApi.abstract.Class):
         pass
 
     def GetChild(self) -> LangApi.abstract.Variable:
-        return Score(self.analyzer, self.api)
+        return Score(self.api)
 
 
 associations = {

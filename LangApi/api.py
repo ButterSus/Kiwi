@@ -66,6 +66,15 @@ class ConstructMethod(Enum):
     PlusOperation = auto()
     MinusOperation = auto()
 
+    # Aug operators
+    # -------------
+
+    AugAddOperation = auto()
+    AugSubOperation = auto()
+    AugMulOperation = auto()
+    AugDivOperation = auto()
+    AugModOperation = auto()
+
     # Another operators
     # -----------------
 
@@ -77,6 +86,7 @@ class ConstructMethod(Enum):
     Call = auto()
     Reference = auto()
     Annotation = auto()
+    AnnAssign = auto()
     GetChild = auto()
 
 
@@ -221,7 +231,7 @@ class API:
             return parent.loader(instruction.method)(*args)
         if isclass(instruction) and not isinstance(instruction, BasicScope):
             instruction: Any
-            return instruction(self.analyzer, self)
+            return instruction(self)
         return instruction
 
     code: Set[CodeScope] = set()

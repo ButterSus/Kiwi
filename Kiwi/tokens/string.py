@@ -3,13 +3,13 @@ from __future__ import annotations
 # Default libraries
 # -----------------
 
-from typing import TYPE_CHECKING, Any, Optional, Callable
+from typing import TYPE_CHECKING, Any, Optional, Callable, List
+from string import Formatter
 
 # Custom libraries
 # ----------------
 
 import LangApi
-from components.kiwiScope import Attr
 
 if TYPE_CHECKING:
     import compiler
@@ -34,26 +34,58 @@ class StringFormat(LangApi.abstract.Format,
                    LangApi.abstract.SupportAdd,
                    LangApi.abstract.SupportMul,
                    LangApi.abstract.Printable):
-    value: str
+    _formatter = Formatter()
+    values: List[tuple[str, bool]]
 
-    def Formalize(self, token: str) -> StringFormat:
-        self.value = token
+    def _optimize(self):
+        i = 0
+        while i < len(self.values) - 1:
+            if self.values[i][1] == self.values[i + 1][1]:
+                self.values[i][0] += self.values[i + 1][0]
+                del self.values[i + 1]
+            i += 1
+
+    def Formalize(self, token: str, isFormatted: bool) -> StringFormat:
+        self.values = list()
+        self.values.append((token, isFormatted))
         return self
 
     def Add(self, other: StringFormat) -> StringFormat:
         assert isinstance(other, StringFormat)
-        self.value += other.value
+        self.values.extend(other.values)
+        self._optimize()
         return self
 
     def Mul(self, other: Kiwi.tokens.number.IntegerFormat) -> StringFormat:
         assert isinstance(other, Kiwi.tokens.number.IntegerFormat)
-        self.value *= other.value
+        self.values *= other.value
+        self._optimize()
         return self
 
     def PrintSource(self) -> LangApi.bytecode.NBTLiteral:
-        return {
-            "text": self.value
-        }
+        print_result = list()
+        for value, isFormatted in self.values:
+            if isFormatted:
+                information = self._formatter.parse(value)
+                result = list()
+                for string, expression, _, _ in information:
+                    if string is not None:
+                        result.append(
+                            StringFormat(self.api).Formalize(
+                                string, False
+                            ).PrintSource()
+                        )
+                    if expression is not None:
+                        evaluated: LangApi.abstract.Printable = self.api.eval(expression)
+                        result.append(evaluated.PrintSource())
+                print_result.append(result)
+            else:
+                print_result.append({
+                    'text': value
+                })
+        if len(print_result) == 1:
+            return print_result[0]
+        return print_result
 
 
 associations = dict()

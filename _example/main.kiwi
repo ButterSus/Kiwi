@@ -1,9 +1,2 @@
-a: score
-a = 5
-
-b: score
-b = 4 + 5
-
-
-
-print(f"Hello, Furlaries! {a}")
+namespace sus:
+	x: score = 5

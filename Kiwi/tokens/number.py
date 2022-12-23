@@ -132,7 +132,7 @@ class IntegerFormat(LangApi.abstract.Format,
         }
 
     def transPredicate(self) -> LangApi.bytecode.NBTLiteral:
-        return self.NotEquals(IntegerFormat(self.analyzer, self.api).Formalize(0))
+        return self.NotEquals(IntegerFormat(self.api).Formalize(0))
 
 
 

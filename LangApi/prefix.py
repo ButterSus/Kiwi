@@ -14,7 +14,8 @@ import functools
 # Custom libraries
 # ----------------
 
-from components.kiwiScope import Attr
+from components.kiwiScope import Attr, DirAttr
+
 if TYPE_CHECKING:
     from LangApi.api import API
 
@@ -37,6 +38,21 @@ def _DefaultCounter(function: Callable[[Prefix, int], Attr]) -> Callable[[], Att
         function.iterator += 1  # noqa
         return function(self, result)
     return _Counter
+
+def _FileName(function: Callable[[Prefix, str], str]) -> Callable[[str], str]:
+    @functools.wraps(function)
+    def _Wrapper(self: Prefix, name: str) -> str:
+        result = function(self, name)
+        mode = True
+        final_result = str()
+        for symbol in result:
+            if mode == symbol.isupper():
+                mode = not mode
+                final_result += '-'
+                symbol = symbol.lower()
+            final_result += symbol
+        return final_result
+    return _Wrapper
 
 
 class ScopeMode(Enum):
@@ -91,7 +107,10 @@ class Prefix:
         """
         match self.mode:
             case ScopeMode.LOCAL:
-                return attr
+                prefix = list()
+                for scope in self.api.scopeFolder[1:]:
+                    prefix.append(scope.name)
+                return Attr(prefix + attr)
             case ScopeMode.GLOBAL:
                 return attr
 
@@ -105,8 +124,7 @@ class Prefix:
         """
         return Attr([f"$temp--{counter}"])
 
-    @staticmethod
-    def SpecStatic(attr: Attr) -> Attr:
+    def SpecStatic(self, attr: Attr) -> Attr:
         """
         Used to add project name for specific
         object names, for example scoreboards.
@@ -117,7 +135,10 @@ class Prefix:
         :return:
         Output attribute with prefix
         """
-        return attr
+        return Attr([self.api.configGeneral['project_name']] + attr)
+
+    def SpecFileProject(self, attr: Attr) -> DirAttr:
+        return DirAttr(Attr([self.api.configGeneral['project_name']]), attr)
 
     @staticmethod
     def SpecConst(attr: Attr) -> Attr:
@@ -189,37 +210,45 @@ class Prefix:
     # =============
 
     @_StaticCounter
-    def FileIf(self, counter: int) -> Attr:
+    def FileIf(self, counter: int) -> str:
         """
         Return attribute for file name of if statement
         """
-        return self.ModLocal(Attr([f'--if--{counter}']))
+        return f'--if--{counter}'
 
     @_StaticCounter
-    def FileElse(self, counter: int) -> Attr:
+    def FileElse(self, counter: int) -> str:
         """
         Return attribute for file name of else statement
         """
-        return self.ModLocal(Attr([f'--else--{counter}']))
+        return f'--else--{counter}'
 
     @_StaticCounter
-    def FileFor(self, counter: int) -> Attr:
+    def FileFor(self, counter: int) -> str:
         """
         Return attribute for file name of for statement
         """
-        return self.ModLocal(Attr([f'--for--{counter}']))
+        return f'--for--{counter}'
 
     @_StaticCounter
-    def FileWhile(self, counter: int) -> Attr:
+    def FileWhile(self, counter: int) -> str:
         """
         Return attribute for file name of while statement
         """
-        return self.ModLocal(Attr([f'--while--{counter}']))
+        return f'--while--{counter}'
 
     @_StaticCounter
-    def FilePredicate(self, counter: int) -> Attr:
+    def FilePredicate(self, counter: int) -> str:
         """
         Return attribute for file name of predicate,
         which is used by if statement as condition, described in JSON
         """
-        return self.ModLocal(Attr([f'--predicate--{counter}']))
+        return f'--predicate--{counter}'
+
+    @_FileName
+    def FileNamespace(self, name: str) -> str:
+        return f'--namespace--{name}--'
+
+    @_FileName
+    def FileFunction(self, name: str) -> str:
+        return name

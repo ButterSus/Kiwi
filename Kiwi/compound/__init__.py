@@ -15,15 +15,21 @@ from typing import Any
 # ----------------
 
 import Kiwi.compound.module
+import Kiwi.compound.function
+import Kiwi.compound.namespace
 
 
 def init(_compiler: Any, _LangApi: Any, _Kiwi: Any):
     module.init(_compiler, _LangApi, _Kiwi)
+    function.init(_compiler, _LangApi, _Kiwi)
+    namespace.init(_compiler, _LangApi, _Kiwi)
 
 
 associations = reduce(
     lambda a, b: a | b,
     [
         module.associations,
+        function.associations,
+        namespace.associations,
     ]
 )

@@ -52,7 +52,7 @@ class Scoreboard(LangApi.abstract.Variable):
     def general(cls) -> Scoreboard:  # noqa
         api = LangApi.api.API.general
         if cls._general is None:
-            cls._general = Scoreboard(api.analyzer, api).InitsType(api.prefix.default_scoreboard,
+            cls._general = Scoreboard(api).InitsType(api.prefix.default_scoreboard,
                                                                    api.prefix.default_scoreboard)
         return cls._general
 
@@ -62,7 +62,7 @@ class Scoreboard(LangApi.abstract.Variable):
             criteria = self.analyzer.native(criteria)
         assert isinstance(criteria, str)
 
-        self.attr = attr
+        self.attr = self.api.prefix.SpecStatic(attr)
         self.address = address
         self.criteria = criteria
         self.api.system(
@@ -79,7 +79,7 @@ class ScoreboardClass(LangApi.abstract.Class):
         pass
 
     def GetChild(self):
-        return Scoreboard(self.analyzer, self.api)
+        return Scoreboard(self.api)
 
 
 associations = {

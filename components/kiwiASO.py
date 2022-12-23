@@ -8,7 +8,7 @@ from __future__ import annotations
 # Default libraries
 # -----------------
 
-from typing import List
+from typing import List, Type
 from dataclasses import dataclass, field
 
 # Custom libraries
@@ -130,22 +130,27 @@ class Return(Theme_Statements, AST):
 @dataclass
 class NamespaceDef(Theme_CStatements, AST):
     name: Name
-    blocks: List[PrivateBlock | PublicBlock | DefaultBlock]
+    blocks: List[Type[AnyBlock]]
 
 
 @dataclass
-class PrivateBlock(Theme_CStatements, AST):
+class AnyBlock(Theme_Statements, AST):
     body: List[statement]
 
 
 @dataclass
-class PublicBlock(Theme_CStatements, AST):
-    body: List[statement]
+class PrivateBlock(AnyBlock):
+    ...
 
 
 @dataclass
-class DefaultBlock(Theme_CStatements, AST):
-    body: List[statement]
+class PublicBlock(AnyBlock):
+    ...
+
+
+@dataclass
+class DefaultBlock(AnyBlock):
+    ...
 
 
 @dataclass

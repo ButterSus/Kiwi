@@ -79,6 +79,8 @@ class Builder:
             tokenizer = Tokenizer(text)
             ast = AST(tokenizer.lexer)
             api = LangApi.api.API(self.constructor, self, tokenizer, ast)
+            if self.configGeneral['debug']:
+                print(dumpAST(ast.module))
             analyzer = kiwiAnalyzer.Analyzer(self.constructor, self, tokenizer, ast, api, text)
             analyzer.visit(ast.module)
             api.visit(ast.module)
