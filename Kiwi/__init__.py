@@ -20,6 +20,7 @@ import Kiwi.tokens
 import Kiwi.compound
 import Kiwi.functions
 import Kiwi.scoreboard
+import Kiwi.bossbar
 
 
 def init(_compiler: Any, _LangApi: Any, _Kiwi: Any):
@@ -27,6 +28,7 @@ def init(_compiler: Any, _LangApi: Any, _Kiwi: Any):
     compound.init(_compiler, _LangApi, _Kiwi)
     functions.init(_compiler, _LangApi, _Kiwi)
     scoreboard.init(_compiler, _LangApi, _Kiwi)
+    bossbar.init(_compiler, _LangApi, _Kiwi)
 
 
 associations = reduce(
@@ -36,5 +38,6 @@ associations = reduce(
         compound.associations,
         functions.associations,
         scoreboard.associations,
+        bossbar.associations,
     ]
 )

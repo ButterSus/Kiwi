@@ -138,6 +138,7 @@ class Prefix:
     # ===============
 
     default_scoreboard = Attr(['default_scoreboard'])
+    default_bossbar = Attr(['default_bossbar'])
 
     # GENERAL MODIFIERS
     # =================

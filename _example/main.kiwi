@@ -1,25 +1,3 @@
-function square_root(x: score) -> score:
-	if x == 0 or x == 1:
-		return x
-	else:
-		start, end, ans -> score = 1, x / 2, 0
-		mid: score
-		while start <= end and ans == 0:
-			mid = (start + end) / 2
-			sqr: score = mid * mid
-			if sqr == x:
-				ans = mid
-			else:
-				if sqr <= x:
-					start = mid + 1
-				else:
-					end = mid - 1
-		if ans == 0:
-			return end
-		else:
-			return ans
 
+test: bossbar = "name"
 
-
-for i: score = 0; i < 25; i += 1:
-	print(f"square root of {i} = {square_root(i)}")

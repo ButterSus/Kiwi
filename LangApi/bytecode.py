@@ -227,6 +227,17 @@ class ScoreboardPlayersReset(CodeType):
         return f'scoreboard players reset {name} {scoreboard}'
 
 
+
+@dataclass
+class BossbarCreate(CodeType):
+    name: str
+    id: str
+
+    def toCode(self) -> str:
+        name = convert_var_name(self.name)
+        id = convert_var_name(self.id)
+        return f'bossbar add {id} "{name}"'
+
 @dataclass
 class FunctionDirectCall(CodeType):
     name: str
