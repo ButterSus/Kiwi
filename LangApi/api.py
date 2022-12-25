@@ -83,6 +83,7 @@ class ConstructMethod(Enum):
     # Special methods
     # ---------------
 
+    Return = auto()
     Call = auto()
     Reference = auto()
     Annotation = auto()
@@ -198,7 +199,7 @@ class API:
         except TypeError:
             return value
 
-    def visit(self, instruction: Any) -> Any:
+    def visit(self, instruction: Any, canInit=False) -> Any:
         """
         This method is used to handle analyzer output.
         Also, if the input value is a list with tuple, tuples will be unpacked.
@@ -222,14 +223,14 @@ class API:
                 instruction.__setattr__(annotation, visited)
             return instruction
         if isinstance(instruction, Construct):
-            parent = self.visit(instruction.parent)
+            parent = self.visit(instruction.parent, canInit=True)
             assert isinstance(parent, LangApi.abstract.Abstract)
             if instruction.raw_args:
                 args = instruction.arguments
             else:
                 args = self.visit(instruction.arguments)
             return parent.loader(instruction.method)(*args)
-        if isclass(instruction) and not isinstance(instruction, BasicScope):
+        if isclass(instruction) and not isinstance(instruction, BasicScope) and canInit:
             instruction: Any
             return instruction(self)
         return instruction
@@ -246,6 +247,14 @@ class API:
 
     # Another methods
     # ---------------
+
+    _isGlobal: int = 0
+
+    def enableGlobal(self):
+        self._isGlobal += True
+
+    def disableGlobal(self):
+        self._isGlobal -= True
 
     def getThisScope(self, index=0) -> BasicScope:
         """
@@ -266,22 +275,91 @@ class API:
         """
         self.scopeFolder.append(scope)
 
-    def enterCodeScope(self, scope: CodeScope):
+    _codeKeys: List[str] = list()
+
+    def enterCodeScope(self, scope: CodeScope, codeKey: str = None):
+        """
+        This method is used to enter a new or existing scope.
+        """
+        if self._codeBuffers:
+            assert False
         self.code.add(scope)
         self.enterScope(scope)
+        if codeKey is not None:
+            self._codeKeys.append(codeKey)
 
     def leaveScope(self):
         """
         This method is used to leave the current scope.
         """
+        if self._codeBuffers:
+            assert False
         self.scopeFolder.pop(-1)
 
-    def system(self, command: LangApi.bytecode.CodeType, codeKey='main', isGlobal=False):
+    def leaveScopeWithKey(self):
+        """
+        This method is used to leave the current scope and code key.
+        """
+        if self._codeBuffers:
+            assert False
+        self.leaveScope()
+        self._codeKeys.pop(-1)
+
+    _codeBuffers: List[Dict[str, List[LangApi.bytecode.CodeType]]] = list()
+
+    def bufferPush(self):
+        """
+        This method allows you additionally save all commands into buffer.
+        It's used to copy generated commands.
+        Be careful! It doesn't save global commands.
+        You can shoot out your leg! (As I did twice)
+        """
+        self._codeBuffers.append(dict())
+
+    def bufferPop(self) -> Dict[str, List[LangApi.bytecode.CodeType]]:
+        """
+        This method allows you to pop saved commands from buffer.
+        It's used to get generated commands.
+        Be careful! It doesn't save global commands.
+        You can shoot out your leg! (As I did twice)
+        """
+        return self._codeBuffers.pop(-1)
+
+    def bufferPaste(self, buffer: Dict[str, List[LangApi.bytecode.CodeType]]):
+        """
+        This method is used to paste buffer code into current scope
+        Be careful! It uses relative scope path!
+        You can shoot out your leg! (As I did twice)
+        """
+        for codeKey, code in buffer.items():
+            for command in code:
+                self.system(command, codeKey=codeKey)
+
+    def system(self, command: LangApi.bytecode.CodeType, codeKey: str = None, isGlobal=False):
         """
         This method is used to add command to code of the current scope.
         It's one of the most important methods.
         """
-        index = 0 if isGlobal else -1
+
+        # Getting index
+        # -------------
+
+        if self._codeKeys and not (isGlobal + self._isGlobal) and codeKey is None:
+            codeKey = self._codeKeys[-1]
+        else:
+            codeKey = 'main'
+        index = 0 if isGlobal + self._isGlobal else -1
+
+        # Buffer saving
+        # -------------
+
+        if self._codeBuffers and not (isGlobal + self._isGlobal):
+            if codeKey not in self._codeBuffers[-1]:
+                self._codeBuffers[-1][codeKey] = list()
+            self._codeBuffers[-1][codeKey].append(command)
+        # Command saving
+        # --------------
+
         if codeKey not in self.scopeFolder[index].code.keys():
             self.scopeFolder[index].code[codeKey] = list()
         self.scopeFolder[index].code[codeKey].append(command)
@@ -293,6 +371,7 @@ class API:
         It returns frontend-Object, Score for example
         """
         result = self.analyzer.ast.eval(compiler.Tokenizer(text).lexer)
+        print(result)
         return self.visit(self.analyzer.visit(result))
 
     def exec(self, text: str) -> Any:

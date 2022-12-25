@@ -3,7 +3,7 @@ from __future__ import annotations
 # Default libraries
 # -----------------
 
-from typing import TYPE_CHECKING, Any, Optional, Callable
+from typing import TYPE_CHECKING, Any, Optional, Callable, Type
 
 # Custom libraries
 # ----------------
@@ -41,13 +41,13 @@ class Undefined(LangApi.abstract.Formalizable):
         self.attr = self.api.prefix.ModLocal(attr)
         return self
 
-    def Annotation(self, parent: LangApi.abstract.Variable, *args: LangApi.abstract.Abstract):
-        result = parent.InitsType(self.attr, self.address, *args)
+    def Annotation(self, parent: Type[LangApi.abstract.Variable], *args: LangApi.abstract.Abstract):
+        result = parent(self.api).InitsType(self.attr, self.address, *args)
         self.analyzer.scope.write(self.address, result)
         return result
 
-    def AnnAssign(self, parent: LangApi.abstract.Const, value: LangApi.abstract.Abstract):
-        result = parent.InitsTypeAssign(self.attr, self.address, value)
+    def AnnAssign(self, parent: Type[LangApi.abstract.Const], value: LangApi.abstract.Abstract):
+        result = parent(self.api).InitsTypeAssign(self.attr, self.address, value)
         self.analyzer.scope.write(self.address, result)
         return result
 

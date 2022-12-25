@@ -40,6 +40,7 @@ class Directories:
     data: Path
     project: Path
     functions: Path
+    predicates: Path
 
 
 class Attributes:
@@ -48,6 +49,7 @@ class Attributes:
     """
     project: List[str]
     functions: List[str]
+    predicates: List[str]
 
 
 class Constructor:
@@ -88,10 +90,16 @@ class Constructor:
         self.directories.functions = Path(self.directories.project / 'functions')
         self.directories.functions.mkdir(exist_ok=True)
 
+        self.directories.predicates = Path(self.directories.project / 'predicates')
+        self.directories.predicates.mkdir(exist_ok=True)
+
         self.attributes.project = list(map(str, self.directories.project.relative_to(
             self.directories.data
         ).parts))
         self.attributes.functions = list(map(str, self.directories.functions.relative_to(
+            self.directories.data
+        ).parts))
+        self.attributes.predicates = list(map(str, self.directories.predicates.relative_to(
             self.directories.data
         ).parts))
 

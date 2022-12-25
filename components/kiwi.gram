@@ -151,6 +151,7 @@ compound_stmt:
     | function_def
     | namespace_def
     | if_stmt
+    | for_stmt
     | while_stmt
     | match_stmt
 
@@ -341,6 +342,12 @@ if_stmt:
         s.start, t[-1].end,
         c, t, []
         )}
+
+for_stmt:
+    | s='for' a=simple_stmt ';' b=expression ';' c=simple_stmt ':' e=block {kiwi.For(
+        s.start, e[-1].end,
+        a, b, c, e
+    )}
 
 while_stmt:
     | s='while' c=expression ':' b=block {kiwi.While(

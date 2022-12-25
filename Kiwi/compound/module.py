@@ -54,6 +54,7 @@ class Module(LangApi.abstract.Block):
                     *self.constructor.attributes.functions,
                     '--main--.mcfunction'
                 ]
+        assert False
 
 
 associations = dict()

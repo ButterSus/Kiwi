@@ -205,6 +205,14 @@ class IfElse(Theme_CStatements, AST):
 
 
 @dataclass
+class For(Theme_CStatements, AST):
+    init: statement
+    condition: expression
+    increment: statement
+    body: List[statement]
+
+
+@dataclass
 class While(Theme_CStatements, AST):
     condition: expression
     body: List[statement]
@@ -413,6 +421,7 @@ compound_stmt = \
     FuncDef | \
     NamespaceDef | \
     IfElse | \
+    For | \
     While | \
     MatchCase
 

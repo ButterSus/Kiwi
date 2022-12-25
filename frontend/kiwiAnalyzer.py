@@ -157,6 +157,21 @@ class Analyzer(AST_Visitor):
             self.visit(node.args)
         )
 
+    def Return(self, node: kiwi.Return):
+        i = 0
+        while i < len(self.api.scopeFolder):
+            function = self.api.getThisScope(i)
+            if isinstance(function, Kiwi.compound.function.Function):
+                break
+            i += 1
+        else:
+            assert False
+        return LangApi.api.Construct(
+            LangApi.api.ConstructMethod.Return,
+            function,
+            [self.visit(node.value)]
+        )
+
     # CONSTANT / TOKENS
     # =================
 
@@ -282,78 +297,70 @@ class Analyzer(AST_Visitor):
                     )
                 )
             return tuple(result)
-
-        for target in node.targets:
-            assert not target.isGroup
-            if parent.isNative:
-                args = node.args
-            else:
-                args = self.visit(node.args)
-            self.api.visit(
-                LangApi.api.Construct(
-                    LangApi.api.ConstructMethod.Annotation,
-                    self.visit(target),
-                    [parent, *args]
-                )
-            )
-
-        result = list()
-        assert len(node.targets) == len(node.values)
-        for a, b in zip(node.targets, node.values):
-            target = self.visit(a)
-            value = self.visit(b)
-            result.append(
-                LangApi.api.Construct(
-                    LangApi.api.ConstructMethod.AssignOperation,
-                    target,
-                    [value]
-                )
-            )
-        return tuple(result)
+        self.visit(
+            kiwi.Annotation(..., ..., node.targets, node.data_type, node.args)
+        )
+        return self.visit(
+            kiwi.Assignment(..., ..., node.targets, node.values)
+        )
 
     # SPACE DECLARATIONS
     # ==================
 
-    # def IfElse(self, node: kiwi.IfElse):
-    #     return self.api.visit(
-    #         Construct(
-    #             'InitsType',
-    #             LangCode.IfElse(self.api),
-    #             [
-    #                 node.condition,
-    #                 node.then,
-    #                 node.or_else
-    #             ]
-    #         )
-    #     )
-    #
-    # def While(self, node: kiwi.While):
-    #     result = self.api.visit(
-    #         Construct(
-    #             'InitsType',
-    #             LangCode.While(self.api),
-    #             [
-    #                 node.condition,
-    #                 node.body
-    #             ]
-    #         )
-    #     )
-    #     return result
+    def IfElse(self, node: kiwi.IfElse):
+        return self.api.visit(
+            LangApi.api.Construct(
+                LangApi.api.ConstructMethod.Formalize,
+                Kiwi.compound.ifelse.If(self.api),
+                [
+                    node.condition,
+                    node.then,
+                    node.or_else,
+                ]
+            )
+        )
 
-    # def FuncDef(self, node: kiwi.FuncDef):
-    #     result = self.api.visit(
-    #             Construct(
-    #                 'AnnotationDeclare',
-    #                 self.visit(node.name),
-    #                 [
-    #                     LangCode.Function(self.api),
-    #                     node.body,
-    #                     node.params,
-    #                     node.returns
-    #                 ]
-    #             )
-    #         )
-    #     return result
+    def For(self, node: kiwi.For):
+        return self.api.visit(
+            LangApi.api.Construct(
+                LangApi.api.ConstructMethod.Formalize,
+                Kiwi.compound.forloop.For(self.api),
+                [
+                    node.init,
+                    node.condition,
+                    node.increment,
+                    node.body,
+                ]
+            )
+        )
+
+    def While(self, node: kiwi.While):
+        return self.api.visit(
+            LangApi.api.Construct(
+                LangApi.api.ConstructMethod.Formalize,
+                Kiwi.compound.whiledo.While(self.api),
+                [
+                    node.condition,
+                    node.body
+                ]
+            )
+        )
+
+    def FuncDef(self, node: kiwi.FuncDef):
+        result = self.api.visit(
+            LangApi.api.Construct(
+                LangApi.api.ConstructMethod.Formalize,
+                Kiwi.compound.function.Function,
+                [
+                    node.name.toAttr(),
+                    node.body,
+                    node.params,
+                    node.returns,
+                ],
+                raw_args=True
+            )
+        )
+        return result
 
     def NamespaceDef(self, node: kiwi.NamespaceDef):
         result = self.api.visit(
@@ -372,85 +379,68 @@ class Analyzer(AST_Visitor):
     # PARAMS AND LAMBDAS
     # ==================
 
-    # def Parameter(self, node: kiwi.Parameter):
-    #     result = list()
-    #     for target in node.targets:
-    #         assert not target.isGroup()
-    #         self.api.visit(
-    #             Construct(
-    #                 'AnnotationDeclare',
-    #                 self.visit(target, no_references=True),
-    #                 [
-    #                     Construct(
-    #                         'GetChild',
-    #                         self.visit(node.data_type),
-    #                         []
-    #                     ),
-    #                     *self.api.visit(
-    #                         self.visit(node.args)
-    #                     )
-    #                 ]
-    #             )
-    #         )
-    #         result.append(self.visit(target))
-    #     return tuple(result)
-    #
-    # def RefParameter(self, node: kiwi.RefParameter):
-    #     assert not node.target.isGroup()
-    #     return self.api.analyzer.scope.get(node.target.toAttr())
-    #
-    # def ReturnParameter(self, node: kiwi.ReturnParameter):
-    #     target = kiwi.Name(..., ..., self.api.getReturnEx().toName())
-    #     self.api.visit(
-    #         Construct(
-    #             'AnnotationDeclare',
-    #             self.visit(target),
-    #             [
-    #                 Construct(
-    #                     'GetChild',
-    #                     self.visit(node.data_type),
-    #                     []
-    #                 ),
-    #                 *self.api.visit(
-    #                     self.visit(node.args)
-    #                 )
-    #             ]
-    #         )
-    #     )
-    #     return self.visit(target)
-    #
-    # def ReturnRefParameter(self, node: kiwi.ReturnRefParameter):
-    #     return self.api.analyzer.scope.get(node.target.toAttr())
+    def Parameter(self, node: kiwi.Parameter):
+        result = list()
+        for target in node.targets:
+            assert not target.isGroup
+            self.api.visit(
+                LangApi.api.Construct(
+                    LangApi.api.ConstructMethod.Annotation,
+                    self.visit(target, no_references=True),
+                    [
+                        LangApi.api.Construct(
+                            LangApi.api.ConstructMethod.GetChild,
+                            self.visit(node.data_type),
+                            []
+                        ),
+                        *self.api.visit(
+                            self.visit(node.args)
+                        )
+                    ]
+                )
+            )
+            result.append(self.visit(target))
+        return tuple(result)
+
+    def RefParameter(self, node: kiwi.RefParameter):
+        assert not node.target.isGroup
+        return self.api.analyzer.scope.get(node.target.toAttr())
+
+    def ReturnParameter(self, node: kiwi.ReturnParameter):
+        return self.api.visit(
+            LangApi.api.Construct(
+                LangApi.api.ConstructMethod.GetChild,
+                self.visit(node.data_type),
+                []
+            )
+        )
+
+    def ReturnRefParameter(self, node: kiwi.ReturnRefParameter):
+        return self.api.analyzer.scope.get(node.target.toAttr())
 
     # COMPARISONS
     # ===========
 
     def Disjunctions(self, node: kiwi.Disjunctions):
-        return self.api.visit(
-            LangApi.api.Construct(
+        return LangApi.api.Construct(
                 LangApi.api.ConstructMethod.Formalize,
                 Kiwi.tokens.boolean.Disjunctions(self.api),
                 [self.visit(node.values)]
             )
-        )
 
     def Conjunctions(self, node: kiwi.Conjunctions):
-        return self.api.visit(
-            LangApi.api.Construct(
+        return LangApi.api.Construct(
                 LangApi.api.ConstructMethod.Formalize,
                 Kiwi.tokens.boolean.Conjunctions(self.api),
                 [self.visit(node.values)]
             )
-        )
 
     def Comparisons(self, node: kiwi.Comparisons):
-        return self.api.visit(
-            LangApi.api.Construct(
+        return LangApi.api.Construct(
                 LangApi.api.ConstructMethod.Formalize,
                 Kiwi.tokens.boolean.Comparisons(self.api),
                 [self.visit(node.values), self.visit(node.ops)]
             )
-        )
 
     # OPERATORS
     # =========

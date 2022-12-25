@@ -28,8 +28,8 @@ include_directories = ["lib"]
 entry_function = "main"
 
 # Directory to generate output datapack
-output_directory = "bin"
-#output_directory = "/home/buttersss/.local/share/multimc/instances/1.18.2/.minecraft/saves/Kiwi_Enthusiasts/datapacks/KiwiSample"
+#output_directory = "bin"
+output_directory = "/home/buttersss/.local/share/multimc/instances/1.18.2/.minecraft/saves/Kiwi_Enthusiasts/datapacks/KiwiSample"
 
 # Choose between "public" / "private" to configure default scope of namespace
 default_scope = "public"

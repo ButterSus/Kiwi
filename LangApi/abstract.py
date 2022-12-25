@@ -8,7 +8,7 @@ from __future__ import annotations
 # Default libraries
 # -----------------
 
-from typing import Optional, Any, TYPE_CHECKING, Callable as _Callable  # noqa: F401
+from typing import Optional, Any, TYPE_CHECKING, Callable as _Callable, Type  # noqa: F401
 from abc import ABC, abstractmethod
 
 # Custom libraries
@@ -51,8 +51,15 @@ class Abstract(ABC):
             _ConstructMethod.PlusOperation: 'Plus',
             _ConstructMethod.MinusOperation: 'Minus',
 
+            _ConstructMethod.AugAddOperation: 'IAdd',
+            _ConstructMethod.AugSubOperation: 'ISub',
+            _ConstructMethod.AugMulOperation: 'IMul',
+            _ConstructMethod.AugDivOperation: 'IDiv',
+            _ConstructMethod.AugModOperation: 'IMod',
+
             _ConstructMethod.AssignOperation: 'Assign',
 
+            _ConstructMethod.Return: 'Return',
             _ConstructMethod.Call: 'Call',
             _ConstructMethod.Reference: 'Reference',
             _ConstructMethod.Annotation: 'Annotation',
@@ -129,6 +136,16 @@ class TransPredicate(Abstract, ABC):
         ...
 
 
+class Returnable(Abstract, ABC):
+    """
+    Object that can return a value.
+    """
+
+    @abstractmethod
+    def Return(self, value: Abstract):
+        ...
+
+
 # BASIC OBJECT TYPES
 # ==================
 
@@ -139,7 +156,7 @@ class Class(Callable, ABC):
     """
 
     @abstractmethod
-    def GetChild(self) -> Abstract:
+    def GetChild(self) -> Type[Abstract]:
         ...
 
 
@@ -157,7 +174,7 @@ class Variable(InitableType, ABC):
         ...
 
 
-class Const(ABC):
+class Const(Abstract, ABC):
     """
     It's used to represent a class that support compile time AnnAssign
     """

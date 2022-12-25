@@ -35,11 +35,17 @@ class IntegerFormat(LangApi.abstract.Format,
                     LangApi.abstract.SupportComparison,
                     LangApi.abstract.TransPredicate,
                     LangApi.abstract.Printable):
+    # General methods
+    # ---------------
+
     value: int
 
     def Formalize(self, token: str | int):
         self.value = int(token)
         return self
+
+    # Math methods
+    # ------------
 
     def Plus(self):
         return self
@@ -77,6 +83,9 @@ class IntegerFormat(LangApi.abstract.Format,
             self.value %= other.value
             return self
         assert False
+
+    # Comparison methods
+    # ------------------
 
     @staticmethod
     def _boolToPredicate(value: bool) -> LangApi.bytecode.NBTLiteral:
@@ -125,6 +134,9 @@ class IntegerFormat(LangApi.abstract.Format,
                 self.value > other.value
             )
         assert False
+
+    # Another methods
+    # ---------------
 
     def PrintSource(self) -> LangApi.bytecode.NBTLiteral:
         return {

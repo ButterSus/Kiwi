@@ -250,7 +250,7 @@ class KiwiParser(Parser):
 
     @memoize
     def compound_stmt(self) -> Optional[Any]:
-        # compound_stmt: function_def | namespace_def | if_stmt | while_stmt | match_stmt
+        # compound_stmt: function_def | namespace_def | if_stmt | for_stmt | while_stmt | match_stmt
         mark = self._mark()
         if (
             (function_def := self.function_def())
@@ -266,6 +266,11 @@ class KiwiParser(Parser):
             (if_stmt := self.if_stmt())
         ):
             return if_stmt
+        self._reset(mark)
+        if (
+            (for_stmt := self.for_stmt())
+        ):
+            return for_stmt
         self._reset(mark)
         if (
             (while_stmt := self.while_stmt())
@@ -768,6 +773,31 @@ class KiwiParser(Parser):
             (t := self.block())
         ):
             return kiwi . IfElse ( s . start , t [- 1] . end , c , t , [] )
+        self._reset(mark)
+        return None
+
+    @memoize
+    def for_stmt(self) -> Optional[Any]:
+        # for_stmt: 'for' simple_stmt ';' expression ';' simple_stmt ':' block
+        mark = self._mark()
+        if (
+            (s := self.expect('for'))
+            and
+            (a := self.simple_stmt())
+            and
+            (literal := self.expect(';'))
+            and
+            (b := self.expression())
+            and
+            (literal_1 := self.expect(';'))
+            and
+            (c := self.simple_stmt())
+            and
+            (literal_2 := self.expect(':'))
+            and
+            (e := self.block())
+        ):
+            return kiwi . For ( s . start , e [- 1] . end , a , b , c , e )
         self._reset(mark)
         return None
 
@@ -2278,8 +2308,8 @@ class KiwiParser(Parser):
         self._reset(mark)
         return children
 
-    KEYWORDS = ('else', 'continue', 'while', 'public', 'namespace', 'pass', 'function', 'if', 'or', 'none', 'false', 'break', 'and', 'private', 'true', 'not', 'return', 'promise')
-    SOFT_KEYWORDS = ('lambda', 'from', 'as', 'import', 'case', 'to', 'default', 'match')
+    KEYWORDS = ('and', 'while', 'function', 'if', 'else', 'true', 'not', 'false', 'return', 'pass', 'none', 'namespace', 'private', 'break', 'or', 'public', 'promise', 'for', 'continue')
+    SOFT_KEYWORDS = ('lambda', 'default', 'from', 'to', 'as', 'import', 'case', 'match')
 
 
 if __name__ == '__main__':

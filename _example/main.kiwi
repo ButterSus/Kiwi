@@ -1,2 +1,10 @@
-namespace sus:
-	x: score = 5
+function abs(x: score) -> score:
+	if x < 0:
+		return -x
+	else:
+		return x
+
+
+a: score = -7
+
+print(f"The values {a} is {abs(a)}")

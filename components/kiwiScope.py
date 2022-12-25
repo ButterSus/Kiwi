@@ -31,6 +31,7 @@ class Attr(list):
     additional methods, and we can check type using
     if isinstance.
     """
+
     def append(self, __object: Any):
         """
         Append an object to the attribute if it's not None.
@@ -200,13 +201,6 @@ class CodeScope(BasicScope, ABC):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.code = dict()
-
-    def Return(self, value: Construct) -> Construct:
-        """
-        This method is default implementation of
-        return statement.
-        It calls assign method of function return parameter.
-        """
 
     @abstractmethod
     def toPath(self, key: str) -> List[str]:

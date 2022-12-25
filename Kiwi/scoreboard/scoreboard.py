@@ -3,7 +3,7 @@ from __future__ import annotations
 # Default libraries
 # -----------------
 
-from typing import TYPE_CHECKING, Any, Optional, Callable
+from typing import TYPE_CHECKING, Any, Optional, Callable, Type
 
 # Custom libraries
 # ----------------
@@ -52,8 +52,10 @@ class Scoreboard(LangApi.abstract.Variable):
     def general(cls) -> Scoreboard:  # noqa
         api = LangApi.api.API.general
         if cls._general is None:
+            api.enableGlobal()
             cls._general = Scoreboard(api).InitsType(api.prefix.default_scoreboard,
                                                                    api.prefix.default_scoreboard)
+            api.disableGlobal()
         return cls._general
 
     def InitsType(self, attr: Attr, address: Attr,
@@ -78,8 +80,8 @@ class ScoreboardClass(LangApi.abstract.Class):
     def Call(self, *args: LangApi.abstract.Abstract):
         pass
 
-    def GetChild(self):
-        return Scoreboard(self.api)
+    def GetChild(self) -> Type[Scoreboard]:
+        return Scoreboard
 
 
 associations = {

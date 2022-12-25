@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional, Callable, List
 from string import Formatter
+from itertools import chain
+from copy import deepcopy
 
 # Custom libraries
 # ----------------
@@ -35,7 +37,7 @@ class StringFormat(LangApi.abstract.Format,
                    LangApi.abstract.SupportMul,
                    LangApi.abstract.Printable):
     _formatter = Formatter()
-    values: List[tuple[str, bool]]
+    values: List[list[str, bool]]
 
     def _optimize(self):
         i = 0
@@ -43,11 +45,12 @@ class StringFormat(LangApi.abstract.Format,
             if self.values[i][1] == self.values[i + 1][1]:
                 self.values[i][0] += self.values[i + 1][0]
                 del self.values[i + 1]
+                i -= 1
             i += 1
 
     def Formalize(self, token: str, isFormatted: bool) -> StringFormat:
         self.values = list()
-        self.values.append((token, isFormatted))
+        self.values.append([token, isFormatted])
         return self
 
     def Add(self, other: StringFormat) -> StringFormat:
@@ -58,7 +61,9 @@ class StringFormat(LangApi.abstract.Format,
 
     def Mul(self, other: Kiwi.tokens.number.IntegerFormat) -> StringFormat:
         assert isinstance(other, Kiwi.tokens.number.IntegerFormat)
-        self.values *= other.value
+        self.values = list(
+            chain.from_iterable([deepcopy(self.values) for _ in range(other.value)])
+        )
         self._optimize()
         return self
 

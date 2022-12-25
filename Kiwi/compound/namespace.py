@@ -34,6 +34,7 @@ def init(_compiler: Any, _LangApi: Any, _Kiwi: Any):
 
 class Namespace(LangApi.abstract.Block):
     attr: Attr
+    namespace_attr: Attr
 
     def _getHideMode(self):
         return self.api.configGeneral['default_scope'] == 'private'
@@ -43,9 +44,10 @@ class Namespace(LangApi.abstract.Block):
             attr, self
         )
         self.attr = attr
+        self.name = attr.toName()
+        self.namespace_attr = self.api.prefix.FileNamespace(self.name)
 
         result = list()
-        self.name = attr.toName()
         self.api.enterCodeScope(self)
         for block in blocks:
             match type(block):
@@ -67,12 +69,14 @@ class Namespace(LangApi.abstract.Block):
 
     def Reference(self, body: List[LangApi.api.Construct]):
         self.api.system(LangApi.bytecode.FunctionDirectCall(
-            self.api.prefix.SpecFileProject(
-                Attr([self.api.prefix.FileNamespace(self.name)])
-            ).toString()
-        ))
+            self.api.prefix.FileAttrToDirectory(
+                self.api.prefix.FileNamespace(self.name)
+            )
+        ))  # TODO: SCOPE HANDLING
         self.api.enterCodeScope(self)
+        self.analyzer.scope.useCustomSpace(self)
         self.api.visit(body)
+        self.analyzer.scope.leaveSpace()
         self.api.leaveScope()
 
     def toPath(self, key: str) -> List[str]:
@@ -80,8 +84,10 @@ class Namespace(LangApi.abstract.Block):
             case 'main':
                 return [
                     *self.constructor.attributes.functions,
-                    f'{self.api.prefix.FileNamespace(self.name)}.mcfunction'
+                    *self.namespace_attr[:-1],
+                    f'{self.namespace_attr.toName()}.mcfunction'
                 ]
+        assert False
 
 
 associations = dict()

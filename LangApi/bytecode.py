@@ -255,7 +255,7 @@ class StepIfPredicate(CodeType):
 class StepIfScoreMatch(CodeType):
     name: str
     scoreboard: str
-    value: str
+    value: str | int
 
     def toCode(self) -> str:
         name = convert_var_name(self.name)
@@ -271,13 +271,17 @@ class StepRun(CodeType):
         return f'run {self.step.toCode()}'
 
 
+_double_slash = '\\\\'
+_unary_slash = '\\'
+
+
 @dataclass
 class Tellraw(CodeType):
     selector: str
     text: str | List[NBTLiteral]
 
     def toCode(self) -> str:
-        return f'tellraw {self.selector} {dumps(self.text)}'
+        return f'tellraw {self.selector} {dumps(self.text).replace(_double_slash, _unary_slash)}'
 
 
 @dataclass

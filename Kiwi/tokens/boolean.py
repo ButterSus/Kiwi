@@ -79,8 +79,41 @@ class Conjunctions(Expression):
 
 
 class Comparisons(Expression):
+    @staticmethod
+    def _getCalculated(op: str,
+                       x: LangApi.abstract.Abstract,
+                       y: LangApi.abstract.Abstract) -> LangApi.abstract.Abstract:
+        match op:
+            case '==':
+                value = x
+                assert isinstance(value, LangApi.abstract.SupportEquals)
+                return value.Equals(y)
+            case '!=':
+                value = x
+                assert isinstance(value, LangApi.abstract.SupportNotEquals)
+                return value.NotEquals(y)
+            case '<=':
+                value = x
+                assert isinstance(value, LangApi.abstract.SupportLessThanEquals)
+                return value.LessThanEquals(y)
+            case '>=':
+                value = x
+                assert isinstance(value, LangApi.abstract.SupportGreaterThanEquals)
+                return value.GreaterThanEquals(y)
+            case '>':
+                value = x
+                assert isinstance(value, LangApi.abstract.SupportGreaterThan)
+                return value.GreaterThan(y)
+            case '<':
+                value = x
+                assert isinstance(value, LangApi.abstract.SupportLessThan)
+                return value.LessThan(y)
+
     def Formalize(self, values: List[kiwi.expression], ops: List[kiwi.Token]) -> Comparisons:
         self.predicate = dict()
+        if len(values) == 2:
+            self.predicate = self._getCalculated(ops[0].value, values[0], values[1])
+            return self
         self.predicate['condition'] = 'minecraft:inverted'
         self.predicate['term'] = dict()
         self.predicate['term']['condition'] = 'minecraft:alternative'
@@ -88,31 +121,7 @@ class Comparisons(Expression):
         for i, op in enumerate(ops):
             predicate = dict()
             predicate['condition'] = 'minecraft:inverted'
-            match op.value:
-                case '==':
-                    value = values[i]
-                    assert isinstance(value, LangApi.abstract.SupportEquals)
-                    predicate['term'] = value.Equals(values[i + 1])
-                case '!=':
-                    value = values[i]
-                    assert isinstance(value, LangApi.abstract.SupportNotEquals)
-                    predicate['term'] = value.NotEquals(values[i + 1])
-                case '<=':
-                    value = values[i]
-                    assert isinstance(value, LangApi.abstract.SupportLessThanEquals)
-                    predicate['term'] = value.LessThanEquals(values[i + 1])
-                case '>=':
-                    value = values[i]
-                    assert isinstance(value, LangApi.abstract.SupportGreaterThanEquals)
-                    predicate['term'] = value.GreaterThanEquals(values[i + 1])
-                case '>':
-                    value = values[i]
-                    assert isinstance(value, LangApi.abstract.SupportGreaterThan)
-                    predicate['term'] = value.GreaterThan(values[i + 1])
-                case '<':
-                    value = values[i]
-                    assert isinstance(value, LangApi.abstract.SupportLessThan)
-                    predicate['term'] = value.LessThan(values[i + 1])
+            predicate['term'] = self._getCalculated(op.value, values[i], values[i + 1])
             self.predicate['term']['terms'].append(predicate)
         return self
 
