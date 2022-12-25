@@ -39,6 +39,9 @@ class If(LangApi.abstract.Block):
     predicate_attr: Attr
     check_var: Optional[Kiwi.scoreboard.score.Score]
 
+    then_local: int
+    or_else_local: int
+
     def Formalize(self,
                   condition: kiwi.expression,
                   then: List[kiwi.statement],
@@ -57,14 +60,14 @@ class If(LangApi.abstract.Block):
 
         self.name = self.if_attr.toName()
         self.api.enterCodeScope(self, codeKey='if')
-        self.analyzer.scope.useCustomSpace(self, hideMode=True)
+        self.then_local = self.analyzer.scope.useLocalSpace(hideMode=True)
         then = self.analyzer.visit(then)
         self.analyzer.scope.leaveSpace()
         self.api.leaveScopeWithKey()
 
         self.name = self.else_attr.toName()
         self.api.enterCodeScope(self, codeKey='else')
-        self.analyzer.scope.useCustomSpace(self, hideMode=True)
+        self.or_else_local = self.analyzer.scope.useLocalSpace(hideMode=True)
         or_else = self.analyzer.visit(or_else)
         self.analyzer.scope.leaveSpace()
         self.api.leaveScopeWithKey()
@@ -119,7 +122,7 @@ class If(LangApi.abstract.Block):
 
         self.name = self.if_attr.toName()
         self.api.enterCodeScope(self, codeKey='if')
-        self.analyzer.scope.newLocalSpace()
+        self.analyzer.scope.useLocalSpace(self.then_local, hideMode=True)
         self.api.visit(then)
         if len(or_else) != 0:
             self.check_var.Assign(Kiwi.tokens.number.IntegerFormat(self.api).Formalize(0))
@@ -128,7 +131,7 @@ class If(LangApi.abstract.Block):
 
         self.name = self.else_attr.toName()
         self.api.enterCodeScope(self, codeKey='else')
-        self.analyzer.scope.newLocalSpace()
+        self.analyzer.scope.useLocalSpace(self.or_else_local, hideMode=True)
         self.api.visit(or_else)
         self.analyzer.scope.leaveSpace()
         self.api.leaveScopeWithKey()

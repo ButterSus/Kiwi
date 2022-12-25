@@ -232,10 +232,10 @@ class ScopeSystem:
     # SCOPE METHODS
     # =============
 
-    def newNamedSpace(self, name: str):
+    def useNamedSpace(self, name: str, hideModule=False):
         """
-        Not recommended feature.
-        It's used to debug something.
+        It's used to create space, that can be accessed
+        by attributes.
         """
         if self.localScope.private_mode:
             name = name[0] if isinstance(name, Attr) else name
@@ -244,11 +244,11 @@ class ScopeSystem:
             name, BasicScope(dict(), self.localScope, name)
         )
         self.localScope = self.localScope.get(name, ignoreScope=False)
+        self.localScope.private_mode = hideModule
 
     def useCustomSpace(self, space: BasicScope, hideMode=False):
         """
-        This method is used to enter some scope.
-        Also, you can set hideMode to True, if you want to make scope local.
+        It's usually used for one-body based statements.
         """
         if self.localScope.private_mode:
             self.localScope.hide.add(space.name)
@@ -259,18 +259,22 @@ class ScopeSystem:
         self.localScope = self.localScope.get(space.name, ignoreScope=False)
         self.localScope.private_mode = hideMode
 
-    def newLocalSpace(self):
+    def useLocalSpace(self, value: int = None, hideMode=False) -> int:
         """
-        Not recommended feature.
-        It's used to debug something.
+        It's usually used for multi-body statements.
         """
+        if value is None:
+            value = self._iterator
+            self._iterator += 1
         if self.localScope.private_mode:
-            self.localScope.hide.add(str(self._iterator))
-        self.localScope.write(
-            str(self._iterator), BasicScope(dict(), self.localScope, str(self._iterator))
-        )
-        self.localScope = self.localScope.get(str(self._iterator), ignoreScope=False)
-        self._iterator += 1
+            self.localScope.hide.add(str(value))
+        if not self.localScope.exists(str(value)):
+            self.localScope.write(
+                str(value), BasicScope(dict(), self.localScope, str(value))
+            )
+        self.localScope = self.localScope.get(str(value), ignoreScope=False)
+        self.localScope.private_mode = hideMode
+        return self._iterator - 1 if value is None else value
 
     def leaveSpace(self):
         """
@@ -296,24 +300,3 @@ class ScopeSystem:
         if self.localScope.private_mode:
             name = name[0] if isinstance(name, list) else name
             self.localScope.hide.add(name)
-
-    # ANOTHER METHODS
-    # ===============
-
-    def enablePrivate(self):
-        """
-        This method is used to enable private mode.
-        e.g:
-        Namespace statement contains private and public variables,
-        so if you want to make them private, you need to call this method.
-        """
-        self.localScope.private_mode = True
-
-    def disablePrivate(self):
-        """
-        This method is used to disable private mode.
-        e.g:
-        Namespace statement contains private and public variables,
-        so if you want to make them public, you need to call this method.
-        """
-        self.localScope.private_mode = False

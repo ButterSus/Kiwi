@@ -81,6 +81,9 @@ class StringFormat(LangApi.abstract.Format,
                             ).PrintSource()
                         )
                     if expression is not None:
+                        from components.kiwiTools import dumpScopeSystem
+                        print(dumpScopeSystem(self.analyzer.scope))
+                        print(self.analyzer.scope.localScope.name)
                         evaluated: LangApi.abstract.Printable = self.api.eval(expression)
                         result.append(evaluated.PrintSource())
                 print_result.append(result)

@@ -39,6 +39,8 @@ class For(LangApi.abstract.Block):
     predicate_attr: Attr
     check_var: Optional[Kiwi.scoreboard.score.Score]
 
+    body_local: int
+
     def Formalize(self,
                   initialize: kiwi.statement,
                   condition: kiwi.expression,
@@ -59,7 +61,7 @@ class For(LangApi.abstract.Block):
 
         self.name = self.for_attr.toName()
         self.api.enterCodeScope(self, codeKey='main')
-        self.analyzer.scope.useCustomSpace(self, hideMode=True)
+        self.body_local = self.analyzer.scope.useLocalSpace(hideMode=True)
         body = self.analyzer.visit(body)
         self.analyzer.scope.leaveSpace()
         self.api.leaveScopeWithKey()
@@ -115,7 +117,7 @@ class For(LangApi.abstract.Block):
 
         self.name = self.for_attr.toName()
         self.api.enterCodeScope(self, codeKey='main')
-        self.analyzer.scope.useCustomSpace(self, hideMode=True)
+        self.analyzer.scope.useLocalSpace(self.body_local, hideMode=True)
         self.api.visit(body)
         self.api.visit(increment)
         self.api.bufferPaste(condition_buffer)

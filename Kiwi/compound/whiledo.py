@@ -38,6 +38,8 @@ class While(LangApi.abstract.Block):
     predicate_attr: Attr
     check_var: Optional[Kiwi.scoreboard.score.Score]
 
+    body_local: int
+
     def Formalize(self,
                   condition: kiwi.expression,
                   body: List[kiwi.statement]):
@@ -54,7 +56,7 @@ class While(LangApi.abstract.Block):
 
         self.name = self.while_attr.toName()
         self.api.enterCodeScope(self, codeKey='main')
-        self.analyzer.scope.useCustomSpace(self, hideMode=True)
+        self.body_local = self.analyzer.scope.useLocalSpace(hideMode=True)
         body = self.analyzer.visit(body)
         self.analyzer.scope.leaveSpace()
         self.api.leaveScopeWithKey()
@@ -104,6 +106,7 @@ class While(LangApi.abstract.Block):
 
         self.name = self.while_attr.toName()
         self.api.enterCodeScope(self, codeKey='main')
+        self.analyzer.scope.useLocalSpace(self.body_local, hideMode=True)
         self.api.visit(body)
         self.api.bufferPaste(condition_buffer)
         self.api.system(
@@ -124,6 +127,7 @@ class While(LangApi.abstract.Block):
                 ]
             )
         )
+        self.analyzer.scope.leaveSpace()
         self.api.leaveScopeWithKey()
 
     def toPath(self, key: str) -> List[str]:
