@@ -1,4 +1,4 @@
-# Kiwi - a language for describing datapack
+# Kiwi - a language for describing datapack.
 
 Kiwi is a language for describing Minecraft datapack, built with
 a focus on syntax, based on Python.
