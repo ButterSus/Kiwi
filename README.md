@@ -11,7 +11,7 @@ But it has no any OOP, like almost any datapack describing language.
 
 - **Beginners:** Kiwi is very friendly for experimentation. It can describe any
 target that you want to do, no matter what is it. If there is no way to describe it
-you can always contact us. Also it provides you more simplified syntax compared
+you can always contact us. Also, it provides you more simplified syntax compared
 with vanilla language for describing datapack.
 
 - **Experts:** Kiwi implements a lot useful of libraries to speed up coding process.
