@@ -15,7 +15,7 @@ you can always contact us. Also, it provides you more simplified syntax compared
 with vanilla language for describing datapack.
 
 - **Experts:** Kiwi implements a lot useful of libraries to speed up coding process.
-Also it have Kiwi IDE with keyboard shortcuts. Anyway, code is more readable and
+Also, it have Kiwi IDE with keyboard shortcuts. Anyway, code is more readable and
 structured compared to other ones.
 
 **What can you do with it?**

@@ -4,7 +4,6 @@ from __future__ import annotations
 # -----------------
 
 from typing import TYPE_CHECKING, Any, Optional, Callable, Type
-from json import dumps
 
 # Custom libraries
 # ----------------
@@ -38,43 +37,37 @@ default_criteria = 'dummy'
 
 class Bossbar(LangApi.abstract.Variable):
     isNative = True
-    """
-    Specifies for analyzer not to handle AST parameters in annotation.
-    """
 
     _general: Bossbar = None
+
     @classmethod
     @property
     def general(cls) -> Scoreboard:  # noqa
         api = LangApi.api.API.general
         if cls._general is None:
             api.enableGlobal()
-            cls._general = Bossbar(api).InitsType(api.prefix.default_bossbar,
-                                                                   api.prefix.default_bossbar)
+            cls._general = Bossbar(api).InitsType(
+                api.prefix.default_bossbar,
+                api.prefix.default_bossbar
+            )
             api.disableGlobal()
         return cls._general
 
     def InitsType(self, attr: Attr, address: Attr, *args) -> Bossbar:
         assert not args
-
         self.attr = self.api.prefix.SpecStatic(attr)
         self.address = address
-
-
         return self
 
     def Assign(self, other: LangApi.abstract.Abstract) -> Bossbar:
         if isinstance(other, Kiwi.tokens.string.StringFormat):
             self.api.system(
-                LangApi.bytecode.BossbarCreate(
-
-                    id=self.attr.toString(),
-                    name=dumps(other.PrintSource())
-
+                LangApi.bytecode.BossbarAdd(
+                    self.attr.toString(),
+                    other.PrintSource()
                 )
             )
             return self
-
         assert False
 
 

@@ -31,6 +31,10 @@ const_predicate_false = {
 }
 
 
+_double_slash = '\\\\'
+_unary_slash = '\\'
+
+
 NBTLiteral = Dict[str, Any] | List[Any]
 
 
@@ -229,14 +233,13 @@ class ScoreboardPlayersReset(CodeType):
 
 
 @dataclass
-class BossbarCreate(CodeType):
-    name: str
-    id: str
+class BossbarAdd(CodeType):
+    identifier: str
+    text: NBTLiteral
 
     def toCode(self) -> str:
-        name = convert_var_name(self.name)
-        id = convert_var_name(self.id)
-        return f'bossbar add {id} {name}'
+        identifier = convert_var_name(self.identifier)
+        return f'bossbar add {identifier} {dumps(self.text).replace(_double_slash, _unary_slash)}'
 
 @dataclass
 class FunctionDirectCall(CodeType):
@@ -280,10 +283,6 @@ class StepRun(CodeType):
 
     def toCode(self) -> str:
         return f'run {self.step.toCode()}'
-
-
-_double_slash = '\\\\'
-_unary_slash = '\\'
 
 
 @dataclass
