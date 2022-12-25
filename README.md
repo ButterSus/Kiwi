@@ -5,7 +5,7 @@ a focus on syntax, based on Python.
 
 Kiwi can be used to any minecraft datapack major project by using import
 systems and high structured code.
-But it have no any OOP, like almost any datapack describing language.
+But it has no any OOP, like almost any datapack describing language.
 
 **Who is it for?**
 
