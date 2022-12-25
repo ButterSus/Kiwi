@@ -4,6 +4,7 @@ from __future__ import annotations
 # -----------------
 
 from typing import TYPE_CHECKING, Any, Optional, Callable, Type
+from json import dumps
 
 # Custom libraries
 # ----------------
@@ -68,14 +69,13 @@ class Bossbar(LangApi.abstract.Variable):
                 LangApi.bytecode.BossbarCreate(
 
                     id=self.attr.toString(),
-                    name=other.PrintSource()
+                    name=dumps(other.PrintSource())
 
                 )
             )
             return self
 
         assert False
-
 
 
 class BossbarClass(LangApi.abstract.Class):
