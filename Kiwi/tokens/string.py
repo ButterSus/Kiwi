@@ -96,4 +96,5 @@ class StringFormat(LangApi.abstract.Format,
         return print_result
 
 
+
 associations = dict()

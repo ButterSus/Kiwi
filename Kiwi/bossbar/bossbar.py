@@ -67,8 +67,9 @@ class Bossbar(LangApi.abstract.Variable):
             self.api.system(
                 LangApi.bytecode.BossbarCreate(
 
-                    name=self.attr.toString(),
-                    id=self.attr.toName()
+                    id=self.attr.toString(),
+                    name=other.PrintSource()
+
                 )
             )
             return self
