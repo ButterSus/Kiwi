@@ -83,6 +83,8 @@ class Builder:
                 print(dumpAST(ast.module))
             analyzer = kiwiAnalyzer.Analyzer(self.constructor, self, tokenizer, ast, api, text)
             analyzer.visit(ast.module)
+            if self.configGeneral['debug']:
+                print(dumpAST(ast.module, minimalistic = self.configGeneral['minimalistic']))
             api.visit(ast.module)
             return tokenizer, analyzer.ast, analyzer, api
 
@@ -114,7 +116,6 @@ class Builder:
 
         if self.configGeneral['debug']:
             print(dumpTokenizer(self.tokenizer))
-            print(dumpAST(self.ast.module, minimalistic = self.configGeneral['minimalistic']))
             print(dumpScopeSystem(self.analyzer.scope))
 
         # Building project

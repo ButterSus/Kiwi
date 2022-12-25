@@ -60,14 +60,14 @@ class Namespace(LangApi.abstract.Block):
             result.extend(self.analyzer.visit(block.body))
             self.analyzer.scope.leaveSpace()
         self.api.leaveScope()
-        return LangApi.api.Construct(
-            LangApi.api.ConstructMethod.Reference,
+        return LangApi.abstract.Construct(
+            LangApi.abstract.ConstructMethod.Reference,
             self,
             [result],
             raw_args=True
         )
 
-    def Reference(self, body: List[LangApi.api.Construct]):
+    def Reference(self, body: List[LangApi.abstract.Construct]):
         self.api.system(LangApi.bytecode.FunctionDirectCall(
             self.api.prefix.FileAttrToDirectory(
                 self.api.prefix.FileNamespace(self.name)

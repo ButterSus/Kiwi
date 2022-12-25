@@ -20,8 +20,9 @@ from abc import ABC, abstractmethod
 # Custom libraries
 
 if TYPE_CHECKING:
-    from LangApi.api import API, Construct
+    from LangApi.api import API
     from LangApi.bytecode import CodeType
+    from LangApi.abstract import Abstract
 
 
 class Attr(list):
@@ -137,7 +138,7 @@ class BasicScope:
         self.parent = parent
         self.name = name
 
-    def write(self, keys: Key, value: Any, *, isAttribute=False) -> True:
+    def write(self, keys: Key, value: Any, *, isAttribute=False) -> bool | Any:
         if isAttribute:
             if self.isHided(keys):
                 return False
@@ -146,29 +147,34 @@ class BasicScope:
                 return True
             if not self.exists(keys):
                 return False
-            result: BasicScope = self.content[keys[0]]
-            if not isinstance(result, BasicScope):
-                return False
-            return result.write(Attr(keys[1:]), value, isAttribute=True)
+            result: Abstract = self.content[keys[0]]
+            if isinstance(result, BasicScope):
+                return result.write(Attr(keys[1:]), value, isAttribute=True)
+            assert 'setAttribute' in dir(result)
+            return result.setAttribute(Attr(keys[1:]), value)
         keys = Attr([keys]) if not isinstance(keys, Attr) else keys
         if len(keys) == 1:
             self.content[keys[0]] = value
             return True
         if not self.exists(keys) and self.parent:
             return self.parent.write(keys, value)
-        assert self.write(keys, value, isAttribute=True)
+        result = self.write(keys, value, isAttribute=True)
+        if not isinstance(result, bool):
+            return result
+        assert result
 
-    def get(self, keys: Key, *, isAttribute=False, ignoreScope=True) -> Any | BasicScope:
+    def get(self, keys: Key, *, isAttribute=False) -> Any | BasicScope:
         if isAttribute:
             assert self.exists(keys)
             assert not self.isHided(keys)
             if len(keys) == 1:
                 result = self.content[keys[0]]
                 return result
-            result = self.content[keys[0]]
+            result: Abstract = self.content[keys[0]]
             if isinstance(result, BasicScope):
-                return result.get(Attr(keys[1:]), ignoreScope=ignoreScope)
-            return result.get(Attr(keys[1:]), isAttribute=True)
+                return result.get(Attr(keys[1:]))
+            assert 'getAttribute' in dir(result)
+            return result.getAttribute(Attr(keys[1:]))
         keys = Attr([keys]) if not isinstance(keys, Attr) else keys
         if not self.exists(keys):
             assert self.parent
@@ -177,6 +183,17 @@ class BasicScope:
             result = self.content[keys[0]]
             return result
         return self.get(keys, isAttribute=True)
+
+    def isAttribute(self, keys: Key) -> bool:
+        keys = Attr([keys]) if not isinstance(keys, Attr) else keys
+        if len(keys) == 1:
+            return False
+        assert self.exists(keys)
+        assert not self.isHided(keys)
+        if isinstance(result := self.content[keys[0]], BasicScope):
+            return result.isAttribute(Attr(keys[1:]))
+        return True
+
 
     def exists(self, key: Key) -> bool:
         if isinstance(key, Attr):
@@ -243,7 +260,7 @@ class ScopeSystem:
         self.localScope.write(
             name, BasicScope(dict(), self.localScope, name)
         )
-        self.localScope = self.localScope.get(name, ignoreScope=False)
+        self.localScope = self.localScope.get(name)
         self.localScope.private_mode = hideModule
 
     def useCustomSpace(self, space: BasicScope, hideMode=False):
@@ -256,7 +273,7 @@ class ScopeSystem:
         self.localScope.write(
             space.name, space
         )
-        self.localScope = self.localScope.get(space.name, ignoreScope=False)
+        self.localScope = self.localScope.get(space.name)
         self.localScope.private_mode = hideMode
 
     def useLocalSpace(self, value: int = None, hideMode=False) -> int:
@@ -272,7 +289,7 @@ class ScopeSystem:
             self.localScope.write(
                 str(value), BasicScope(dict(), self.localScope, str(value))
             )
-        self.localScope = self.localScope.get(str(value), ignoreScope=False)
+        self.localScope = self.localScope.get(str(value))
         self.localScope.private_mode = hideMode
         return self._iterator - 1 if value is None else value
 
@@ -287,14 +304,16 @@ class ScopeSystem:
     # ================
 
     def get(self, name: Key) -> Any | BasicScope:
+        """
+        This method is used to get a variable
+        in current local scopes from variable name.
+        """
         return self.localScope.get(name)
 
     def write(self, name: Key, value: Any):
         """
         This method is used to bind some variable name
         in current local scope to some variable.
-        Notes:
-
         """
         self.localScope.write(name, value)
         if self.localScope.private_mode:

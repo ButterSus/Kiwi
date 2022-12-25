@@ -42,7 +42,7 @@ class Bossbar(LangApi.abstract.Variable):
 
     @classmethod
     @property
-    def general(cls) -> Scoreboard:  # noqa
+    def general(cls) -> Bossbar:  # noqa
         api = LangApi.api.API.general
         if cls._general is None:
             api.enableGlobal()

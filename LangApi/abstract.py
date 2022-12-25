@@ -8,13 +8,16 @@ from __future__ import annotations
 # Default libraries
 # -----------------
 
-from typing import Optional, Any, TYPE_CHECKING, Callable as _Callable, Type  # noqa: F401
+from typing import Optional, Any, TYPE_CHECKING, Callable as _Callable, Type, Dict, List  # noqa: F401
 from abc import ABC, abstractmethod
+from inspect import isclass
+from enum import Enum, auto
+from dataclasses import dataclass, field
 
 # Custom libraries
 # ----------------
 
-from LangApi.api import API as _API, ConstructMethod as _ConstructMethod
+from LangApi.api import API as _API
 from components.kiwiScope import Attr as _Attr
 from components.kiwiScope import CodeScope
 
@@ -28,48 +31,184 @@ if TYPE_CHECKING:
 # ===========
 
 
+class ConstructMethod(Enum):
+    """
+    This enum defines all methods of Kiwi objects
+    """
+
+    # Basic initializations
+    # ---------------------
+
+    InitsType = auto()
+    Formalize = auto()
+
+    # Binary operators
+    # ----------------
+
+    AddOperation = auto()
+    SubOperation = auto()
+    MulOperation = auto()
+    DivOperation = auto()
+    ModOperation = auto()
+
+    # Unary operators
+    # ----------------
+
+    PlusOperation = auto()
+    MinusOperation = auto()
+
+    # Aug operators
+    # -------------
+
+    AugAddOperation = auto()
+    AugSubOperation = auto()
+    AugMulOperation = auto()
+    AugDivOperation = auto()
+    AugModOperation = auto()
+
+    # Another operators
+    # -----------------
+
+    AssignOperation = auto()
+
+    # Special methods
+    # ---------------
+
+    Return = auto()
+    Call = auto()
+    Reference = auto()
+    Annotation = auto()
+    AnnAssign = auto()
+    GetChild = auto()
+
+
+@dataclass
+class Construct:
+    """
+    This dataclass stores analyzer request to run any method of built-in object or grammar constructions.
+    API.visit method can launch it.
+    """
+    method: ConstructMethod
+    """
+    The method identifier to run
+    e.g:
+    ConstructMethod.AddOperation
+    """
+    parent: Type[Abstract] | Abstract
+    """
+    The object or class of the method to run,
+    if it's class, then it should take api parameter to initialize
+    """
+    arguments: List[Any]
+    """
+    The arguments of the method to run,
+    It can be absolutely anything
+    """
+    raw_args: bool = field(default=False)
+    """
+    By default, arguments will be passed to visitor, that will launch Construct before to pass
+    it as argument. (it's made to make it more abstract)
+    e.g:
+    Let's assume we have this structure:
+    Construct(  # This construct will be handled last of all
+        method = "Add",
+        parent = SomeClassOrObject
+        arguments = [
+            Construct(  # This construct will be handled first of all
+                method = "Add",
+                parent = SomeClassOrObject
+                arguments = [1, 2]
+            )
+        ]
+    ),
+    But if raw_args equals to True, then arguments will not be handled by visitor
+    """
+
+
 class Abstract(ABC):
     constructor: _Constructor
     analyzer: _Analyzer
     api: _API
+
+    _was_associated = False
 
     def __init__(self, api: _API):
         self.constructor = api.analyzer.constructor
         self.analyzer = api.analyzer
         self.api = api
 
-    def loader(self, command: _ConstructMethod) -> _Callable:
+        if self.__class__._was_associated:
+            return
+        for key, value in self.associations.items():
+            if isclass(value):
+                value: Type[Abstract]
+                self.associations[key] = value(self.api)
+        self.__class__._was_associated = True
+
+    def loader(self, command: ConstructMethod) -> _Callable:
         cases = {
-            _ConstructMethod.InitsType: 'InitsType',
-            _ConstructMethod.Formalize: 'Formalize',
+            ConstructMethod.InitsType: 'InitsType',
+            ConstructMethod.Formalize: 'Formalize',
 
-            _ConstructMethod.AddOperation: 'Add',
-            _ConstructMethod.SubOperation: 'Sub',
-            _ConstructMethod.MulOperation: 'Mul',
-            _ConstructMethod.DivOperation: 'Div',
-            _ConstructMethod.ModOperation: 'Mod',
-            _ConstructMethod.PlusOperation: 'Plus',
-            _ConstructMethod.MinusOperation: 'Minus',
+            ConstructMethod.AddOperation: 'Add',
+            ConstructMethod.SubOperation: 'Sub',
+            ConstructMethod.MulOperation: 'Mul',
+            ConstructMethod.DivOperation: 'Div',
+            ConstructMethod.ModOperation: 'Mod',
+            ConstructMethod.PlusOperation: 'Plus',
+            ConstructMethod.MinusOperation: 'Minus',
 
-            _ConstructMethod.AugAddOperation: 'IAdd',
-            _ConstructMethod.AugSubOperation: 'ISub',
-            _ConstructMethod.AugMulOperation: 'IMul',
-            _ConstructMethod.AugDivOperation: 'IDiv',
-            _ConstructMethod.AugModOperation: 'IMod',
+            ConstructMethod.AugAddOperation: 'IAdd',
+            ConstructMethod.AugSubOperation: 'ISub',
+            ConstructMethod.AugMulOperation: 'IMul',
+            ConstructMethod.AugDivOperation: 'IDiv',
+            ConstructMethod.AugModOperation: 'IMod',
 
-            _ConstructMethod.AssignOperation: 'Assign',
+            ConstructMethod.AssignOperation: 'Assign',
 
-            _ConstructMethod.Return: 'Return',
-            _ConstructMethod.Call: 'Call',
-            _ConstructMethod.Reference: 'Reference',
-            _ConstructMethod.Annotation: 'Annotation',
-            _ConstructMethod.AnnAssign: 'AnnAssign',
-            _ConstructMethod.GetChild: 'GetChild',
+            ConstructMethod.Return: 'Return',
+            ConstructMethod.Call: 'Call',
+            ConstructMethod.Reference: 'Reference',
+            ConstructMethod.Annotation: 'Annotation',
+            ConstructMethod.AnnAssign: 'AnnAssign',
+            ConstructMethod.GetChild: 'GetChild',
         }
         assert command in cases.keys()
         method = cases.get(command)
         assert method in dir(self)
         return self.__getattribute__(method)
+
+    associations: Dict[str, Abstract] = dict()
+    """
+    It's used to create attributes
+    """
+
+    def setAttribute(self, attr: _Attr, value: Any) -> Any:
+        """
+        You can override this method
+        to handle setting attributes by yourself
+        """
+        if len(attr) > 1:
+            result = self.associations[attr[0]]
+            assert isinstance(result, Abstract)
+            return result.setAttribute(attr[1:], value)
+        return Construct(
+            ConstructMethod.AssignOperation,
+            self.getAttribute(attr),
+            [value]
+        )
+
+    def getAttribute(self, attr: _Attr) -> Abstract | Any:
+        """
+        You can override this method
+        to handle getting attributes by yourself
+        """
+        assert attr[0] in self.associations.keys()
+        if len(attr) > 1:
+            result = self.associations[attr[0]]
+            assert isinstance(result, Abstract)
+            return result.getAttribute(attr[1:])
+        return self.associations[attr[0]]
 
 
 # BASIC PROPERTIES
@@ -166,8 +305,19 @@ class Variable(InitableType, ABC):
     """
 
     attr: _Attr
+    """
+    Absolute path to the object
+    """
+
     address: _Attr
+    """
+    Relative path to the object
+    """
+
     isNative = False
+    """
+    It's used if you want to pass *args without analyzer handling
+    """
 
     @abstractmethod
     def InitsType(self, attr: _Attr, address: _Attr, *args: Abstract) -> Optional[Abstract]:

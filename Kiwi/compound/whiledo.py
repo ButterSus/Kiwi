@@ -61,16 +61,16 @@ class While(LangApi.abstract.Block):
         self.analyzer.scope.leaveSpace()
         self.api.leaveScopeWithKey()
 
-        return LangApi.api.Construct(
-            LangApi.api.ConstructMethod.Reference,
+        return LangApi.abstract.Construct(
+            LangApi.abstract.ConstructMethod.Reference,
             self,
             [condition, body],
             raw_args=True
         )
 
     def Reference(self,
-                  condition: LangApi.api.Construct,
-                  body: List[LangApi.api.Construct]):
+                  condition: LangApi.abstract.Construct,
+                  body: List[LangApi.abstract.Construct]):
         self.api.bufferPush()
         predicate = self.api.visit(
             condition)

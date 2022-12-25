@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Optional, Callable, Dict, Type
 # ----------------
 
 import LangApi
+from LangApi.abstract import Abstract
 from components.kiwiScope import Attr
 
 
@@ -423,6 +424,14 @@ class Score(LangApi.abstract.Variable,
                 "objective": self.api.prefix.useConverter(self.scoreboard.attr.toString())
             }
         }
+
+    class META_some(LangApi.abstract.Abstract):
+        def getAttribute(self, attr: Attr) -> None:
+            print(attr)
+
+    associations = {
+        'some': META_some
+    }
 
 
 class ScoreClass(LangApi.abstract.Class):

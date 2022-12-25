@@ -35,14 +35,14 @@ class Module(LangApi.abstract.Block):
         self.api.enterCodeScope(self)
         result = self.analyzer.visit(body)
         self.api.leaveScope()
-        return LangApi.api.Construct(
-            LangApi.api.ConstructMethod.Reference,
+        return LangApi.abstract.Construct(
+            LangApi.abstract.ConstructMethod.Reference,
             self,
             [result],
             raw_args=True
         )
 
-    def Reference(self, body: List[LangApi.api.Construct]):
+    def Reference(self, body: List[LangApi.abstract.Construct]):
         self.api.enterCodeScope(self)
         self.api.visit(body)
         self.api.leaveScope()

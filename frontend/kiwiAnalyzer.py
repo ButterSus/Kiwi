@@ -35,25 +35,29 @@ def init(_compiler: Any, _LangApi: Any, _Kiwi: Any):
     _Kiwi.init(_compiler, _LangApi, _Kiwi)
 
     Analyzer._augAssignOps = {
-        '+=': LangApi.api.ConstructMethod.AugAddOperation,
-        '-=': LangApi.api.ConstructMethod.AugSubOperation,
-        '*=': LangApi.api.ConstructMethod.AugMulOperation,
-        '/=': LangApi.api.ConstructMethod.AugDivOperation,
-        '%=': LangApi.api.ConstructMethod.AugModOperation,
+        '+=': LangApi.abstract.ConstructMethod.AugAddOperation,
+        '-=': LangApi.abstract.ConstructMethod.AugSubOperation,
+        '*=': LangApi.abstract.ConstructMethod.AugMulOperation,
+        '/=': LangApi.abstract.ConstructMethod.AugDivOperation,
+        '%=': LangApi.abstract.ConstructMethod.AugModOperation,
     }
 
     Analyzer._unaryOps = {
-        "+": LangApi.api.ConstructMethod.PlusOperation,
-        "-": LangApi.api.ConstructMethod.MinusOperation,
+        "+": LangApi.abstract.ConstructMethod.PlusOperation,
+        "-": LangApi.abstract.ConstructMethod.MinusOperation,
     }
 
     Analyzer._binaryOps = {
-        "+": LangApi.api.ConstructMethod.AddOperation,
-        "-": LangApi.api.ConstructMethod.SubOperation,
-        "*": LangApi.api.ConstructMethod.MulOperation,
-        "/": LangApi.api.ConstructMethod.DivOperation,
-        "%": LangApi.api.ConstructMethod.ModOperation,
+        "+": LangApi.abstract.ConstructMethod.AddOperation,
+        "-": LangApi.abstract.ConstructMethod.SubOperation,
+        "*": LangApi.abstract.ConstructMethod.MulOperation,
+        "/": LangApi.abstract.ConstructMethod.DivOperation,
+        "%": LangApi.abstract.ConstructMethod.ModOperation,
     }
+
+
+class IsAttribute(Exception):
+    ...
 
 
 class Analyzer(AST_Visitor):
@@ -127,8 +131,8 @@ class Analyzer(AST_Visitor):
 
     def Module(self, node: kiwi.Module):
         node.body = self.api.visit(
-            LangApi.api.Construct(
-                LangApi.api.ConstructMethod.Formalize,
+            LangApi.abstract.Construct(
+                LangApi.abstract.ConstructMethod.Formalize,
                 Kiwi.compound.module.Module,
                 [node.body]
             )
@@ -139,8 +143,8 @@ class Analyzer(AST_Visitor):
 
     def Expression(self, node: kiwi.Expression):
         return self.api.visit(
-            LangApi.api.Construct(
-                LangApi.api.ConstructMethod.Formalize,
+            LangApi.abstract.Construct(
+                LangApi.abstract.ConstructMethod.Formalize,
                 Kiwi.tokens.expression.Expression,
                 [node.value],
                 raw_args=True
@@ -151,8 +155,8 @@ class Analyzer(AST_Visitor):
     # --------------
 
     def Call(self, node: kiwi.Call):
-        return LangApi.api.Construct(
-            LangApi.api.ConstructMethod.Call,
+        return LangApi.abstract.Construct(
+            LangApi.abstract.ConstructMethod.Call,
             self.visit(node.target),
             self.visit(node.args)
         )
@@ -166,8 +170,8 @@ class Analyzer(AST_Visitor):
             i += 1
         else:
             assert False
-        return LangApi.api.Construct(
-            LangApi.api.ConstructMethod.Return,
+        return LangApi.abstract.Construct(
+            LangApi.abstract.ConstructMethod.Return,
             function,
             [self.visit(node.value)]
         )
@@ -177,8 +181,8 @@ class Analyzer(AST_Visitor):
 
     def Number(self, node: kiwi.Number):
         return self.api.visit(
-            LangApi.api.Construct(
-                LangApi.api.ConstructMethod.Formalize,
+            LangApi.abstract.Construct(
+                LangApi.abstract.ConstructMethod.Formalize,
                 Kiwi.tokens.number.IntegerFormat,
                 [node.value]
             )
@@ -187,15 +191,15 @@ class Analyzer(AST_Visitor):
     def String(self, node: kiwi.String):
         prefix = node.getPrefix()
         if not prefix:
-            return LangApi.api.Construct(
-                LangApi.api.ConstructMethod.Formalize,
+            return LangApi.abstract.Construct(
+                LangApi.abstract.ConstructMethod.Formalize,
                 Kiwi.tokens.string.StringFormat,
                 [node.getString(), False]
             )
         match prefix:
             case "f":
-                return LangApi.api.Construct(
-                    LangApi.api.ConstructMethod.Formalize,
+                return LangApi.abstract.Construct(
+                    LangApi.abstract.ConstructMethod.Formalize,
                     Kiwi.tokens.string.StringFormat(self.api),
                     [node.getString(), True]
                 )
@@ -205,13 +209,15 @@ class Analyzer(AST_Visitor):
     # ==================
 
     def VariableReference(self, node: kiwi.Name | kiwi.Attribute):
+        if self._checkAttribute and self.scope.localScope.isAttribute(node.toAttr()):
+            raise IsAttribute(node.toAttr())
         if not self._no_references:
             try:
                 return self.scope.get(node.toAttr())
             except AssertionError:
                 pass
-        return LangApi.api.Construct(
-            LangApi.api.ConstructMethod.Formalize,
+        return LangApi.abstract.Construct(
+            LangApi.abstract.ConstructMethod.Formalize,
             Kiwi.tokens.undefined.Undefined,
             [node.toAttr()]
         )
@@ -223,8 +229,8 @@ class Analyzer(AST_Visitor):
 
     def Annotation(self, node: kiwi.Annotation):
         parent: LangApi.abstract.Variable = self.api.visit(
-            LangApi.api.Construct(
-                LangApi.api.ConstructMethod.GetChild,
+            LangApi.abstract.Construct(
+                LangApi.abstract.ConstructMethod.GetChild,
                 self.visit(node.data_type),
                 []
             )
@@ -236,21 +242,21 @@ class Analyzer(AST_Visitor):
             else:
                 args = self.visit(node.args)
             self.api.visit(
-                LangApi.api.Construct(
-                    LangApi.api.ConstructMethod.Annotation,
+                LangApi.abstract.Construct(
+                    LangApi.abstract.ConstructMethod.Annotation,
                     self.visit(target),
                     [parent, *args]
                 )
             )
 
-    _augAssignOps: Dict[str, LangApi.api.ConstructMethod]
+    _augAssignOps: Dict[str, LangApi.abstract.ConstructMethod]
 
     def AugAssignment(self, node: kiwi.AugAssignment):
         result = list()
         assert len(node.targets) == len(node.values)
         for a, b in zip(node.targets, node.values):
             result.append(
-                LangApi.api.Construct(
+                LangApi.abstract.Construct(
                     self._augAssignOps[node.op.value],
                     self.visit(a),
                     [self.visit(b)]
@@ -258,25 +264,37 @@ class Analyzer(AST_Visitor):
             )
         return tuple(result)
 
+    _checkAttribute = False
+
     def Assignment(self, node: kiwi.Assignment):
         result = list()
         assert len(node.targets) == len(node.values)
         for a, b in zip(node.targets, node.values):
-            target = self.visit(a)
-            value = self.visit(b)
-            result.append(
-                LangApi.api.Construct(
-                    LangApi.api.ConstructMethod.AssignOperation,
-                    target,
-                    [value]
+            self._checkAttribute = True
+            try:
+                target = self.visit(a)
+            except IsAttribute as attribute:
+                target = attribute.args[0]
+                value = self.visit(b)
+                result.append(
+                    self.scope.write(target, value)
                 )
-            )
+            else:
+                self._checkAttribute = False
+                value = self.visit(b)
+                result.append(
+                    LangApi.abstract.Construct(
+                        LangApi.abstract.ConstructMethod.AssignOperation,
+                        target,
+                        [value]
+                    )
+                )
         return tuple(result)
 
     def AnnAssignment(self, node: kiwi.AnnAssignment):
         parent: LangApi.abstract.Variable = self.api.visit(
-            LangApi.api.Construct(
-                LangApi.api.ConstructMethod.GetChild,
+            LangApi.abstract.Construct(
+                LangApi.abstract.ConstructMethod.GetChild,
                 self.visit(node.data_type),
                 []
             )
@@ -289,8 +307,8 @@ class Analyzer(AST_Visitor):
                 value = self.visit(b)
                 result.append(
                     self.api.visit(
-                        LangApi.api.Construct(
-                            LangApi.api.ConstructMethod.AnnAssign,
+                        LangApi.abstract.Construct(
+                            LangApi.abstract.ConstructMethod.AnnAssign,
                             target,
                             [parent, value]
                         )
@@ -309,8 +327,8 @@ class Analyzer(AST_Visitor):
 
     def IfElse(self, node: kiwi.IfElse):
         return self.api.visit(
-            LangApi.api.Construct(
-                LangApi.api.ConstructMethod.Formalize,
+            LangApi.abstract.Construct(
+                LangApi.abstract.ConstructMethod.Formalize,
                 Kiwi.compound.ifelse.If(self.api),
                 [
                     node.condition,
@@ -322,8 +340,8 @@ class Analyzer(AST_Visitor):
 
     def For(self, node: kiwi.For):
         return self.api.visit(
-            LangApi.api.Construct(
-                LangApi.api.ConstructMethod.Formalize,
+            LangApi.abstract.Construct(
+                LangApi.abstract.ConstructMethod.Formalize,
                 Kiwi.compound.forloop.For(self.api),
                 [
                     node.init,
@@ -336,8 +354,8 @@ class Analyzer(AST_Visitor):
 
     def While(self, node: kiwi.While):
         return self.api.visit(
-            LangApi.api.Construct(
-                LangApi.api.ConstructMethod.Formalize,
+            LangApi.abstract.Construct(
+                LangApi.abstract.ConstructMethod.Formalize,
                 Kiwi.compound.whiledo.While(self.api),
                 [
                     node.condition,
@@ -348,8 +366,8 @@ class Analyzer(AST_Visitor):
 
     def FuncDef(self, node: kiwi.FuncDef):
         result = self.api.visit(
-            LangApi.api.Construct(
-                LangApi.api.ConstructMethod.Formalize,
+            LangApi.abstract.Construct(
+                LangApi.abstract.ConstructMethod.Formalize,
                 Kiwi.compound.function.Function,
                 [
                     node.name.toAttr(),
@@ -364,8 +382,8 @@ class Analyzer(AST_Visitor):
 
     def NamespaceDef(self, node: kiwi.NamespaceDef):
         result = self.api.visit(
-            LangApi.api.Construct(
-                LangApi.api.ConstructMethod.Formalize,
+            LangApi.abstract.Construct(
+                LangApi.abstract.ConstructMethod.Formalize,
                 Kiwi.compound.namespace.Namespace,
                 [
                     node.name.toAttr(),
@@ -384,12 +402,12 @@ class Analyzer(AST_Visitor):
         for target in node.targets:
             assert not target.isGroup
             self.api.visit(
-                LangApi.api.Construct(
-                    LangApi.api.ConstructMethod.Annotation,
+                LangApi.abstract.Construct(
+                    LangApi.abstract.ConstructMethod.Annotation,
                     self.visit(target, no_references=True),
                     [
-                        LangApi.api.Construct(
-                            LangApi.api.ConstructMethod.GetChild,
+                        LangApi.abstract.Construct(
+                            LangApi.abstract.ConstructMethod.GetChild,
                             self.visit(node.data_type),
                             []
                         ),
@@ -408,8 +426,8 @@ class Analyzer(AST_Visitor):
 
     def ReturnParameter(self, node: kiwi.ReturnParameter):
         return self.api.visit(
-            LangApi.api.Construct(
-                LangApi.api.ConstructMethod.GetChild,
+            LangApi.abstract.Construct(
+                LangApi.abstract.ConstructMethod.GetChild,
                 self.visit(node.data_type),
                 []
             )
@@ -422,22 +440,22 @@ class Analyzer(AST_Visitor):
     # ===========
 
     def Disjunctions(self, node: kiwi.Disjunctions):
-        return LangApi.api.Construct(
-                LangApi.api.ConstructMethod.Formalize,
+        return LangApi.abstract.Construct(
+                LangApi.abstract.ConstructMethod.Formalize,
                 Kiwi.tokens.boolean.Disjunctions(self.api),
                 [self.visit(node.values)]
             )
 
     def Conjunctions(self, node: kiwi.Conjunctions):
-        return LangApi.api.Construct(
-                LangApi.api.ConstructMethod.Formalize,
+        return LangApi.abstract.Construct(
+                LangApi.abstract.ConstructMethod.Formalize,
                 Kiwi.tokens.boolean.Conjunctions(self.api),
                 [self.visit(node.values)]
             )
 
     def Comparisons(self, node: kiwi.Comparisons):
-        return LangApi.api.Construct(
-                LangApi.api.ConstructMethod.Formalize,
+        return LangApi.abstract.Construct(
+                LangApi.abstract.ConstructMethod.Formalize,
                 Kiwi.tokens.boolean.Comparisons(self.api),
                 [self.visit(node.values), self.visit(node.ops)]
             )
@@ -445,21 +463,21 @@ class Analyzer(AST_Visitor):
     # OPERATORS
     # =========
 
-    _unaryOps: Dict[str, LangApi.api.ConstructMethod]
+    _unaryOps: Dict[str, LangApi.abstract.ConstructMethod]
 
     def UnaryOp(self, node: kiwi.UnaryOp):
         x = self.visit(node.x)
-        return LangApi.api.Construct(
+        return LangApi.abstract.Construct(
             self._unaryOps[str(node.op)],
             x,
             []
         )
 
-    _binaryOps: Dict[str, LangApi.api.ConstructMethod]
+    _binaryOps: Dict[str, LangApi.abstract.ConstructMethod]
 
     def BinaryOp(self, node: kiwi.BinaryOp):
         x, y = self.visit(node.x), self.visit(node.y)
-        return LangApi.api.Construct(
+        return LangApi.abstract.Construct(
             self._binaryOps[str(node.op)],
             x,
             [y]

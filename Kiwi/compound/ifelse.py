@@ -72,17 +72,17 @@ class If(LangApi.abstract.Block):
         self.analyzer.scope.leaveSpace()
         self.api.leaveScopeWithKey()
 
-        return LangApi.api.Construct(
-            LangApi.api.ConstructMethod.Reference,
+        return LangApi.abstract.Construct(
+            LangApi.abstract.ConstructMethod.Reference,
             self,
             [condition, then, or_else],
             raw_args=True
         )
 
     def Reference(self,
-                  condition: LangApi.api.Construct,
-                  then: List[LangApi.api.Construct],
-                  or_else: List[LangApi.api.Construct]):
+                  condition: LangApi.abstract.Construct,
+                  then: List[LangApi.abstract.Construct],
+                  or_else: List[LangApi.abstract.Construct]):
         predicate = self.api.visit(
             condition)
         assert isinstance(predicate, LangApi.abstract.TransPredicate)

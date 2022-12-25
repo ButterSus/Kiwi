@@ -66,18 +66,18 @@ class For(LangApi.abstract.Block):
         self.analyzer.scope.leaveSpace()
         self.api.leaveScopeWithKey()
 
-        return LangApi.api.Construct(
-            LangApi.api.ConstructMethod.Reference,
+        return LangApi.abstract.Construct(
+            LangApi.abstract.ConstructMethod.Reference,
             self,
             [initialize, condition, increment, body],
             raw_args=True
         )
 
     def Reference(self,
-                  initialize: List[LangApi.api.Construct],
-                  condition: LangApi.api.Construct,
-                  increment: List[LangApi.api.Construct],
-                  body: List[LangApi.api.Construct]):
+                  initialize: List[LangApi.abstract.Construct],
+                  condition: LangApi.abstract.Construct,
+                  increment: List[LangApi.abstract.Construct],
+                  body: List[LangApi.abstract.Construct]):
         self.api.bufferPush()
         predicate = self.api.visit(
             condition)

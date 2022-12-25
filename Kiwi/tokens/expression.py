@@ -32,7 +32,7 @@ def init(_compiler: Any, _LangApi: Any, _Kiwi: Any):
 
 
 class Expression(LangApi.abstract.Formalizable):
-    def Formalize(self, value: kiwi.expression) -> LangApi.api.Construct:
+    def Formalize(self, value: kiwi.expression) -> LangApi.abstract.Construct:
         return self.analyzer.visit(value)
 
 

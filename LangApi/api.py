@@ -13,10 +13,8 @@ from __future__ import annotations
 from typing import (
     Dict, TYPE_CHECKING, Any,List, Type, Set
 )
-from dataclasses import dataclass, field
 from itertools import chain
 from inspect import isclass
-from enum import Enum, auto
 
 # Custom libraries
 # ----------------
@@ -38,100 +36,6 @@ def init(_compiler: Any, _LangApi: Any, _Kiwi: Any):
     globals()['compiler'] = _compiler  # noqa
     globals()['LangApi'] = _LangApi  # noqa
     globals()['Kiwi'] = _Kiwi  # noqa
-
-
-class ConstructMethod(Enum):
-    """
-    This enum defines all methods of Kiwi objects
-    """
-
-    # Basic initializations
-    # ---------------------
-
-    InitsType = auto()
-    Formalize = auto()
-
-    # Binary operators
-    # ----------------
-
-    AddOperation = auto()
-    SubOperation = auto()
-    MulOperation = auto()
-    DivOperation = auto()
-    ModOperation = auto()
-
-    # Unary operators
-    # ----------------
-
-    PlusOperation = auto()
-    MinusOperation = auto()
-
-    # Aug operators
-    # -------------
-
-    AugAddOperation = auto()
-    AugSubOperation = auto()
-    AugMulOperation = auto()
-    AugDivOperation = auto()
-    AugModOperation = auto()
-
-    # Another operators
-    # -----------------
-
-    AssignOperation = auto()
-
-    # Special methods
-    # ---------------
-
-    Return = auto()
-    Call = auto()
-    Reference = auto()
-    Annotation = auto()
-    AnnAssign = auto()
-    GetChild = auto()
-
-
-@dataclass
-class Construct:
-    """
-    This dataclass stores analyzer request to run any method of built-in object or grammar constructions.
-    API.visit method can launch it.
-    """
-    method: ConstructMethod
-    """
-    The method identifier to run
-    e.g:
-    ConstructMethod.AddOperation
-    """
-    parent: Type[LangApi.abstract.Abstract] | LangApi.abstract.Abstract
-    """
-    The object or class of the method to run,
-    if it's class, then it should take api parameter to initialize
-    """
-    arguments: List[Any]
-    """
-    The arguments of the method to run,
-    It can be absolutely anything
-    """
-    raw_args: bool = field(default=False)
-    """
-    By default, arguments will be passed to visitor, that will launch Construct before to pass
-    it as argument. (it's made to make it more abstract)
-    e.g:
-    Let's assume we have this structure:
-    Construct(  # This construct will be handled last of all
-        method = "Add",
-        parent = SomeClassOrObject
-        arguments = [
-            Construct(  # This construct will be handled first of all
-                method = "Add",
-                parent = SomeClassOrObject
-                arguments = [1, 2]
-            )
-        ]
-    ),
-    But if raw_args equals to True, then arguments will not be handled by visitor
-    """
 
 
 class API:
@@ -222,7 +126,7 @@ class API:
                 visited = self.visit(attribute)
                 instruction.__setattr__(annotation, visited)
             return instruction
-        if isinstance(instruction, Construct):
+        if isinstance(instruction, LangApi.abstract.Construct):
             parent = self.visit(instruction.parent, canInit=True)
             assert isinstance(parent, LangApi.abstract.Abstract)
             if instruction.raw_args:
@@ -371,7 +275,6 @@ class API:
         It returns frontend-Object, Score for example
         """
         result = self.analyzer.ast.eval(compiler.Tokenizer(text).lexer)
-        print(result)
         return self.visit(self.analyzer.visit(result))
 
     def exec(self, text: str) -> Any:
