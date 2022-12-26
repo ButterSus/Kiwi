@@ -1,0 +1,247 @@
+<!-- HTML header for doxygen 1.9.5-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="$langISO">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=11"/>
+    <meta name="generator" content="Doxygen 1.8.15"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Kiwi Official Docs: Установка и первый датапак на Kiwi</title>
+    <link href="../../tabs.css" rel="stylesheet" type="text/css"/>
+    <script type="text/javascript" src="../../jquery.js"></script>
+    <script type="text/javascript" src="../../dynsections.js"></script>
+    <link href="../../navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../../resize.js"></script>
+<script type="text/javascript" src="../../navtreedata.js"></script>
+<script type="text/javascript" src="../../navtree.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+  $(document).ready(initResizable);
+/* @license-end */</script>
+    <link href="../../search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../../search/searchdata.js"></script>
+<script type="text/javascript" src="../../search/search.js"></script>
+    <link href="../../doxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="../../doxygen-awesome.css" rel="stylesheet" type="text/css"/>
+<link href="../../doxygen-awesome-sidebar-only.css" rel="stylesheet" type="text/css"/>
+    <script type="module">
+        import mermaid from 'https://unpkg.com/mermaid@9/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({theme: 'dark'})
+        mermaid.init({theme: 'dark'}, '#kiwi_loop')
+        document.addEventListener('click', function(event){
+            if (document.getElementsByTagName("doxygen-awesome-dark-mode-toggle")[0].contains(event.target)) {
+                if (document.documentElement.classList[0] === "dark-mode") {
+                    console.log('dark')
+                }
+                else {
+                    console.log('light')
+                }
+            }
+        })
+    </script>
+    <script type="text/javascript" src="../../kiwi-renderline.js"></script>
+    <script type="text/javascript" src="../../kiwi-highlighter.js"></script>
+    <script type="module">
+        const content_box_list = document.getElementsByClassName('content-box');
+        for (let i = 0; i < content_box_list.length; i++) {
+            let content_box = content_box_list[i]
+            let textarea = content_box.getElementsByClassName('textarea-input')[0]
+            let highlight = content_box.getElementsByClassName('highlight-area')[0]
+            let lines = highlight_construct(
+                textarea,
+                highlight,
+                highlight.innerText
+            )
+            renderLineNumbers(lines, content_box)
+        }
+    </script>
+    <script type="text/javascript" src="../../doxygen-awesome-darkmode-toggle.js"></script>
+</head>
+<body>
+    <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+        <div id="titlearea">
+            <table cellspacing="0" cellpadding="0">
+                <tbody>
+                <tr id="projectrow">
+                    <td id="projectalign">
+                        <div id="projectname">Kiwi Official Docs
+                        </div>
+                        <div id="projectbrief">made by Kiwi Community</div>
+                    </td>
+                </tr>
+                <!--BEGIN FULL_SIDEBAR-->
+                <tr>
+                    <td id="cringe" colspan="2">
+                        <div id="MSearchBox" class="MSearchBoxInactive"><span class="left"><span id="MSearchSelect"
+                                                                                                 onmouseover="return searchBox.OnSearchSelectShow()"
+                                                                                                 onmouseout="return searchBox.OnSearchSelectHide()">&nbsp;</span><input
+                                type="text" id="MSearchField" value="" placeholder="Search" accesskey="S"
+                                onfocus="searchBox.OnSearchFieldFocus(true)"
+                                onblur="searchBox.OnSearchFieldFocus(false)"
+                                onkeyup="searchBox.OnSearchFieldChange(event)"></span><span class="right"><a
+                                id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"
+                                style="display: none;"><img id="MSearchCloseImg" src="search/close.svg" alt=""
+                                                            border="0"></a></span></div>
+                    </td>
+                </tr>
+                <!--END FULL_SIDEBAR-->
+                </tbody>
+            </table>
+        </div>
+        <!-- end header part -->
+<!-- Generated by Doxygen 1.8.15 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+var searchBox = new SearchBox("searchBox", "../../search",false,'Search');
+/* @license-end */
+</script>
+<script type="text/javascript" src="../../menudata.js"></script>
+<script type="text/javascript" src="../../menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(function() {
+  initMenu('../../',true,false,'search.php','Search');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('d8/d3b/introduction_installation.html','../../');});
+/* @license-end */
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="PageDoc"><div class="header">
+  <div class="headertitle">
+<div class="title">Установка и первый датапак на Kiwi </div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><p><b>Установка сборщика</b></p>
+<p>Для создания программ на Python нам потребуется сборщик. Для его установки перейдём на <a href="https://www.github.com/ButterSus/Kiwi">страницу в GitHub</a> и найдём вкладку <a href="https://github.com/ButterSus/Kiwi/releases">релизов</a>.</p>
+<p>Перед вами должна открыться следующая страница:</p>
+<div class="image">
+<img src="../../release.png" alt="release.png"/>
+</div>
+   <p>Вам необходимо скачать нужный исходный код в зависимости от вашей операционной системы.</p>
+<p>Так же убедитесь что у вас стоит <a href="https://www.python.org/">Python</a> версии <code>3.10</code> и выше, в противном случае компилятор не будет работать.</p>
+<p><b>Создаём проект</b></p>
+<p>Попробуем создать наш первый датапак, для этого используем команду ниже открыв системный терминал в директории с исходным кодом:</p>
+<blockquote class="doxtable">
+<p>python build.py &ndash;create-project test_project </p>
+</blockquote>
+<p>В результате получим ошибку:</p>
+<blockquote class="doxtable">
+<p>it's not allowed to create project inside of Kiwi source code </p>
+</blockquote>
+<p>Это защита от дурака. Дело в том что нам требуется создать проект по какой-нибудь новой директории.</p>
+<p>Поэтому для создания проекта требуется где-нибудь не внутри Kiwi создать новую папку. Мы для примера создадим папку с именем first_project:</p>
+<blockquote class="doxtable">
+<p>python build.py &ndash;create-project ~/first_project </p>
+</blockquote>
+<p>При запуске должно вывести:</p>
+<blockquote class="doxtable">
+<p>project first_project was created successfully </p>
+</blockquote>
+<h1><a class="anchor" id="autotoc_md2"></a>
+Иерархия файлов в проекте</h1>
+<p>Каждый датапак состоит из множества директорий, включающих в себя большое количество файлов разных форматов.</p>
+<p>Однако структура в <b>Kiwi</b> несколько отличается от <em>ванильной структуры файлов</em>. Выглядит она следующий образом:</p>
+<p> 
+<div style="display: flex">
+  <pre class="mermaid" style="float: left; margin-right: 5%">
+  graph TD;
+      subgraph ZA["Библиотеки"]
+      0["kiwi_project.toml"] -.- a["Библиотеки"];
+      end
+  
+      ZA --- 1
+  
+      subgraph 1["Исходный код"]
+      d["kiwi_project.toml"] -.- b["Kiwi-код"]
+      end
+  
+      1 --- ZB
+  
+      subgraph ZB["Сгенерированный датапак"]
+      2["Множество файлов"];
+      end
+  
+      ZA --- ZB
+  </pre>
+  <div style="display: flex; flex-direction: column;
+justify-content: space-between; width: 55%; align-content: start">
+</p>
+<ul>
+<li><b>Библиотеки</b><ul>
+<li>Первым делом <em>загружаются библиотеки в проект</em>. Они могут быть испльзованы для <em>ускорения разработки</em> или для любых других целей. Для того чтобы задать параметры, подключить библиотеки используется конфигурационный файл <code>kiwi_project.toml</code></li>
+</ul>
+</li>
+<li><b>Ваш проект</b><ul>
+<li><b>Kiwi</b> нацелен на читаемость кода и скорость написания, по этой причине множество механик из датапаков, которые обычно хранились в десяти тысячах разных файлах могут быть компактно на языке Kiwi поместиться в один файл с форматом <code>.kiwi</code>. <code>kiwi_project.toml</code> используется для тонкой настройки генерируемого датапака.</li>
+</ul>
+</li>
+<li><b>Сгенерированный датапак</b><ul>
+<li>В итоге из нескольких файлов формата <code>.kiwi</code> генерируются десятки файлов разных форматов в разных директориях. Следует учитывать, что <b>Kiwi</b> по умолчанию может создавать файлы для инициализации того или иного метода, что позволит вам избежать ненужной рутины.</li>
+</ul>
+</li>
+</ul>
+<p> 
+</div></div>
+</p>
+<div style="clear: both"></div><p><b>Сборка проекта</b></p>
+<p>После всей этой информации попробуем собрать наш первый датапак используя команду ниже:</p>
+<blockquote class="doxtable">
+<p>python build ~/first_project </p>
+</blockquote>
+<p>Если всё пошло хорошо, должно вывести:</p>
+<blockquote class="doxtable">
+<p>compiled successfully in 0.065 seconds </p>
+</blockquote>
+<p><b>Запускаем в игре</b></p>
+<p>Этот тестовый датапак должен выводить в чат <code>Hello, World!</code>, для того чтобы запустить сгенерированный датапак, вам необходимо скопировать папку <code>bin</code> в директории проекта по директории <code>Ваш мир / datapacks /</code>.</p>
+<p>Далее в Minecraft используем команду ниже, чтобы запустить датапак:</p>
+<blockquote class="doxtable">
+<p>/reload </p>
+</blockquote>
+</div></div><!-- PageDoc -->
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.9.5-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="../../index.html">Руководство для начинающих</a></li><li class="navelem"><a class="el" href="../../d8/d41/introduction.html">Глава 1. Введение в Kiwi</a></li>
+    <li class="footer">
+      <img src="https://img.shields.io/badge/version-1.0-58f83f" alt="Release" />
+    </li>
+  </ul>
+</div>
+</body>
+</html>
