@@ -143,7 +143,7 @@ $(document).ready(function(){initNavTree('dc/dcd/basics_types.html','../../');})
 <div class="title">Переменные и типы данных </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="autotoc_md6"></a>
+<div class="textblock"><h1><a class="anchor" id="autotoc_md10"></a>
 Переменные</h1>
 <p>Переменные предназначены для хранения данных. Название переменной в <b>Kiwi</b> должно начинаться с алфавитного символа или со знака подчеркивания и может содержать алфавитно-цифровые символы и знак подчеркивания. И кроме того, название переменной не должно совпадать с названием ключевых слов языка <b>Kiwi</b>. Ключевых слов не так много, их легко запомнить:</p>
 <p> <div class= content-box><pre class= textarea-input></pre><pre class= highlight-area>
@@ -162,7 +162,7 @@ a: score = 5
 <p> <div class= content-box><pre class= textarea-input></pre><pre class= highlight-area>
 break: score = 5
 </pre></div></p>
-<h1><a class="anchor" id="autotoc_md7"></a>
+<h1><a class="anchor" id="autotoc_md11"></a>
 Типы данных и аннотации</h1>
 <p>Каждая переменная должна иметь свой тип данных. В <b>Kiwi</b>, как вы могли заметить, тип данных указывается после названия переменной. Однако переменную можно создавать и таким образом:</p>
 <p> <div class= content-box><pre class= textarea-input></pre><pre class= highlight-area>
@@ -174,7 +174,7 @@ a = 5
 kills: scoreboard "kills"
 </pre></div></p>
 <p>Основной смысл в аннотациях в том, что они позволяют создавать переменную определённого типа данных с какими-то параметрами. В данном случае <code>"kills"</code> - параметр аннотации типа данных <code>scoreboard</code>. Это одна из ключевых фишек языка <b>Kiwi</b>, позволяющая творить магию ещё на этапе генерации датапака.</p>
-<h1><a class="anchor" id="autotoc_md8"></a>
+<h1><a class="anchor" id="autotoc_md12"></a>
 Таблицы значений и счета игроков</h1>
 <p>Среди сообщества разработчиков датапаков они проще зовутся <a href="https://minecraft.fandom.com/wiki/Scoreboard">скорбордами</a>. Основной смысл в том, что у каждого игрока в Minecraft есть свой счёт в какой-то таблице.</p>
 <p>Таблица зовётся <b>скорбордом (<a href="https://minecraft.fandom.com/wiki/Scoreboard">scoreboard</a>)</b>. Количество игроков в скорборде и количество скорбордов игрока ничем не ограничено.</p>
@@ -220,7 +220,7 @@ print(b)  # Выводим в чат
 <p>5 </p>
 </blockquote>
 <p>Дело в том, что <b>Kiwi</b> автоматически привязывает все счета без указанных скорбордов к своему скорборду, что ускорит написание и увеличит читаемость кода. При этом глобальный скорборд всего один на весь <b>Kiwi</b> проект.</p>
-<h1><a class="anchor" id="autotoc_md9"></a>
+<h1><a class="anchor" id="autotoc_md13"></a>
 Форматы записи</h1>
 <p><b>Логические значения</b></p>
 <p>Если вам требуется объявить переменную с логическими значениями <b>0</b> и <b>1</b>, то вы можете использовать ключевые слова <code>true</code> и <code>false</code>. Например:</p>
