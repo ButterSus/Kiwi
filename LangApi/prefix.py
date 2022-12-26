@@ -246,6 +246,16 @@ class Prefix:
         """
         return self.ModLocal(Attr([f'$check--{counter}']))
 
+    @_DefaultAttrCounter
+    def VarItem(self, counter: int) -> Attr:
+        """
+        Returns attribute for variable of check,
+        that is used to check:
+        if condition was true, then do not run else body
+        else if condition was not true, then run else body
+        """
+        return self.ModLocal(Attr([f'$item--{counter}']))
+
     # FILE PREFIXES
     # =============
 
@@ -264,11 +274,18 @@ class Prefix:
         return self.ModLocal(Attr([f'--else--{counter}']))
 
     @_DefaultAttrCounter
-    def FileFor(self, counter: int) -> Attr:
+    def FileForClassic(self, counter: int) -> Attr:
         """
         Return attribute for file name of for statement
         """
         return self.ModLocal(Attr([f'--for--{counter}']))
+
+    @_DefaultAttrCounter
+    def FileForIterator(self, counter: int) -> Attr:
+        """
+        Return attribute for file name of for statement
+        """
+        return self.ModLocal(Attr([f'--for-in--{counter}']))
 
     @_DefaultAttrCounter
     def FileWhile(self, counter: int) -> Attr:

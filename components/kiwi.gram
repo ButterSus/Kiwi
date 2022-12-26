@@ -151,7 +151,8 @@ compound_stmt:
     | function_def
     | namespace_def
     | if_stmt
-    | for_stmt
+    | for_classic_stmt
+    | for_iterator_stmt
     | while_stmt
     | match_stmt
 
@@ -343,11 +344,24 @@ if_stmt:
         c, t, []
         )}
 
-for_stmt:
-    | s='for' a=simple_stmt ';' b=expression ';' c=simple_stmt ':' e=block {kiwi.For(
+for_classic_stmt:
+    | s='for' a=simple_stmt ';' b=expression ';' c=simple_stmt ':' e=block {kiwi.ForClassic(
         s.start, e[-1].end,
         a, b, c, e
     )}
+
+for_iterator_stmt:
+    | s='for' t=for_iterator_param 'in' i=expression ':' e=block {kiwi.ForIterator(
+        s.start, e[-1].end,
+        *t, i, e
+    )}
+
+for_iterator_param:
+	| t=expression ':' p=expression a=expression+ {
+        [t], p, a
+	    } | t=expression ':' p=expression {
+		[t], p, []
+	}
 
 while_stmt:
     | s='while' c=expression ':' b=block {kiwi.While(
@@ -432,11 +446,11 @@ inversion:
 # --------------------
 
 comparisons:
-    | f=sum v=compare_op_sum_pair+ {kiwi.Comparisons(
+    | f=range v=compare_op_sum_pair+ {kiwi.Comparisons(
         f.start, v[-1][1].end,
         [f, *list(map(lambda x: x[1], v))], list(map(lambda x: x[0], v))
         )}
-    | sum
+    | range
 
 compare_op_sum_pair:
     | eq_sum
@@ -447,43 +461,50 @@ compare_op_sum_pair:
     | gt_sum
 
 eq_sum:
-    | s='==' v=sum {kiwi.Token(
+    | s='==' v=range {kiwi.Token(
         s.start, s.end,
         '=='
         ), v}
 
 noteq_sum:
-    | s='!=' v=sum {kiwi.Token(
+    | s='!=' v=range {kiwi.Token(
         s.start, s.end,
         '!='
         ), v}
 
 lte_sum:
-    | s='<=' v=sum {kiwi.Token(
+    | s='<=' v=range {kiwi.Token(
         s.start, s.end,
         '<='
         ), v}
 
 lt_sum:
-    | s='<' v=sum {kiwi.Token(
+    | s='<' v=range {kiwi.Token(
         s.start, s.end,
         '<'
         ), v}
 
 gte_sum:
-    | s='>=' v=sum {kiwi.Token(
+    | s='>=' v=range {kiwi.Token(
         s.start, s.end,
         '>='
         ), v}
 
 gt_sum:
-    | s='>' v=sum {kiwi.Token(
+    | s='>' v=range {kiwi.Token(
         s.start, s.end,
         '>'
         ), v}
 
 # Arithmetic operators
 # --------------------
+
+range:
+    | x=sum '.' '.' y=sum {kiwi.Range(
+        x.start, y.end,
+        x, y
+    )}
+    | sum
 
 sum:
     | x=sum s='+' y=term {kiwi.BinaryOp(

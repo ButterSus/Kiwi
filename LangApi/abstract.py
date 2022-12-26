@@ -352,6 +352,19 @@ class Block(Formalizable, CodeScope, ABC):
         super().__init__(api)
 
 
+class Iterable(Abstract, ABC):
+    """
+    It's used to represent an iterable object.
+    """
+
+    iterationItem: Abstract
+    iterationCondition: _Attr
+
+    @abstractmethod
+    def NewIteration(self):
+        ...
+
+
 
 # MATH EXPRESSIONS
 # ================

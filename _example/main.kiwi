@@ -1,0 +1,2 @@
+for i: score in -20 .. 20:
+	print(i)

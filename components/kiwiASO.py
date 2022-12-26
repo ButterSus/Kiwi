@@ -205,10 +205,19 @@ class IfElse(Theme_CStatements, AST):
 
 
 @dataclass
-class For(Theme_CStatements, AST):
+class ForClassic(Theme_CStatements, AST):
     init: statement
     condition: expression
     increment: statement
+    body: List[statement]
+
+
+@dataclass
+class ForIterator(Theme_CStatements, AST):
+    targets: List[expression]
+    parent: expression
+    args: List[expression]
+    iterator: expression
     body: List[statement]
 
 
@@ -232,6 +241,12 @@ class Case(Theme_Statements, AST):
 
 # EXPRESSIONS
 # ===========
+
+
+@dataclass
+class Range(Theme_Expressions, AST):
+    expr_start: expression
+    expr_end: expression
 
 
 @dataclass
@@ -403,6 +418,7 @@ expression = \
     Call | \
     MatchExpr | \
     Name | Attribute | \
+    Range | \
     String | \
     Number
 
@@ -421,7 +437,8 @@ compound_stmt = \
     FuncDef | \
     NamespaceDef | \
     IfElse | \
-    For | \
+    ForClassic | \
+    ForIterator | \
     While | \
     MatchCase
 

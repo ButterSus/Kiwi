@@ -425,14 +425,6 @@ class Score(LangApi.abstract.Variable,
             }
         }
 
-    class META_some(LangApi.abstract.Abstract):
-        def getAttribute(self, attr: Attr) -> None:
-            print(attr)
-
-    associations = {
-        'some': META_some
-    }
-
 
 class ScoreClass(LangApi.abstract.Class):
     def Call(self, *args: LangApi.abstract.Abstract):

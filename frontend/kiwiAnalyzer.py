@@ -141,6 +141,16 @@ class Analyzer(AST_Visitor):
     # EXPRESSIONS
     # ===========
 
+    def Range(self, node: kiwi.Range):
+        return self.api.visit(
+            LangApi.abstract.Construct(
+                LangApi.abstract.ConstructMethod.Formalize,
+                Kiwi.tokens.range.Range,
+                [node.expr_start, node.expr_end],
+                raw_args=True
+            )
+        )
+
     def Expression(self, node: kiwi.Expression):
         return self.api.visit(
             LangApi.abstract.Construct(
@@ -334,21 +344,45 @@ class Analyzer(AST_Visitor):
                     node.condition,
                     node.then,
                     node.or_else,
-                ]
+                ],
+                raw_args=True
             )
         )
 
-    def For(self, node: kiwi.For):
+    def ForClassic(self, node: kiwi.ForClassic):
         return self.api.visit(
             LangApi.abstract.Construct(
                 LangApi.abstract.ConstructMethod.Formalize,
-                Kiwi.compound.forloop.For(self.api),
+                Kiwi.compound.forloop.ForClassic(self.api),
                 [
                     node.init,
                     node.condition,
                     node.increment,
                     node.body,
-                ]
+                ],
+                raw_args=True
+            )
+        )
+
+    def ForIterator(self, node: kiwi.ForIterator):
+        self.visit(
+            kiwi.Annotation(
+                ..., ...,
+                node.targets,
+                node.parent,
+                node.args,
+            )
+        )
+        return self.api.visit(
+            LangApi.abstract.Construct(
+                LangApi.abstract.ConstructMethod.Formalize,
+                Kiwi.compound.forloop.ForIterator(self.api),
+                [
+                    self.visit(node.targets[0]),
+                    node.iterator,
+                    node.body,
+                ],
+                raw_args=True
             )
         )
 
@@ -360,7 +394,8 @@ class Analyzer(AST_Visitor):
                 [
                     node.condition,
                     node.body
-                ]
+                ],
+                raw_args=True
             )
         )
 
