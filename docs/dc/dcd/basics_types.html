@@ -1,0 +1,269 @@
+<!-- HTML header for doxygen 1.9.5-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="$langISO">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=11"/>
+    <meta name="generator" content="Doxygen 1.8.15"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Kiwi Official Docs: Переменные и типы данных</title>
+    <link href="../../tabs.css" rel="stylesheet" type="text/css"/>
+    <script type="text/javascript" src="../../jquery.js"></script>
+    <script type="text/javascript" src="../../dynsections.js"></script>
+    <link href="../../navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../../resize.js"></script>
+<script type="text/javascript" src="../../navtreedata.js"></script>
+<script type="text/javascript" src="../../navtree.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+  $(document).ready(initResizable);
+/* @license-end */</script>
+    <link href="../../search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../../search/searchdata.js"></script>
+<script type="text/javascript" src="../../search/search.js"></script>
+    <link href="../../doxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="../../doxygen-awesome.css" rel="stylesheet" type="text/css"/>
+<link href="../../doxygen-awesome-sidebar-only.css" rel="stylesheet" type="text/css"/>
+    <script type="module">
+        import mermaid from 'https://unpkg.com/mermaid@9/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({theme: 'dark'})
+        mermaid.init({theme: 'dark'}, '#kiwi_loop')
+        document.addEventListener('click', function(event){
+            if (document.getElementsByTagName("doxygen-awesome-dark-mode-toggle")[0].contains(event.target)) {
+                if (document.documentElement.classList[0] === "dark-mode") {
+                    console.log('dark')
+                }
+                else {
+                    console.log('light')
+                }
+            }
+        })
+    </script>
+    <script type="text/javascript" src="../../kiwi-renderline.js"></script>
+    <script type="text/javascript" src="../../kiwi-highlighter.js"></script>
+    <script type="module">
+        const content_box_list = document.getElementsByClassName('content-box');
+        for (let i = 0; i < content_box_list.length; i++) {
+            let content_box = content_box_list[i]
+            let textarea = content_box.getElementsByClassName('textarea-input')[0]
+            let highlight = content_box.getElementsByClassName('highlight-area')[0]
+            let lines = highlight_construct(
+                textarea,
+                highlight,
+                highlight.innerText
+            )
+            renderLineNumbers(lines, content_box)
+        }
+    </script>
+    <script type="text/javascript" src="../../doxygen-awesome-darkmode-toggle.js"></script>
+</head>
+<body>
+    <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+        <div id="titlearea">
+            <table cellspacing="0" cellpadding="0">
+                <tbody>
+                <tr id="projectrow">
+                    <td id="projectalign">
+                        <div id="projectname">Kiwi Official Docs
+                        </div>
+                        <div id="projectbrief">made by Kiwi Community</div>
+                    </td>
+                </tr>
+                <!--BEGIN FULL_SIDEBAR-->
+                <tr>
+                    <td id="cringe" colspan="2">
+                        <div id="MSearchBox" class="MSearchBoxInactive"><span class="left"><span id="MSearchSelect"
+                                                                                                 onmouseover="return searchBox.OnSearchSelectShow()"
+                                                                                                 onmouseout="return searchBox.OnSearchSelectHide()">&nbsp;</span><input
+                                type="text" id="MSearchField" value="" placeholder="Search" accesskey="S"
+                                onfocus="searchBox.OnSearchFieldFocus(true)"
+                                onblur="searchBox.OnSearchFieldFocus(false)"
+                                onkeyup="searchBox.OnSearchFieldChange(event)"></span><span class="right"><a
+                                id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"
+                                style="display: none;"><img id="MSearchCloseImg" src="search/close.svg" alt=""
+                                                            border="0"></a></span></div>
+                    </td>
+                </tr>
+                <!--END FULL_SIDEBAR-->
+                </tbody>
+            </table>
+        </div>
+        <!-- end header part -->
+<!-- Generated by Doxygen 1.8.15 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+var searchBox = new SearchBox("searchBox", "../../search",false,'Search');
+/* @license-end */
+</script>
+<script type="text/javascript" src="../../menudata.js"></script>
+<script type="text/javascript" src="../../menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(function() {
+  initMenu('../../',true,false,'search.php','Search');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('dc/dcd/basics_types.html','../../');});
+/* @license-end */
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="PageDoc"><div class="header">
+  <div class="headertitle">
+<div class="title">Переменные и типы данных </div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><h1><a class="anchor" id="autotoc_md6"></a>
+Переменные</h1>
+<p>Переменные предназначены для хранения данных. Название переменной в <b>Kiwi</b> должно начинаться с алфавитного символа или со знака подчеркивания и может содержать алфавитно-цифровые символы и знак подчеркивания. И кроме того, название переменной не должно совпадать с названием ключевых слов языка <b>Kiwi</b>. Ключевых слов не так много, их легко запомнить:</p>
+<p> <div class= content-box><pre class= textarea-input></pre><pre class= highlight-area>
+break           continue            else 
+false           function            if
+namespace       none                pass
+private         promise             public
+return          true                while
+</pre></div></p>
+<p>Например, создадим переменную:</p>
+<p> <div class= content-box><pre class= textarea-input></pre><pre class= highlight-area>
+a: score = 5
+</pre></div></p>
+<p>Здесь определена переменная <code>a</code> с типом данных <code>score</code>, которая хранит число 5.</p>
+<p>Однако следующий код не сработает, так как <code>break</code> это ключевое слово <b>Kiwi</b>:</p>
+<p> <div class= content-box><pre class= textarea-input></pre><pre class= highlight-area>
+break: score = 5
+</pre></div></p>
+<h1><a class="anchor" id="autotoc_md7"></a>
+Типы данных и аннотации</h1>
+<p>Каждая переменная должна иметь свой тип данных. В <b>Kiwi</b>, как вы могли заметить, тип данных указывается после названия переменной. Однако переменную можно создавать и таким образом:</p>
+<p> <div class= content-box><pre class= textarea-input></pre><pre class= highlight-area>
+a: score
+a = 5
+</pre></div></p>
+<p>Здесь мы сначала указываем тип данных, этот процесс называется <a href="../../#">аннотацией</a>. Однако встречаются и такие способы аннотации с параметрами, каждый параметр отделяется друг от друга пробелом:</p>
+<p> <div class= content-box><pre class= textarea-input></pre><pre class= highlight-area>
+kills: scoreboard "kills"
+</pre></div></p>
+<p>Основной смысл в аннотациях в том, что они позволяют создавать переменную определённого типа данных с какими-то параметрами. В данном случае <code>"kills"</code> - параметр аннотации типа данных <code>scoreboard</code>. Это одна из ключевых фишек языка <b>Kiwi</b>, позволяющая творить магию ещё на этапе генерации датапака.</p>
+<h1><a class="anchor" id="autotoc_md8"></a>
+Таблицы значений и счета игроков</h1>
+<p>Среди сообщества разработчиков датапаков они проще зовутся <a href="https://minecraft.fandom.com/wiki/Scoreboard">скорбордами</a>. Основной смысл в том, что у каждого игрока в Minecraft есть свой счёт в какой-то таблице.</p>
+<p>Таблица зовётся <b>скорбордом (<a href="https://minecraft.fandom.com/wiki/Scoreboard">scoreboard</a>)</b>. Количество игроков в скорборде и количество скорбордов игрока ничем не ограничено.</p>
+<p>Счёт игрока в скорборде принято называть <b>счётом (score)</b>. Однако следует отметить, что <em>счёт игрока можно создавать и изменять в независимости от того, есть ли он на сервере или нет.</em></p>
+<p> 
+<div style="display: flex">
+  <pre class="mermaid" style="margin-right: 5%">
+  graph
+    a["scoreboard math"]
+    b["scoreboard hp"]
+    1["Игрок a"] --> a
+    2["Игрок b"] --> a
+    3["Игрок c"] --> a
+    4["Вы"] --> a
+    1["Игрок a"] --> b
+    2["Игрок b"] --> b
+    3["Игрок c"] --> b
+    4["Вы"] --> b
+  </pre>
+  <div style="display: flex; flex-direction: column;
+justify-content: space-between; width: 55%; align-content: start">
+</p>
+<p>Из этого следует вывод: <em>Чтобы создать переменную, необходимо привязать имя игрока к таблице значений (скорборду).</em></p>
+<p> 
+</div></div>
+</p>
+<p>Пока что можем создавать скорборд без параметров, чтобы нам было проще вести изучение. Рассмотрим пример:</p>
+<p> <div class= content-box><pre class= textarea-input></pre><pre class= highlight-area>
+a: scoreboard  # Создаём скорборд
+b: score a = 5  # Привязываем имя игрока b к скорборду a
+print(b)  # Выводим в чат
+</pre></div></p>
+<p>При запуске следующего кода получим в чате:</p>
+<blockquote class="doxtable">
+<p>5 </p>
+</blockquote>
+<p>Однако следующий код без скорборда тоже сработает:</p>
+<p> <div class= content-box><pre class= textarea-input></pre><pre class= highlight-area>
+b: score = 5  # Привязываем имя игрока куда-то?
+print(b)  # Выводим в чат
+</pre></div></p>
+<blockquote class="doxtable">
+<p>5 </p>
+</blockquote>
+<p>Дело в том, что <b>Kiwi</b> автоматически привязывает все счета без указанных скорбордов к своему скорборду, что ускорит написание и увеличит читаемость кода. При этом глобальный скорборд всего один на весь <b>Kiwi</b> проект.</p>
+<h1><a class="anchor" id="autotoc_md9"></a>
+Форматы записи</h1>
+<p><b>Логические значения</b></p>
+<p>Если вам требуется объявить переменную с логическими значениями <b>0</b> и <b>1</b>, то вы можете использовать ключевые слова <code>true</code> и <code>false</code>. Например:</p>
+<p> <div class= content-box><pre class= textarea-input></pre><pre class= highlight-area>
+a: bool = true  # В переменную a присваиваем true
+</pre></div></p>
+<p> <div class= content-box><pre class= textarea-input></pre><pre class= highlight-area>
+if true:  # Если истина есть истина
+    print("It's true!")  # Выводим в чат
+</pre></div></p>
+<p><b>Целые числа</b></p>
+<p>Чаще всего бывает нужно присвоить обычное число. Как вы могли догадаться по показанному ранее, принцип написания здесь понятен и очевиден:</p>
+<p> <div class= content-box><pre class= textarea-input></pre><pre class= highlight-area>
+a: score = 5  # Можно по обычному
+b: score = 00123  # Если требуется, добавляйте нули в начале
+c: score = 1_000_000_350  # Для больших чисел можете использовать '_'
+d: score = -5_000  # Можно писать отрицательные числа
+e: score = +1  # Указывать неотрицательный тип тоже можно
+</pre></div></p>
+<p>Однако:</p>
+<p> <div class= content-box><pre class= textarea-input></pre><pre class= highlight-area>
+a: score = 1__000  # Однако два подряд идущих приводит к ошибке!
+b: score = --1  # Дважды писать знак неправильно
+c: score = 0_1  # Так нельзя!
+</pre></div></p>
+<p>Бывают и форматы записи для разных систем счисления, хотя мы надеемся что вам они не пригодятся):</p>
+<p> <div class= content-box><pre class= textarea-input></pre><pre class= highlight-area>
+a: score = 0b1011  # Кто шарит тот шарит))
+b: score = 0o1343  # Ну эта типа восьмеричная
+c: score = 0x12de  # А это может например для цветов пригодится!
+</pre></div> </p>
+</div></div><!-- PageDoc -->
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.9.5-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="../../index.html">Руководство для начинающих</a></li><li class="navelem"><a class="el" href="../../d4/d98/basics.html">Глава 2. Основы Kiwi</a></li>
+    <li class="footer">
+      <img src="https://img.shields.io/badge/version-1.0-58f83f" alt="Release" />
+    </li>
+  </ul>
+</div>
+</body>
+</html>
