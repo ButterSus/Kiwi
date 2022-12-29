@@ -13,7 +13,7 @@ description = "#Made by using Kiwi Compiler"
 entry_file = "main"
 
 # Version to compile for
-mc_version = "1.18.2"
+mc_version = "1.16.2"
 
 
 # ADDITIONAL OPTIONS
@@ -22,14 +22,14 @@ mc_version = "1.18.2"
 [options]
 
 # Directories with libraries
-include_directories = ["lib"]
+include_directories = []
 
 # Entry point function
 entry_function = "main"
 
 # Directory to generate output datapack
-#output_directory = "bin"
-output_directory = "/home/buttersss/.local/share/multimc/instances/1.18.2/.minecraft/saves/Опездол/datapacks/KiwiSample"
+output_directory = "bin"
+# output_directory = "/home/buttersss/.local/share/multimc/instances/1.18.2/.minecraft/saves/Опездол/datapacks/KiwiSample"
 
 # Choose between "public" / "private" to configure default scope of namespace
 default_scope = "public"

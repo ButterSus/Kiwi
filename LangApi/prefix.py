@@ -143,20 +143,6 @@ class Prefix:
     # GENERAL MODIFIERS
     # =================
 
-    @staticmethod
-    def ModGlobal(attr: Attr) -> Attr:
-        """
-        Used to add global prefix
-        For example you can add project prefix to
-        avoid some scope conflicts, but I think it's useless
-        at the moment because we have datapack folder
-        :param attr:
-        Input attribute
-        :return:
-        Output attribute with prefix
-        """
-        return attr
-
     def ModLocal(self, attr: Attr) -> Attr:
         """
         Used to add local prefix
@@ -176,8 +162,12 @@ class Prefix:
         match self.mode:
             case ScopeMode.LOCAL:
                 prefix = list()
-                for scope in self.api.scopeFolder[1:]:
+                for scope in self.api.scopeFolder[:-1]:
+                    if scope.name is None:
+                        continue
                     prefix.append(scope.name)
+                if self.api.scopeFolder[-1].directName is not None:
+                    prefix.append(self.api.scopeFolder[-1].directName)
                 return Attr(prefix + attr)
             case ScopeMode.GLOBAL:
                 return attr

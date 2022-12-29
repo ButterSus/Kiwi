@@ -239,7 +239,7 @@ class BossbarAdd(CodeType):
 
     def toCode(self) -> str:
         identifier = convert_var_name(self.identifier)
-        return f'bossbar add {identifier} {dumps(self.text).replace(_double_slash, _unary_slash)}'
+        return f'bossbar add {identifier} {dumps(self.text, ensure_ascii=False).replace(_double_slash, _unary_slash)}'
 
 @dataclass
 class FunctionDirectCall(CodeType):

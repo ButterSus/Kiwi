@@ -131,7 +131,14 @@ class BasicScope:
     content: dict
     hide: Set[str] = set()
     parent: Optional[BasicScope]
-    name: str = None
+    name: Optional[str] = None
+
+    def _defaultDirectName(self) -> Optional[str]:
+        return self.name
+
+    directName = property(
+        fget=_defaultDirectName
+    )
 
     def __init__(self, content: dict, parent: Optional[BasicScope] = None, name: str = None):
         self.content = content

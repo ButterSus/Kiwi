@@ -31,6 +31,8 @@ def init(_compiler: Any, _LangApi: Any, _Kiwi: Any):
 
 
 class Module(LangApi.abstract.Block):
+    name = None
+
     def Formalize(self, body: List[Any]):
         self.api.enterCodeScope(self)
         result = self.analyzer.visit(body)
