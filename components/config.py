@@ -15,7 +15,7 @@ from argparse import ArgumentParser
 # ----------------
 
 import toml
-
+import components.kiwiColors as colors
 
 # Dict with default values
 # ------------------------
@@ -53,7 +53,7 @@ class ConfigOptions(TypedDict):
 
 
 configOptions: ConfigOptions = {
-    "include_directories": [],
+    "include_directories": ["src"],
     "entry_function": "main",
     "output_directory": "bin",
     "default_scope": "public"
@@ -82,7 +82,7 @@ configProject: ConfigProject = {
     "project_name": "untitled",
     "description": "#Made by using Frontend Compiler",
     "entry_file": "main",
-    "mc_version": "1.16.5"
+    "mc_version": "1.18.2"
 }
 
 
@@ -133,6 +133,10 @@ class Terminal:
 
     def __init__(self):
         self.get_arguments()
+        if self.arguments['create_project']:
+            self.configGeneral = dict()
+            self.configGeneral |= self.arguments
+            return
         self.get_options()
 
     def get_arguments(self):
@@ -159,8 +163,14 @@ class Terminal:
                     result |= value
             return result
 
+        project_toml = self.pathGeneral / 'kiwi_project.toml'
+        if not project_toml.exists():
+            print(f'{colors.Red}File kiwi_project.toml not found in project directory\n'
+                  f'To fix this, try create project using --create-project attribute{colors.Default}')
+            exit(1)
+
         currentConfigTOML: ConfigTOML \
-            = DefaultDict(configTOML, toml.load(str(self.pathGeneral / 'kiwi_project.toml')))
+            = DefaultDict(configTOML, toml.load(str(project_toml)))
         currentConfigProject: ConfigProject \
             = DefaultDict(configProject, currentConfigTOML['project'])
         currentConfigExtended: ConfigExtended \

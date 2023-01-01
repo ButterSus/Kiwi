@@ -76,7 +76,10 @@ class Constructor:
         Folders initialization.
         """
 
-        self.directories.bin = Path(self.config['output_directory'])
+        if (path := Path(self.config['output_directory'])).exists():
+            self.directories.bin = path
+        else:
+            self.directories.bin = Path(self.config['path']) / self.config['output_directory']
         rmtree(self.directories.bin, ignore_errors=True)
         self.directories.bin.mkdir(exist_ok=True)
 
