@@ -12,7 +12,6 @@ import LangApi
 from components.kiwiScope import Attr
 import components.kiwiASO as kiwi
 
-
 if TYPE_CHECKING:
     import compiler
     import LangApi
@@ -80,8 +79,8 @@ class Range(LangApi.abstract.Block, LangApi.abstract.Formalizable, LangApi.abstr
     def NewIteration(self):
         self.iterationItem.IAdd(
             Kiwi.tokens.number.IntegerFormat(
-            self.api
-        ).Formalize(1))
+                self.api
+            ).Formalize(1))
 
     def toPath(self, key: str) -> List[str]:
         match key:
