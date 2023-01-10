@@ -91,12 +91,12 @@ class KiwiParser(Parser):
 
     @memoize
     def import_stmt(self) -> Optional[Any]:
-        # import_stmt: "import" dotted_as_names ((NEWLINE | ';'))+
+        # import_stmt: 'import' &&(dotted_as_names) ((NEWLINE | ';'))+
         mark = self._mark()
         if (
-            (literal := self.expect("import"))
+            (literal := self.expect('import'))
             and
-            (v := self.dotted_as_names())
+            (forced := self.expect_forced(self.dotted_as_names(), '''(dotted_as_names)'''))
             and
             (_loop1_2 := self._loop1_2())
         ):
@@ -132,14 +132,14 @@ class KiwiParser(Parser):
 
     @memoize
     def dotted_as_name(self) -> Optional[Any]:
-        # dotted_as_name: dotted_name "as" NAME_ | dotted_name
+        # dotted_as_name: dotted_name "as" &&(NAME_) | dotted_name
         mark = self._mark()
         if (
             (v := self.dotted_name())
             and
             (literal := self.expect("as"))
             and
-            (a := self.NAME_())
+            (forced := self.expect_forced(self.NAME_(), '''(NAME_)'''))
         ):
             return kiwi . Alias ( v [0] . start , a . end , '' . join ( v ) , a )
         self._reset(mark)
@@ -152,14 +152,14 @@ class KiwiParser(Parser):
 
     @memoize_left_rec
     def dotted_name(self) -> Optional[Any]:
-        # dotted_name: dotted_name '.' NAME_ | NAME_
+        # dotted_name: dotted_name '.' &&(NAME_) | NAME_
         mark = self._mark()
         if (
             (v := self.dotted_name())
             and
             (literal := self.expect('.'))
             and
-            (a := self.NAME_())
+            (forced := self.expect_forced(self.NAME_(), '''(NAME_)'''))
         ):
             return [* v , a]
         self._reset(mark)
@@ -291,14 +291,14 @@ class KiwiParser(Parser):
 
     @memoize
     def assignment(self) -> Optional[Any]:
-        # assignment: annotations '=' ','.expression+ | ','.expression+ '=' ','.expression+ | ','.expression+ augassign ','.expression+ | annotations
+        # assignment: annotations '=' &&(','.expression+) | ','.expression+ '=' &&(','.expression+) | ','.expression+ augassign &&(','.expression+) | annotations
         mark = self._mark()
         if (
             (a := self.annotations())
             and
             (literal := self.expect('='))
             and
-            (v := self._gather_8())
+            (forced := self.expect_forced(self._gather_8(), '''(','.expression+)'''))
         ):
             return kiwi . AnnAssignment ( a [0] [0] . start , v [- 1] . end , * a , v )
         self._reset(mark)
@@ -307,7 +307,7 @@ class KiwiParser(Parser):
             and
             (literal := self.expect('='))
             and
-            (v := self._gather_12())
+            (forced := self.expect_forced(self._gather_12(), '''(','.expression+)'''))
         ):
             return kiwi . Assignment ( i [0] . start , v [- 1] . end , i , v )
         self._reset(mark)
@@ -316,7 +316,7 @@ class KiwiParser(Parser):
             and
             (o := self.augassign())
             and
-            (v := self._gather_16())
+            (forced := self.expect_forced(self._gather_16(), '''(','.expression+)'''))
         ):
             return kiwi . AugAssignment ( i [0] . start , v [- 1] . end , i , o , v )
         self._reset(mark)
@@ -329,14 +329,14 @@ class KiwiParser(Parser):
 
     @memoize
     def annotations(self) -> Optional[Any]:
-        # annotations: expression ':' expression+ | ','.expression+ '->' expression+
+        # annotations: expression ':' &&(expression+) | ','.expression+ '->' &&(expression+)
         mark = self._mark()
         if (
             (i := self.expression())
             and
             (literal := self.expect(':'))
             and
-            (a := self._loop1_18())
+            (forced := self.expect_forced(self._loop1_18(), '''(expression+)'''))
         ):
             return [i] , a [0] , a [1 :]
         self._reset(mark)
@@ -345,7 +345,7 @@ class KiwiParser(Parser):
             and
             (literal := self.expect('->'))
             and
-            (a := self._loop1_21())
+            (forced := self.expect_forced(self._loop1_21(), '''(expression+)'''))
         ):
             return i , a [0] , a [1 :]
         self._reset(mark)
@@ -456,14 +456,12 @@ class KiwiParser(Parser):
 
     @memoize
     def private_block(self) -> Optional[Any]:
-        # private_block: 'private' ':' block
+        # private_block: 'private' &&(':' block)
         mark = self._mark()
         if (
             (s := self.expect('private'))
             and
-            (literal := self.expect(':'))
-            and
-            (v := self.block())
+            (forced := self.expect_forced(self._tmp_23(), '''(':' block)'''))
         ):
             return kiwi . PrivateBlock ( s . start , v [- 1] . end , v )
         self._reset(mark)
@@ -471,14 +469,12 @@ class KiwiParser(Parser):
 
     @memoize
     def public_block(self) -> Optional[Any]:
-        # public_block: 'public' ':' block
+        # public_block: 'public' &&(':' block)
         mark = self._mark()
         if (
             (s := self.expect('public'))
             and
-            (literal := self.expect(':'))
-            and
-            (v := self.block())
+            (forced := self.expect_forced(self._tmp_24(), '''(':' block)'''))
         ):
             return kiwi . PublicBlock ( s . start , v [- 1] . end , v )
         self._reset(mark)
@@ -497,16 +493,14 @@ class KiwiParser(Parser):
 
     @memoize
     def namespace_def(self) -> Optional[Any]:
-        # namespace_def: 'namespace' NAME_ ':' hiding_block
+        # namespace_def: 'namespace' &&(NAME_) &&(':' hiding_block)
         mark = self._mark()
         if (
             (s := self.expect('namespace'))
             and
-            (i := self.NAME_())
+            (forced := self.expect_forced(self.NAME_(), '''(NAME_)'''))
             and
-            (literal := self.expect(':'))
-            and
-            (b := self.hiding_block())
+            (forced_1 := self.expect_forced(self._tmp_25(), '''(':' hiding_block)'''))
         ):
             return kiwi . NamespaceDef ( s . start , b [- 1] . end , i , b )
         self._reset(mark)
@@ -514,32 +508,32 @@ class KiwiParser(Parser):
 
     @memoize
     def function_def(self) -> Optional[Any]:
-        # function_def: 'function' NAME_ '(' parameters ')' '->' return_param '<' '-' expression ':' block | 'function' NAME_ '(' parameters ')' '<' '-' expression ':' block | 'function' NAME_ '(' parameters ')' '->' return_param ':' block | 'function' NAME_ '(' parameters ')' ':' block
+        # function_def: 'function' (&&(NAME_)) &&'(' parameters &&')' '->' (&&(return_param)) '<' '-' (&&(expression)) &&':' (&&(block)) | 'function' NAME_ '(' parameters ')' '<' '-' (&&(expression)) &&':' (&&(block)) | 'function' NAME_ '(' parameters ')' '->' (&&(return_param)) &&':' (&&(block)) | 'function' NAME_ '(' parameters ')' &&':' (&&(block))
         mark = self._mark()
         if (
             (s := self.expect('function'))
             and
-            (i := self.NAME_())
+            (i := self.expect_forced(self.NAME_(), '''(NAME_)'''))
             and
-            (literal := self.expect('('))
+            (forced := self.expect_forced(self.expect('('), "'('"))
             and
             (p := self.parameters())
             and
-            (literal_1 := self.expect(')'))
+            (forced_1 := self.expect_forced(self.expect(')'), "')'"))
             and
-            (literal_2 := self.expect('->'))
+            (literal := self.expect('->'))
             and
-            (r := self.return_param())
+            (r := self.expect_forced(self.return_param(), '''(return_param)'''))
             and
-            (literal_3 := self.expect('<'))
+            (literal_1 := self.expect('<'))
             and
-            (literal_4 := self.expect('-'))
+            (literal_2 := self.expect('-'))
             and
-            (pr := self.expression())
+            (pr := self.expect_forced(self.expression(), '''(expression)'''))
             and
-            (literal_5 := self.expect(':'))
+            (forced_2 := self.expect_forced(self.expect(':'), "':'"))
             and
-            (b := self.block())
+            (b := self.expect_forced(self.block(), '''(block)'''))
         ):
             return kiwi . FuncDef ( s . start , b [- 1] . end , i , p [0] , p [1] , r , pr , b )
         self._reset(mark)
@@ -558,11 +552,11 @@ class KiwiParser(Parser):
             and
             (literal_3 := self.expect('-'))
             and
-            (pr := self.expression())
+            (pr := self.expect_forced(self.expression(), '''(expression)'''))
             and
-            (literal_4 := self.expect(':'))
+            (forced := self.expect_forced(self.expect(':'), "':'"))
             and
-            (b := self.block())
+            (b := self.expect_forced(self.block(), '''(block)'''))
         ):
             return kiwi . FuncDef ( s . start , b [- 1] . end , i , p [0] , p [1] , None , pr , b )
         self._reset(mark)
@@ -579,11 +573,11 @@ class KiwiParser(Parser):
             and
             (literal_2 := self.expect('->'))
             and
-            (r := self.return_param())
+            (r := self.expect_forced(self.return_param(), '''(return_param)'''))
             and
-            (literal_3 := self.expect(':'))
+            (forced := self.expect_forced(self.expect(':'), "':'"))
             and
-            (b := self.block())
+            (b := self.expect_forced(self.block(), '''(block)'''))
         ):
             return kiwi . FuncDef ( s . start , b [- 1] . end , i , p [0] , p [1] , r , None , b )
         self._reset(mark)
@@ -598,9 +592,9 @@ class KiwiParser(Parser):
             and
             (literal_1 := self.expect(')'))
             and
-            (literal_2 := self.expect(':'))
+            (forced := self.expect_forced(self.expect(':'), "':'"))
             and
-            (b := self.block())
+            (b := self.expect_forced(self.block(), '''(block)'''))
         ):
             return kiwi . FuncDef ( s . start , b [- 1] . end , i , p [0] , p [1] , None , None , b )
         self._reset(mark)
@@ -612,9 +606,9 @@ class KiwiParser(Parser):
         # nullable=True
         mark = self._mark()
         if (
-            (p := self._loop0_23(),)
+            (p := self._loop0_26(),)
             and
-            (d := self._loop0_24(),)
+            (d := self._loop0_27(),)
         ):
             return [* p , * map ( lambda x : x [0] , d )] , list ( map ( lambda x : x [1] , d ) )
         self._reset(mark)
@@ -719,7 +713,7 @@ class KiwiParser(Parser):
         if (
             (s := self.expression())
             and
-            (a := self._loop0_25(),)
+            (a := self._loop0_28(),)
         ):
             return kiwi . ReturnParameter ( s . start , a [- 1] . end if a else s . end , s , a )
         self._reset(mark)
@@ -838,7 +832,7 @@ class KiwiParser(Parser):
             and
             (p := self.expression())
             and
-            (a := self._loop1_26())
+            (a := self._loop1_29())
         ):
             return [t] , p , a
         self._reset(mark)
@@ -911,9 +905,9 @@ class KiwiParser(Parser):
         # cases: (',' NEWLINE*).case+
         mark = self._mark()
         if (
-            (_gather_27 := self._gather_27())
+            (_gather_30 := self._gather_30())
         ):
-            return _gather_27
+            return _gather_30
         self._reset(mark)
         return None
 
@@ -986,7 +980,7 @@ class KiwiParser(Parser):
         # nullable=True
         mark = self._mark()
         if (
-            (v := self._gather_29())
+            (v := self._gather_32())
         ):
             return v
         self._reset(mark)
@@ -1015,7 +1009,7 @@ class KiwiParser(Parser):
         if (
             (s := self.conjunctions())
             and
-            (a := self._loop1_31())
+            (a := self._loop1_34())
         ):
             return kiwi . Disjunctions ( s . start , a [- 1] . end , [s , * a] )
         self._reset(mark)
@@ -1046,7 +1040,7 @@ class KiwiParser(Parser):
         if (
             (s := self.inversion())
             and
-            (a := self._loop1_32())
+            (a := self._loop1_35())
         ):
             return kiwi . Conjunctions ( s . start , a [- 1] . end , [s , * a] )
         self._reset(mark)
@@ -1095,7 +1089,7 @@ class KiwiParser(Parser):
         if (
             (f := self.range())
             and
-            (v := self._loop1_33())
+            (v := self._loop1_36())
         ):
             return kiwi . Comparisons ( f . start , v [- 1] [1] . end , [f , * list ( map ( lambda x : x [1] , v ) )] , list ( map ( lambda x : x [0] , v ) ) )
         self._reset(mark)
@@ -1491,7 +1485,7 @@ class KiwiParser(Parser):
         # args: ','.expression+
         mark = self._mark()
         if (
-            (v := self._gather_34())
+            (v := self._gather_37())
         ):
             return v
         self._reset(mark)
@@ -1521,9 +1515,9 @@ class KiwiParser(Parser):
         # match_keys: (',' NEWLINE*).match_key+
         mark = self._mark()
         if (
-            (_gather_36 := self._gather_36())
+            (_gather_39 := self._gather_39())
         ):
-            return _gather_36
+            return _gather_39
         self._reset(mark)
         return None
 
@@ -1591,7 +1585,7 @@ class KiwiParser(Parser):
         # WORD_: ((NUMBER | NAME))+
         mark = self._mark()
         if (
-            (v := self._loop1_38())
+            (v := self._loop1_41())
         ):
             return kiwi . Word ( v [0] . start , v [- 1] . end , '' . join ( list ( map ( str , v ) ) ) )
         self._reset(mark)
@@ -1726,9 +1720,9 @@ class KiwiParser(Parser):
         mark = self._mark()
         children = []
         while (
-            (_tmp_39 := self._tmp_39())
+            (_tmp_42 := self._tmp_42())
         ):
-            children.append(_tmp_39)
+            children.append(_tmp_42)
             mark = self._mark()
         self._reset(mark)
         return children
@@ -1739,9 +1733,9 @@ class KiwiParser(Parser):
         mark = self._mark()
         children = []
         while (
-            (_tmp_40 := self._tmp_40())
+            (_tmp_43 := self._tmp_43())
         ):
-            children.append(_tmp_40)
+            children.append(_tmp_43)
             mark = self._mark()
         self._reset(mark)
         return children
@@ -1795,9 +1789,9 @@ class KiwiParser(Parser):
         mark = self._mark()
         children = []
         while (
-            (_tmp_41 := self._tmp_41())
+            (_tmp_44 := self._tmp_44())
         ):
-            children.append(_tmp_41)
+            children.append(_tmp_44)
             mark = self._mark()
         self._reset(mark)
         return children
@@ -2027,16 +2021,55 @@ class KiwiParser(Parser):
         mark = self._mark()
         children = []
         while (
-            (_tmp_42 := self._tmp_42())
+            (_tmp_45 := self._tmp_45())
         ):
-            children.append(_tmp_42)
+            children.append(_tmp_45)
             mark = self._mark()
         self._reset(mark)
         return children
 
     @memoize
-    def _loop0_23(self) -> Optional[Any]:
-        # _loop0_23: param_no_default
+    def _tmp_23(self) -> Optional[Any]:
+        # _tmp_23: ':' block
+        mark = self._mark()
+        if (
+            (literal := self.expect(':'))
+            and
+            (v := self.block())
+        ):
+            return [literal, v]
+        self._reset(mark)
+        return None
+
+    @memoize
+    def _tmp_24(self) -> Optional[Any]:
+        # _tmp_24: ':' block
+        mark = self._mark()
+        if (
+            (literal := self.expect(':'))
+            and
+            (v := self.block())
+        ):
+            return [literal, v]
+        self._reset(mark)
+        return None
+
+    @memoize
+    def _tmp_25(self) -> Optional[Any]:
+        # _tmp_25: ':' hiding_block
+        mark = self._mark()
+        if (
+            (literal := self.expect(':'))
+            and
+            (b := self.hiding_block())
+        ):
+            return [literal, b]
+        self._reset(mark)
+        return None
+
+    @memoize
+    def _loop0_26(self) -> Optional[Any]:
+        # _loop0_26: param_no_default
         mark = self._mark()
         children = []
         while (
@@ -2048,8 +2081,8 @@ class KiwiParser(Parser):
         return children
 
     @memoize
-    def _loop0_24(self) -> Optional[Any]:
-        # _loop0_24: param_with_default
+    def _loop0_27(self) -> Optional[Any]:
+        # _loop0_27: param_with_default
         mark = self._mark()
         children = []
         while (
@@ -2061,38 +2094,38 @@ class KiwiParser(Parser):
         return children
 
     @memoize
-    def _loop0_25(self) -> Optional[Any]:
-        # _loop0_25: expression
-        mark = self._mark()
-        children = []
-        while (
-            (expression := self.expression())
-        ):
-            children.append(expression)
-            mark = self._mark()
-        self._reset(mark)
-        return children
-
-    @memoize
-    def _loop1_26(self) -> Optional[Any]:
-        # _loop1_26: expression
-        mark = self._mark()
-        children = []
-        while (
-            (expression := self.expression())
-        ):
-            children.append(expression)
-            mark = self._mark()
-        self._reset(mark)
-        return children
-
-    @memoize
     def _loop0_28(self) -> Optional[Any]:
-        # _loop0_28: (',' NEWLINE*) case
+        # _loop0_28: expression
         mark = self._mark()
         children = []
         while (
-            (_tmp_43 := self._tmp_43())
+            (expression := self.expression())
+        ):
+            children.append(expression)
+            mark = self._mark()
+        self._reset(mark)
+        return children
+
+    @memoize
+    def _loop1_29(self) -> Optional[Any]:
+        # _loop1_29: expression
+        mark = self._mark()
+        children = []
+        while (
+            (expression := self.expression())
+        ):
+            children.append(expression)
+            mark = self._mark()
+        self._reset(mark)
+        return children
+
+    @memoize
+    def _loop0_31(self) -> Optional[Any]:
+        # _loop0_31: (',' NEWLINE*) case
+        mark = self._mark()
+        children = []
+        while (
+            (_tmp_46 := self._tmp_46())
             and
             (elem := self.case())
         ):
@@ -2102,14 +2135,14 @@ class KiwiParser(Parser):
         return children
 
     @memoize
-    def _gather_27(self) -> Optional[Any]:
-        # _gather_27: case _loop0_28
+    def _gather_30(self) -> Optional[Any]:
+        # _gather_30: case _loop0_31
         mark = self._mark()
         if (
             (elem := self.case())
             is not None
             and
-            (seq := self._loop0_28())
+            (seq := self._loop0_31())
             is not None
         ):
             return [elem] + seq
@@ -2117,8 +2150,8 @@ class KiwiParser(Parser):
         return None
 
     @memoize
-    def _loop0_30(self) -> Optional[Any]:
-        # _loop0_30: ',' lambda_param
+    def _loop0_33(self) -> Optional[Any]:
+        # _loop0_33: ',' lambda_param
         mark = self._mark()
         children = []
         while (
@@ -2132,14 +2165,14 @@ class KiwiParser(Parser):
         return children
 
     @memoize
-    def _gather_29(self) -> Optional[Any]:
-        # _gather_29: lambda_param _loop0_30
+    def _gather_32(self) -> Optional[Any]:
+        # _gather_32: lambda_param _loop0_33
         mark = self._mark()
         if (
             (elem := self.lambda_param())
             is not None
             and
-            (seq := self._loop0_30())
+            (seq := self._loop0_33())
             is not None
         ):
             return [elem] + seq
@@ -2147,8 +2180,8 @@ class KiwiParser(Parser):
         return None
 
     @memoize
-    def _loop1_31(self) -> Optional[Any]:
-        # _loop1_31: disjunction
+    def _loop1_34(self) -> Optional[Any]:
+        # _loop1_34: disjunction
         mark = self._mark()
         children = []
         while (
@@ -2160,8 +2193,8 @@ class KiwiParser(Parser):
         return children
 
     @memoize
-    def _loop1_32(self) -> Optional[Any]:
-        # _loop1_32: conjunction
+    def _loop1_35(self) -> Optional[Any]:
+        # _loop1_35: conjunction
         mark = self._mark()
         children = []
         while (
@@ -2173,8 +2206,8 @@ class KiwiParser(Parser):
         return children
 
     @memoize
-    def _loop1_33(self) -> Optional[Any]:
-        # _loop1_33: compare_op_sum_pair
+    def _loop1_36(self) -> Optional[Any]:
+        # _loop1_36: compare_op_sum_pair
         mark = self._mark()
         children = []
         while (
@@ -2186,8 +2219,8 @@ class KiwiParser(Parser):
         return children
 
     @memoize
-    def _loop0_35(self) -> Optional[Any]:
-        # _loop0_35: ',' expression
+    def _loop0_38(self) -> Optional[Any]:
+        # _loop0_38: ',' expression
         mark = self._mark()
         children = []
         while (
@@ -2201,14 +2234,14 @@ class KiwiParser(Parser):
         return children
 
     @memoize
-    def _gather_34(self) -> Optional[Any]:
-        # _gather_34: expression _loop0_35
+    def _gather_37(self) -> Optional[Any]:
+        # _gather_37: expression _loop0_38
         mark = self._mark()
         if (
             (elem := self.expression())
             is not None
             and
-            (seq := self._loop0_35())
+            (seq := self._loop0_38())
             is not None
         ):
             return [elem] + seq
@@ -2216,12 +2249,12 @@ class KiwiParser(Parser):
         return None
 
     @memoize
-    def _loop0_37(self) -> Optional[Any]:
-        # _loop0_37: (',' NEWLINE*) match_key
+    def _loop0_40(self) -> Optional[Any]:
+        # _loop0_40: (',' NEWLINE*) match_key
         mark = self._mark()
         children = []
         while (
-            (_tmp_44 := self._tmp_44())
+            (_tmp_47 := self._tmp_47())
             and
             (elem := self.match_key())
         ):
@@ -2231,14 +2264,14 @@ class KiwiParser(Parser):
         return children
 
     @memoize
-    def _gather_36(self) -> Optional[Any]:
-        # _gather_36: match_key _loop0_37
+    def _gather_39(self) -> Optional[Any]:
+        # _gather_39: match_key _loop0_40
         mark = self._mark()
         if (
             (elem := self.match_key())
             is not None
             and
-            (seq := self._loop0_37())
+            (seq := self._loop0_40())
             is not None
         ):
             return [elem] + seq
@@ -2246,21 +2279,21 @@ class KiwiParser(Parser):
         return None
 
     @memoize
-    def _loop1_38(self) -> Optional[Any]:
-        # _loop1_38: (NUMBER | NAME)
+    def _loop1_41(self) -> Optional[Any]:
+        # _loop1_41: (NUMBER | NAME)
         mark = self._mark()
         children = []
         while (
-            (_tmp_45 := self._tmp_45())
+            (_tmp_48 := self._tmp_48())
         ):
-            children.append(_tmp_45)
+            children.append(_tmp_48)
             mark = self._mark()
         self._reset(mark)
         return children
 
     @memoize
-    def _tmp_39(self) -> Optional[Any]:
-        # _tmp_39: import_stmt | from_import_stmt
+    def _tmp_42(self) -> Optional[Any]:
+        # _tmp_42: import_stmt | from_import_stmt
         mark = self._mark()
         if (
             (import_stmt := self.import_stmt())
@@ -2275,8 +2308,8 @@ class KiwiParser(Parser):
         return None
 
     @memoize
-    def _tmp_40(self) -> Optional[Any]:
-        # _tmp_40: NEWLINE | ';'
+    def _tmp_43(self) -> Optional[Any]:
+        # _tmp_43: NEWLINE | ';'
         mark = self._mark()
         if (
             (_newline := self.expect('NEWLINE'))
@@ -2291,8 +2324,8 @@ class KiwiParser(Parser):
         return None
 
     @memoize
-    def _tmp_41(self) -> Optional[Any]:
-        # _tmp_41: NEWLINE | ';'
+    def _tmp_44(self) -> Optional[Any]:
+        # _tmp_44: NEWLINE | ';'
         mark = self._mark()
         if (
             (_newline := self.expect('NEWLINE'))
@@ -2307,8 +2340,8 @@ class KiwiParser(Parser):
         return None
 
     @memoize
-    def _tmp_42(self) -> Optional[Any]:
-        # _tmp_42: private_block | public_block | default_block
+    def _tmp_45(self) -> Optional[Any]:
+        # _tmp_45: private_block | public_block | default_block
         mark = self._mark()
         if (
             (private_block := self.private_block())
@@ -2328,34 +2361,34 @@ class KiwiParser(Parser):
         return None
 
     @memoize
-    def _tmp_43(self) -> Optional[Any]:
-        # _tmp_43: ',' NEWLINE*
+    def _tmp_46(self) -> Optional[Any]:
+        # _tmp_46: ',' NEWLINE*
         mark = self._mark()
         if (
             (literal := self.expect(','))
             and
-            (_loop0_46 := self._loop0_46(),)
+            (_loop0_49 := self._loop0_49(),)
         ):
-            return [literal, _loop0_46]
+            return [literal, _loop0_49]
         self._reset(mark)
         return None
 
     @memoize
-    def _tmp_44(self) -> Optional[Any]:
-        # _tmp_44: ',' NEWLINE*
+    def _tmp_47(self) -> Optional[Any]:
+        # _tmp_47: ',' NEWLINE*
         mark = self._mark()
         if (
             (literal := self.expect(','))
             and
-            (_loop0_47 := self._loop0_47(),)
+            (_loop0_50 := self._loop0_50(),)
         ):
-            return [literal, _loop0_47]
+            return [literal, _loop0_50]
         self._reset(mark)
         return None
 
     @memoize
-    def _tmp_45(self) -> Optional[Any]:
-        # _tmp_45: NUMBER | NAME
+    def _tmp_48(self) -> Optional[Any]:
+        # _tmp_48: NUMBER | NAME
         mark = self._mark()
         if (
             (number := self.number())
@@ -2370,8 +2403,8 @@ class KiwiParser(Parser):
         return None
 
     @memoize
-    def _loop0_46(self) -> Optional[Any]:
-        # _loop0_46: NEWLINE
+    def _loop0_49(self) -> Optional[Any]:
+        # _loop0_49: NEWLINE
         mark = self._mark()
         children = []
         while (
@@ -2383,8 +2416,8 @@ class KiwiParser(Parser):
         return children
 
     @memoize
-    def _loop0_47(self) -> Optional[Any]:
-        # _loop0_47: NEWLINE
+    def _loop0_50(self) -> Optional[Any]:
+        # _loop0_50: NEWLINE
         mark = self._mark()
         children = []
         while (
@@ -2395,8 +2428,8 @@ class KiwiParser(Parser):
         self._reset(mark)
         return children
 
-    KEYWORDS = ('if', 'public', 'for', 'continue', 'return', 'while', 'true', 'or', 'promise', 'break', 'not', 'and', 'in', 'else', 'namespace', 'false', 'function', 'none', 'private', 'pass')
-    SOFT_KEYWORDS = ('match', 'case', 'import', 'as', 'from', 'default', 'to', 'lambda')
+    KEYWORDS = ('import', 'promise', 'private', 'or', 'return', 'namespace', 'false', 'public', 'pass', 'and', 'break', 'true', 'for', 'while', 'continue', 'none', 'function', 'in', 'not', 'if', 'else')
+    SOFT_KEYWORDS = ('default', 'lambda', 'case', 'as', 'match', 'to', 'from')
 
 
 if __name__ == '__main__':

@@ -94,7 +94,7 @@ import_stmts:
     | v=(import_stmt | from_import_stmt)+ {list(chain.from_iterable(v))}
 
 import_stmt:
-    | "import" v=dotted_as_names (NEWLINE | ';')+ {v}
+    | 'import' &&(v=dotted_as_names) (NEWLINE | ';')+ {v}
 
 from_import_stmt:
     | s="from" v=dotted_name a=import_stmt {[
@@ -107,7 +107,7 @@ dotted_as_names:
     | ','.dotted_as_name+
 
 dotted_as_name:
-    | v=dotted_name "as" a=NAME_ {kiwi.Alias(
+    | v=dotted_name "as" &&(a=NAME_) {kiwi.Alias(
         v[0].start, a.end,
         ''.join(v), a
         )}
@@ -117,7 +117,7 @@ dotted_as_name:
         )}
 
 dotted_name:
-    | v=dotted_name '.' a=NAME_ {[*v, a]}
+    | v=dotted_name '.' &&(a=NAME_) {[*v, a]}
     | v=NAME_ {[v]}
 
 # GENERAL STATEMENTS
@@ -160,15 +160,15 @@ compound_stmt:
 # =================
 
 assignment:
-    | a=annotations '=' v=','.expression+ {kiwi.AnnAssignment(
+    | a=annotations '=' &&(v=','.expression+) {kiwi.AnnAssignment(
         a[0][0].start, v[-1].end,
         *a, v
         )}
-    | i=','.expression+ '=' v=','.expression+ {kiwi.Assignment(
+    | i=','.expression+ '=' &&(v=','.expression+) {kiwi.Assignment(
         i[0].start, v[-1].end,
         i, v
         )}
-    | i=','.expression+ o=augassign v=','.expression+ {kiwi.AugAssignment(
+    | i=','.expression+ o=augassign &&(v=','.expression+) {kiwi.AugAssignment(
         i[0].start, v[-1].end,
         i, o, v
         )}
@@ -178,8 +178,8 @@ assignment:
         )}
 
 annotations:
-    | i=expression ':' a=expression+ {[i], a[0], a[1:]}
-    | i=','.expression+ '->' a=expression+ {i, a[0], a[1:]}
+    | i=expression ':' &&(a=expression+) {[i], a[0], a[1:]}
+    | i=','.expression+ '->' &&(a=expression+) {i, a[0], a[1:]}
 
 augassign:
     | s='+=' {kiwi.Token(
@@ -230,13 +230,13 @@ blocks:
     | (private_block | public_block | default_block)+
 
 private_block:
-    | s='private' ':' v=block {kiwi.PrivateBlock(
+    | s='private' &&(':' v=block) {kiwi.PrivateBlock(
         s.start, v[-1].end,
         v
     )}
 
 public_block:
-    | s='public' ':' v=block {kiwi.PublicBlock(
+    | s='public' &&(':' v=block) {kiwi.PublicBlock(
         s.start, v[-1].end,
         v
     )}
@@ -251,7 +251,7 @@ default_block:
 # ---------------------
 
 namespace_def:
-    | s='namespace' i=NAME_ ':' b=hiding_block {kiwi.NamespaceDef(
+    | s='namespace' &&(i=NAME_) &&(':' b=hiding_block) {kiwi.NamespaceDef(
         s.start, b[-1].end,
         i, b
         )}
@@ -260,19 +260,19 @@ namespace_def:
 # --------------------
 
 function_def:
-    | s='function' i=NAME_ '(' p=parameters ')' '->' r=return_param '<' '-' pr=expression ':' b=block {kiwi.FuncDef(
+    | s='function' i=(&&(NAME_)) &&'(' p=parameters &&')' '->' r=(&&(return_param)) '<' '-' pr=(&&(expression)) &&':' b=(&&(block)) {kiwi.FuncDef(
         s.start, b[-1].end,
         i, p[0], p[1], r, pr, b
         )}
-    | s='function' i=NAME_ '(' p=parameters ')' '<' '-' pr=expression ':' b=block {kiwi.FuncDef(
+    | s='function' i=NAME_ '(' p=parameters ')' '<' '-' pr=(&&(expression)) &&':' b=(&&(block)) {kiwi.FuncDef(
         s.start, b[-1].end,
         i, p[0], p[1], None, pr, b
         )}
-    | s='function' i=NAME_ '(' p=parameters ')' '->' r=return_param ':' b=block {kiwi.FuncDef(
+    | s='function' i=NAME_ '(' p=parameters ')' '->' r=(&&(return_param)) &&':' b=(&&(block)) {kiwi.FuncDef(
         s.start, b[-1].end,
         i, p[0], p[1], r, None, b
         )}
-    | s='function' i=NAME_ '(' p=parameters ')' ':' b=block {kiwi.FuncDef(
+    | s='function' i=NAME_ '(' p=parameters ')' &&':' b=(&&(block)) {kiwi.FuncDef(
         s.start, b[-1].end,
         i, p[0], p[1], None, None, b
         )}
