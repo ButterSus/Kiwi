@@ -1,6 +1,6 @@
 > # Current State of Project
 > 
-> It was very interesting to try myself in the implementation of a nonsense "transpilator". None of the ideas were implemented, there is no time. Development is permanently suspended.
+> It was very interesting to try myself in the implementation of a nonsense "transpiler". None of the ideas were implemented, there is no time. Development is permanently suspended.
 
 # Kiwi - a datapack description language
 
